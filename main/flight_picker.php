@@ -45,6 +45,7 @@
 
     <script src="js/bootstrap-datepicker.min.js" type="text/javascript"></script>
     <script src="js/bootbox.min.js" type="text/javascript"></script>
+    <script src="js/bootstrap-typeahead.min.js" type="text/javascript"></script>
 
     <link href="../style.css" media="screen" rel="stylesheet" type="text/css"/>
     <!--sa poip up-->
@@ -112,7 +113,7 @@ $finalcode = 'RS-' . createRandomPassword();
 <?php
 $position = $_SESSION['SESS_LAST_NAME'];
 
-if ($position == 'admin') {
+
 ?>
 
 <div class="container-fluid">
@@ -137,7 +138,6 @@ if ($position == 'admin') {
                     </li>
 
                 </ul>
-                <?php } ?>
             </div><!--/.well -->
         </div><!--/span-->
         <div class="span10">
@@ -154,7 +154,7 @@ if ($position == 'admin') {
                 </li>
             </ul>
             <div style="margin-top: -19px; margin-bottom: 21px;">
-                <a href="index.php">
+                <a href="flight_packages.php">
                     <button class="btn btn-default btn-large" style="float: none;"><i
                             class="icon icon-circle-arrow-left icon-large"></i> Back
                     </button>
@@ -170,6 +170,13 @@ if ($position == 'admin') {
                 <input type="hidden" name="flightTime" id="flightTime" value="" />
                 <input type="hidden" name="flightDuration" id="flightDuration" value="" />
                 <input type="hidden" name="offerDuration" id="offerDuration" value="" />
+
+                <?php
+                $result = $db->prepare("SELECT * FROM flight_packages WHERE id = :package_id");
+                $result->execute(array('package_id'=>$_GET['pkg_id']));
+                $row = $result->fetch();
+                ?>
+                <h4><?php echo $row['package_name']; ?></h4>
 
                 <select class="span6" name="flightOffer" id="flightOffer">
                     <option>Select a Flight Offer</option>
@@ -187,30 +194,18 @@ if ($position == 'admin') {
                 </select>
                 <input type="hidden" name="date" value="<?php echo date("m/d/y"); ?>"/>
 
-                <select class="span6" name="customer" id="customer">
-                    <option>Select a Customer</option>
-                    <?php
-                    $result = $db->prepare("SELECT * FROM customer");
-                    $result->execute();
-                    for ($i = 0; $row = $result->fetch(); $i++) {
-                        ?>
-                        <option value="<?php echo $row['customer_id']; ?>" <?php echo $_GET['customer_id']==$row['customer_id'] ? 'selected' : ''?>>
-                            <?php echo $row['customer_name']; ?>
-                        </option>
-                        <?php
-                    }
-                    ?>
-                </select>
-                <button id="btnAddCustomer" data-href="user_login.php" class="btn btn-secondary">
+                <br/>
+                <input type="text" class="form-contorl span6" placeholder="Search Customers" id="customer" name="customer" />
+                <button id="btnAddCustomer" data-href="user_login.php" class="btn btn-secondary" style="margin-bottom:9px;">
                     Add Customer
                 </button>
 
                 <div class="row">
-                    <div class="span3">
+                    <div class="span3" style="margin-left:25px;">
                         <div id="datePicker"></div>
                     </div>
 
-                    <div class="span7" id="timeslots">
+                    <div class="span6" id="timeslots">
                     </div>
                 </div>
 
@@ -349,6 +344,33 @@ if ($position == 'admin') {
 
 <script type="text/javascript">
 
+    $("#customer").typeahead({
+        onSelect: function(item) {
+            console.log(item);
+        },
+        ajax: {
+            url: "api.php",
+            timeout: 500,
+            displayField: "customer_name",
+            triggerLength: 1,
+            method: "post",
+            loadingClass: "loading-circle",
+            preDispatch: function (query) {
+                return {
+                    search: query,
+                    call: 'searchCustomers',
+                }
+            },
+            preProcess: function (response) {
+                console.log(response.success);
+                if (response.success == false) {
+                    return false;
+                }
+                return response.data;
+            }
+        },
+    });
+
     var _getTimeslots = function(flightDate, flightOfferId, duration) {
 
         if(duration == undefined) {
@@ -398,7 +420,9 @@ if ($position == 'admin') {
             data: $('#register-form').serialize(),
             dataType: 'json',
             success: function(response) {
+                $(e.target).button('reset');
                 if(response.success == 1) {
+                    $('#add-customer-modal').modal('hide');
                     var _customer = response.data;
                     $('#customer').append('<option value="'+_customer.customer_id+'" selected>'+_customer.customer_name+'</option>');
                 } else {
@@ -406,6 +430,12 @@ if ($position == 'admin') {
                 }
             }
         });
+    });
+
+    $('#add-customer-modal').on('shown.bs.modal', function() {
+       $('#dob').datepicker({
+           format: 'yyyy-mm-dd'
+       });
     });
 
     $('#timeslots').on('click', '.label', function(e) {

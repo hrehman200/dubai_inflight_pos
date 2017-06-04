@@ -36,5 +36,6 @@
     </div>
 </form>
 
-<link rel="stylesheet" type="text/css" href="css/user_login.css"/>
-<script type="text/javascript" src="js/user_login.js"></script>
+<style>
+    .datepicker{z-index:1151 !important;}
+</style>

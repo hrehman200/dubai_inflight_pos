@@ -67,9 +67,9 @@ function saveCustomer() {
     $post = $_POST;
 
     $sql = "INSERT INTO customer
-      (customer_name, address, gender, phone, email, password, nationality, resident_of)
+      (customer_name, address, gender, phone, email, password, nationality, resident_of, dob)
       VALUES
-      (:customer_name, :address, :gender, :phone, :email, :password, :nationality, :resident_of)";
+      (:customer_name, :address, :gender, :phone, :email, :password, :nationality, :resident_of, :dob)";
 
     $query = $db->prepare($sql);
 
@@ -81,10 +81,30 @@ function saveCustomer() {
         ':email'=>$post['email'],
         ':password'=>$post['password'],
         ':nationality'=>$post['nationality'],
-        'resident_of'=>$post['resident_of']
+        ':resident_of'=>$post['resident_of'],
+        ':dob'=>$post['dob']
     ));
 
     $customer_id = $db->lastInsertId();
 
     echo json_encode(array('success'=>1, 'msg'=>'', 'data'=>array('customer_id'=>$customer_id, 'customer_name'=>$post['customer_name'])));
+}
+
+function searchCustomers() {
+    global $db;
+
+    $post = $_POST;
+
+    $query = $db->prepare('SELECT * FROM customer WHERE customer_name LIKE :search');
+    $query->execute(array(
+        ':search' => '%'.$post['search'].'%'
+    ));
+
+    $result = $query->fetchAll(PDO::FETCH_ASSOC);
+
+    echo json_encode(array(
+        'success'=>1,
+        'msg'=>'',
+        'data'=>$result
+    ));
 }
