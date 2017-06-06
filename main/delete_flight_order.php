@@ -1,18 +1,43 @@
 <?php
 include('../connect.php');
 
-$transaction_id = $_GET['transaction_id'];
-
-$result = $db->prepare("DELETE FROM sales_order WHERE transaction_id= :transaction_id");
-$result->bindParam(':transaction_id', $transaction_id);
-$result->execute();
-
-$url = 'http://' . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'];
+$url       = 'http://' . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'];
 $str_query = parse_url($url, PHP_URL_QUERY);
 
-$str_query = str_replace('transaction_id='.$transaction_id, "", $str_query);
+$flight_purchase_id = $_GET['flight_purchase_id'];
+$booking_id         = $_GET['booking_id'];
 
-$location = sprintf("location: flight_picker.php?".$str_query);
+/**
+ * @param $booking_id
+ * @param null $flight_purchase_id
+ */
+function deleteFlightBooking($booking_id, $flight_purchase_id = null) {
+    global $db;
+    if($flight_purchase_id == null) {
+        $result = $db->prepare("DELETE FROM flight_bookings WHERE id= :booking_id");
+        $result->bindParam(':booking_id', $booking_id);
+    } else {
+        $result = $db->prepare("DELETE FROM flight_bookings WHERE flight_purchase_id= :flight_purchase_id");
+        $result->bindParam(':flight_purchase_id', $booking_id);
+    }
+    $result->execute();
+}
+
+if($flight_purchase_id > 0) {
+    $result = $db->prepare("DELETE FROM flight_purchases WHERE id= :flight_purchase_id");
+    $result->bindParam(':flight_purchase_id', $flight_purchase_id);
+    $result->execute();
+
+    deleteFlightBooking(null, $flight_purchase_id);
+    $str_query = str_replace('flight_purchase_id=' . $flight_purchase_id, "", $str_query);
+
+} else if ($booking_id > 0) {
+
+    deleteFlightBooking($booking_id);
+    $str_query = str_replace('booking_id=' . $flight_purchase_id, "", $str_query);
+}
+
+$location = sprintf("location: flight_picker.php?" . $str_query);
 
 header($location);
 ?>

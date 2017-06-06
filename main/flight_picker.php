@@ -22,9 +22,7 @@
 
     <link href="vendors/uniform.default.css" rel="stylesheet" media="screen">
     <link href="css/bootstrap.css" rel="stylesheet">
-
     <link rel="stylesheet" type="text/css" href="css/DT_bootstrap.css">
-
     <link rel="stylesheet" type="text/css" href="css/bootstrap-datepicker.standalone.css">
 
     <link rel="stylesheet" href="css/font-awesome.min.css">
@@ -54,7 +52,6 @@
     <script language="javascript" type="text/javascript">
         /* Visit http://www.yaldex.com/ for full source code
          and get more free JavaScript, CSS and DHTML scripts! */
-        /*<!--Begin
         var timerID = null;
         var timerRunning = false;
         function stopclock() {
@@ -80,8 +77,7 @@
             stopclock();
             showtime();
         }
-        window.onload = startclock;*/
-        // End -->
+        window.onload = startclock;
     </SCRIPT>
 
 </head>
@@ -170,6 +166,10 @@ $position = $_SESSION['SESS_LAST_NAME'];
                 <input type="hidden" name="flightTime" id="flightTime" value="" />
                 <input type="hidden" name="flightDuration" id="flightDuration" value="" />
                 <input type="hidden" name="offerDuration" id="offerDuration" value="" />
+                <input type="hidden" name="customerId" id="customerId" value="<?=$_GET['customer_id']?>" />
+                <input type="hidden" name="flightPurchaseId" id="flightPurchaseId" value="" />
+                <input type="hidden" name="useBalance" id="useBalance" value="0" />
+
 
                 <?php
                 $result = $db->prepare("SELECT * FROM flight_packages WHERE id = :package_id");
@@ -195,7 +195,7 @@ $position = $_SESSION['SESS_LAST_NAME'];
                 <input type="hidden" name="date" value="<?php echo date("m/d/y"); ?>"/>
 
                 <br/>
-                <input type="text" class="form-contorl span6" placeholder="Search Customers" id="customer" name="customer" />
+                <input type="text" class="form-contorl span6" placeholder="Search Customers" id="customer" name="customer" autocomplete="off" />
                 <button id="btnAddCustomer" data-href="user_login.php" class="btn btn-secondary" style="margin-bottom:9px;">
                     Add Customer
                 </button>
@@ -205,7 +205,21 @@ $position = $_SESSION['SESS_LAST_NAME'];
                         <div id="datePicker"></div>
                     </div>
 
-                    <div class="span6" id="timeslots">
+                    <div class="span5" id="timeslots">
+                    </div>
+
+                    <div class="span3">
+                        <!--<h3></h3>
+                        <table class="table table-bordered">
+                            <thead>
+                                <tr>
+                                    <th>Time</th>
+                                    <th>Duration</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tblCustomerBookings">
+                            </tbody>
+                        </table>-->
                     </div>
                 </div>
 
@@ -225,92 +239,73 @@ $position = $_SESSION['SESS_LAST_NAME'];
 
                 <?php
                 $id = $_GET['invoice'];
-                include('../connect.php');
 
                 $url = 'http://' . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'];
                 $str_query = parse_url($url, PHP_URL_QUERY);
 
-                $result = $db->prepare("SELECT * FROM sales_order WHERE invoice= :invoiceId GROUP BY invoice, flight_offer_id");
+                $result = $db->prepare("SELECT fp.id AS flight_purchase_id, fo.code, fpkg.package_name, fo.offer_name, fo.price, fo.duration FROM flight_purchases fp
+                  LEFT JOIN flight_offers fo ON fp.flight_offer_id = fo.id
+                  LEFT JOIN flight_packages fpkg ON fo.package_id = fpkg.id
+                  WHERE fp.invoice_id= :invoiceId");
                 $result->bindParam(':invoiceId', $id);
                 $result->execute();
-                for ($i = 1; $row = $result->fetch(); $i++) {
+
+                $total_cost = 0;
+                $total_duration = 0;
+                while($row = $result->fetch()) {
+                    $total_cost += $row['price'];
+                    $total_duration += $row['duration'];
                     ?>
                     <tr class="record">
-                        <td hidden><?php echo $row['product']; ?></td>
-                        <td><?php echo $row['product_code']; ?></td>
-                        <td><?php echo $row['gen_name']; ?></td>
-                        <td><?php echo $row['name']; ?></td>
-                        <td><?php echo formatMoney($row['price'], true); ?></td>
-                        <td><?php echo $row['qty']; ?></td>
+                        <td><?php echo $row['code']; ?></td>
+                        <td><?php echo $row['package_name']; ?></td>
+                        <td><?php echo $row['offer_name'] ? $row['offer_name'] : 'Deduct from balance'; ?></td>
+                        <td><?php echo $row['price']; ?></td>
+                        <td><?php echo $row['duration']; ?></td>
                         <td width="90"><a
-                                href="delete_flight_order.php?transaction_id=<?php echo $row['transaction_id']."&".$str_query;?>" >
-                                <button class="btn btn-mini btn-warning"><i class="icon icon-remove"></i> Cancel
-                                </button>
+                                href="delete_flight_order.php?flight_purchase_id=<?php echo $row['flight_purchase_id'] . "&" . $str_query; ?>">
+                                <button class="btn btn-mini btn-warning"><i class="icon icon-remove"></i> Cancel</button>
                             </a></td>
+                        <script type="text/javascript">
+                            $('#flightPurchaseId').val(<?=$row['flight_purchase_id']?>);
+                        </script>
                     </tr>
+
+                    <?php
+                    $query2 = $db->prepare('SELECT * FROM flight_bookings WHERE flight_purchase_id = :flight_purchase_id');
+                    $query2->bindParam(':flight_purchase_id', $row['flight_purchase_id']);
+                    $query2->execute();
+                    while($row2 = $query2->fetch()) {
+                        ?>
+                        <tr>
+                            <td colspan="2"></td>
+                            <td style="text-align: center;"><?=substr($row2['flight_time'],0,-3)?></td>
+                            <td></td>
+                            <td><?=$row2['duration']?></td>
+                            <td><a href="delete_flight_order.php?booking_id=<?php echo $row2['id'] . "&" . $str_query; ?>">
+                                    <button class="btn btn-mini btn-warning"><i class="icon icon-remove"></i> Cancel</button>
+                                </a></td>
+                        </tr>
+                        <?php
+                    }
+                    ?>
+
                     <?php
                 }
                 ?>
                 <tr>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td> Total Amount:</td>
-                    <td> Total Minutes:</td>
-                    <td></td>
+                    <td colspan="3" style="text-align: right;">Totals:</td>
+                    <td><?=$total_cost?></td>
+                    <td colspan="2"><?=$total_duration?></td>
                 </tr>
-                <tr>
-                    <th colspan="3" align="right"><strong style="font-size: 12px; color: #222222;">Total:</strong></th>
-                    <td colspan="1"><strong style="font-size: 12px; color: #222222;">
-                            <?php
-                            function formatMoney($number, $fractional = false) {
-                                if ($fractional) {
-                                    $number = sprintf('%.2f', $number);
-                                }
-                                while (true) {
-                                    $replaced = preg_replace('/(-?\d+)(\d\d\d)/', '$1,$2', $number);
-                                    if ($replaced != $number) {
-                                        $number = $replaced;
-                                    } else {
-                                        break;
-                                    }
-                                }
-
-                                return $number;
-                            }
-
-                            $sdsd     = $_GET['invoice'];
-                            $resultas = $db->prepare("SELECT sum(price) FROM sales_order WHERE invoice= :a");
-                            $resultas->bindParam(':a', $sdsd);
-                            $resultas->execute();
-                            for ($i = 0; $rowas = $resultas->fetch(); $i++) {
-                                $fgfg = $rowas['sum(price)'];
-                                echo formatMoney($fgfg, true);
-                            }
-                            ?>
-                        </strong></td>
-                    <td colspan="1"><strong style="font-size: 12px; color: #222222;">
-                            <?php
-                            $resulta = $db->prepare("SELECT sum(qty) FROM sales_order WHERE invoice= :b");
-                            $resulta->bindParam(':b', $sdsd);
-                            $resulta->execute();
-                            for ($i = 0; $qwe = $resulta->fetch(); $i++) {
-                                $asd = $qwe['sum(qty)'];
-                                echo formatMoney($asd, true);
-                            }
-                            ?>
-
-                    </td>
-                    <th></th>
-                </tr>
-
                 </tbody>
             </table>
+            <!--<button class="btn btn-mini btn-warning"><i class="icon icon-remove"></i> Cancel</button>-->
             <br>
             <a rel="facebox"
                href="checkout.php?pt=cash&
                invoice=<?php echo $_GET['invoice'] ?>&
-               total=<?php echo $fgfg ?>&
+               total=<?php echo $total_cost ?>&
                totalprof=<?php echo $asd ?>&
                cashier=<?php echo $_SESSION['SESS_FIRST_NAME'] ?>&
                savingflight=1">
@@ -346,11 +341,12 @@ $position = $_SESSION['SESS_LAST_NAME'];
 
     $("#customer").typeahead({
         onSelect: function(item) {
-            console.log(item);
+            $('#customerId').val(item.value);
         },
         ajax: {
             url: "api.php",
             timeout: 500,
+            valueField: "customer_id",
             displayField: "customer_name",
             triggerLength: 1,
             method: "post",
@@ -362,14 +358,13 @@ $position = $_SESSION['SESS_LAST_NAME'];
                 }
             },
             preProcess: function (response) {
-                console.log(response.success);
                 if (response.success == false) {
                     return false;
                 }
                 return response.data;
             }
-        },
-    });
+        }
+    }).val("<?=$_GET['customer_name']?>");
 
     var _getTimeslots = function(flightDate, flightOfferId, duration) {
 
@@ -389,9 +384,9 @@ $position = $_SESSION['SESS_LAST_NAME'];
             },
             dataType: 'json',
             success: function(response) {
-                console.log(response);
                 if(response.success == 1) {
                     $('#timeslots').html(response.data);
+                    $('[data-toggle="tooltip"]').tooltip();
                 }
             }
         });
@@ -440,36 +435,96 @@ $position = $_SESSION['SESS_LAST_NAME'];
 
     $('#timeslots').on('click', '.label', function(e) {
 
-        /*var dialog = bootbox.dialog({
-            title: 'A custom dialog with init',
-            message: '<p><i class="fa fa-spin fa-spinner"></i> Loading...</p>'
+        $('#flightTime').val($(e.target).text());
+
+        var duration = $('#flightOffer option:selected').data('duration');
+        $('#offerDuration').val(duration);
+
+        $.ajax({
+            url:'api.php',
+            method: 'POST',
+            data: {
+                'call': 'getDetailsForNewBookingModal',
+                'flightPurchaseId': $('#flightPurchaseId').val(),
+                'customerId': $('#customerId').val(),
+            },
+            dataType: 'json',
+            success: function(response) {
+                if(response.success == 1) {
+                    var data = response.data;
+                    _showSelectMinutesDialog(duration, data.unbooked_duration, data.balance);
+                }
+            }
         });
-        dialog.init(function(){
-            dialog.find('.bootbox-body').html('I was loaded after the dialog was shown!');
+    });
 
-        });*/
+    var _showSelectMinutesDialog = function(duration, unbookedDuration, balance) {
 
-        bootbox.prompt({
-            title: "Enter minutes to fly",
-            inputType: 'number',
-            callback: function (minutes) {
+        unbookedDuration = unbookedDuration < 0 ? 0 : unbookedDuration;
+        balance = balance < 0 ? 0 : balance;
 
-                if(minutes !== null) {
-                    var duration = $('#flightOffer option:selected').data('duration');
-                    if (minutes <= duration) {
-                        $('#flightTime').val($(e.target).text());
-                        $('#offerDuration').val(duration);
-                        $('#flightDuration').val(minutes);
-                        $('#formFlightTime').submit();
-                    } else {
-                        alert('You can not assign more than ' + duration + ' minutes.');
-                        return false;
+        var dialog = bootbox.dialog({
+            title: 'Enter minutes to fly',
+            message: '<div> \
+                <input type="text" id="txtMinutes" /> \
+            </div>',
+            buttons: {
+                btn1: {
+                    label: 'New Purchase',
+                    className: 'btn-success',
+                    callback: function (result) {
+                        var minutes = $('#txtMinutes').val();
+                        if(minutes !== null) {
+                            if (minutes <= duration) {
+                                $('#flightPurchaseId').val('');
+                                $('#flightDuration').val(minutes);
+                                $('#formFlightTime').submit();
+                            } else {
+                                alert('You can not assign more than ' + duration + ' minutes.');
+                                return false;
+                            }
+                        }
+                    }
+                },
+                btn2: {
+                    label: 'Use Existing Purchase ('+unbookedDuration+')',
+                    className: 'btn-info',
+                    callback: function (result) {
+                        var minutes = $('#txtMinutes').val();
+                        if(minutes !== null) {
+                            if (minutes <= unbookedDuration) {
+                                $('#flightDuration').val(minutes);
+                                $('#formFlightTime').submit();
+                            } else {
+                                alert('Existing purchase only has ' + unbookedDuration + ' minutes.');
+                                return false;
+                            }
+                        }
+                    }
+                },
+                btn3: {
+                    label: 'Deduct from balance ('+balance+')',
+                    className: 'btn',
+                    callback: function (result) {
+                        var minutes = $('#txtMinutes').val();
+                        if(minutes !== null) {
+                            if (minutes <= balance) {
+                                $('#useBalance').val(1);
+                                $('#flightPurchaseId').val('');
+                                $('#flightDuration').val(minutes);
+                                $('#formFlightTime').submit();
+                            } else {
+                                alert('Balance does not have' + minutes + ' minutes.');
+                                return false;
+                            }
+                        }
                     }
                 }
             }
         });
+    }
 
-    });
+
 
 </script>
 

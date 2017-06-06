@@ -27,6 +27,7 @@ $q->execute(array($c, $b));
 $fffffff = $asasa - $discount;
 $d       = $fffffff * $c;
 $profit  = $p * $c;
+
 // query
 $sql = "INSERT INTO sales_order (invoice,product,qty,amount,name,price,profit,product_code,gen_name,date) VALUES (:a,:b,:c,:d,:e,:f,:h,:i,:j,:k)";
 $q   = $db->prepare($sql);

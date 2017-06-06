@@ -137,7 +137,15 @@
 
 
                 <input type="number" name="cash" placeholder="Cash"
-                       style="width: 268px; height:30px;  margin-bottom: 15px;" required/>
+                       style="width: 268px; height:30px;  margin-bottom: 15px;" value="<?=$_GET['total']?>" required/>
+
+                <?php
+                if($_GET['savingflight'] == 1) {
+                    ?>
+                    <input type="number" name="discount" placeholder="Discount %" style="width: 268px; height:30px;  margin-bottom: 15px;" required />
+                    <?php
+                }
+                ?>
 
                 <br>
                 <?php

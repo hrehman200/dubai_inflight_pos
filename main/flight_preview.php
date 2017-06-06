@@ -42,12 +42,14 @@
     $result = $db->prepare("SELECT * FROM sales WHERE invoice_number= :userid");
     $result->bindParam(':userid', $invoice);
     $result->execute();
+    $discount = 0;
     for($i=0; $row = $result->fetch(); $i++){
         $cname=$row['name'];
         $invoice=$row['invoice_number'];
         $date=$row['date'];
         $cash=$row['due_date'];
         $cashier=$row['cashier'];
+        $discount = $row['discount'];
 
         $pt=$row['type'];
         $price=$row['amount'];
@@ -138,13 +140,9 @@
         <div class="span2">
             <div class="well sidebar-nav">
                 <ul class="nav nav-list">
-                    <li><a href="index.php"><i class="icon-dashboard icon-2x"></i> Dashboard </a></li>
-                    <li class="active"><a href="sales.php?id=cash&invoice"><i class="icon-shopping-cart icon-2x"></i> Sales</a>  </li>
-                    <li><a href="products.php"><i class="icon-list-alt icon-2x"></i> Products</a>                                     </li>
-                    <li><a href="customer.php"><i class="icon-group icon-2x"></i> Customers</a>                                    </li>
-                    <li><a href="supplier.php"><i class="icon-group icon-2x"></i> Suppliers</a>                                    </li>
-                    <li><a href="salesreport.php?d1=0&d2=0"><i class="icon-bar-chart icon-2x"></i> Sales Report</a>                </li>
-                    <li><a href="sales_inventory.php"><i class="icon-table icon-2x"></i> Product Inventory</a>                </li>
+                    <?php
+                    include('side-menu.php');
+                    ?>
                     <br><br><br><br><br><br>
                     <li>
                         <div class="hero-unit-clock">
@@ -202,50 +200,78 @@
                         <table border="1" cellpadding="4" cellspacing="0" style="font-family: arial; font-size: 12px;	text-align:left;" width="100%">
                             <thead>
                             <tr>
-                                <th width="90"> Product Code </th>
-                                <th> Product Name </th>
-                                <th> Minutes </th>
+                                <th width="90"> Code </th>
+                                <th> Package </th>
+                                <th> Offer </th>
                                 <th> Price </th>
+                                <th> Minutes </th>
                             </tr>
                             </thead>
                             <tbody>
 
                             <?php
-                            $id=$_GET['invoice'];
-                            $result = $db->prepare("SELECT * FROM sales_order WHERE invoice= :userid");
-                            $result->bindParam(':userid', $id);
+                            $invoice_id=$_GET['invoice'];
+
+                            $result = $db->prepare("SELECT fp.id AS flight_purchase_id, fo.code, fpkg.package_name, fo.offer_name, fo.price, fo.duration FROM flight_purchases fp
+                                      LEFT JOIN flight_offers fo ON fp.flight_offer_id = fo.id
+                                      LEFT JOIN flight_packages fpkg ON fo.package_id = fpkg.id
+                                      WHERE fp.invoice_id= :invoiceId");
+                            $result->bindParam(':invoiceId', $invoice_id);
                             $result->execute();
-                            for($i=0; $row = $result->fetch(); $i++){
+
+                            $total_cost = 0;
+                            $total_duration = 0;
+                            while($row = $result->fetch()) {
+                                $total_cost += $row['price'];
+                                $total_duration += $row['duration'];
                                 ?>
                                 <tr class="record">
-                                    <td><?php echo $row['product_code']; ?></td>
-                                    <td><?php echo $row['name']; ?></td>
-                                    <td><?php echo $row['qty']; ?></td>
-                                    <td>
-                                        <?php
-                                        $ppp=$row['price'];
-                                        echo formatMoney($ppp, true);
-                                        ?>
-                                    </td>
+                                    <td><?php echo $row['code']; ?></td>
+                                    <td><?php echo $row['package_name']; ?></td>
+                                    <td><?php echo $row['offer_name'] ? $row['offer_name'] : 'Deduct from balance'; ?></td>
+                                    <td><?php echo $row['price']; ?></td>
+                                    <td><?php echo $row['duration']; ?></td>
                                 </tr>
+
+                                <?php
+                                $query2 = $db->prepare('SELECT * FROM flight_bookings WHERE flight_purchase_id = :flight_purchase_id');
+                                $query2->bindParam(':flight_purchase_id', $row['flight_purchase_id']);
+                                $query2->execute();
+                                while($row2 = $query2->fetch()) {
+                                    ?>
+                                    <tr>
+                                        <td colspan="2"></td>
+                                        <td style="text-align: center;"><?=substr($row2['flight_time'],0,-3)?></td>
+                                        <td></td>
+                                        <td><?=$row2['duration']?></td>
+                                    </tr>
+                                    <?php
+                                }
+                                ?>
+
                                 <?php
                             }
                             ?>
-
                             <tr>
-                                <td colspan="3" style=" text-align:right;"><strong style="font-size: 12px;">Total: &nbsp;</strong></td>
-                                <td ><strong style="font-size: 12px;">
-                                        <?php
-                                        $sdsd=$_GET['invoice'];
-                                        $resultas = $db->prepare("SELECT sum(price) FROM sales_order WHERE invoice= :a");
-                                        $resultas->bindParam(':a', $sdsd);
-                                        $resultas->execute();
-                                        for($i=0; $rowas = $resultas->fetch(); $i++){
-                                            $fgfg=$rowas['sum(price)'];
-                                            echo formatMoney($fgfg, true);
-                                        }
-                                        ?>
-                                    </strong></td>
+                                <td colspan="3" style="text-align: right;">Sub Total:</td>
+                                <td><?=$total_cost?></td>
+                                <td colspan="2"><?=$total_duration?></td>
+                            </tr>
+                            <tr>
+                                <td colspan="3" style="text-align: right;">Discount:</td>
+                                <td><?php
+                                    $discount_value = floor($discount * $total_cost / 100);
+                                    echo sprintf('-%d (%s%%)', $discount_value, $discount);
+                                    ?></td>
+                                <td colspan="2"></td>
+                            </tr>
+                            <tr>
+                                <td colspan="3" style="text-align: right;">Total:</td>
+                                <td><?php
+                                    $total = $total_cost - $discount_value;
+                                    echo $total;
+                                    ?></td>
+                                <td colspan="2"></td>
                             </tr>
 
                             </tbody>
