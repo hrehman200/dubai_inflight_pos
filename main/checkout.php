@@ -112,6 +112,7 @@
         <input type="hidden" name="cashier" value="<?php echo $_GET['cashier']; ?>"/>
         <input type="hidden" name="profit" value="<?php echo $_GET['totalprof']; ?>"/>
         <input type="hidden" name="savingflight" value="<?php echo $_GET['savingflight']; ?>"/>
+        <input type="hidden" name="customerId" value="<?php echo $_GET['customerId']; ?>"/>
 
         <center>
 

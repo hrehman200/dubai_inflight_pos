@@ -196,6 +196,11 @@ $position = $_SESSION['SESS_LAST_NAME'];
 
                 <br/>
                 <input type="text" class="form-contorl span6" placeholder="Search Customers" id="customer" name="customer" autocomplete="off" />
+
+                <button class="btn btn-info" style="margin-bottom: 9px;" id="btnFlightHistory">
+                    Flight History
+                </button>
+
                 <button id="btnAddCustomer" data-href="user_login.php" class="btn btn-secondary" style="margin-bottom:9px;">
                     Add Customer
                 </button>
@@ -308,7 +313,8 @@ $position = $_SESSION['SESS_LAST_NAME'];
                total=<?php echo $total_cost ?>&
                totalprof=<?php echo $asd ?>&
                cashier=<?php echo $_SESSION['SESS_FIRST_NAME'] ?>&
-               savingflight=1">
+               savingflight=1&
+               customerId=<?=$_GET['customer_id']?>">
                 <button class="btn btn-success btn-large btn-block"><i class="icon icon-save icon-large"></i> SAVE
                 </button>
             </a>
@@ -393,7 +399,8 @@ $position = $_SESSION['SESS_LAST_NAME'];
     };
 
     $("#datePicker").datepicker({
-        format: 'yyyy-mm-dd'
+        format: 'yyyy-mm-dd',
+        startDate: new Date()
     }).on('changeDate', function(e) {
         var pickedDate = $("#datePicker").data('datepicker').getFormattedDate('yyyy-mm-dd');
         $('#flightDate').val(pickedDate);
@@ -401,6 +408,15 @@ $position = $_SESSION['SESS_LAST_NAME'];
 
     }).datepicker('update', '<?php echo $_GET['date']?>')
         .trigger('changeDate');
+
+    $('#btnFlightHistory').on('click', function(e) {
+        e.preventDefault();
+        var location = 'flight_history.php';
+        if($('#customer').val() != '') {
+            location += '?customerId='+$('#customerId').val()+'&customerName='+$('#customer').val();
+            window.location = location;
+        }
+    });
 
     $('#btnAddCustomer').on('click', function(e){
         e.preventDefault();

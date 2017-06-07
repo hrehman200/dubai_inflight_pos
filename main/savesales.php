@@ -10,6 +10,7 @@ $z               = $_POST['profit'];
 $mode_of_payment = $_POST['mode_of_payment'];
 $cname           = $_POST['cname'];
 $discount        = $_POST['discount'];
+$customer_id     = $_POST['customerId'];
 
 $monthNumber = date_parse_from_format("m/d/y", $c);
 $monthNum    = $monthNumber["month"];
@@ -26,17 +27,18 @@ if ($d == 'cash') {
     $f = $_POST['due'];
 }
 
-if($_POST['savingflight'] == 1) {
+if ($_POST['savingflight'] == 1) {
 
-    $sql = "INSERT INTO sales (invoice_number,cashier,date,type,month,year,amount,profit,due_date, mode_of_payment, discount)
-        VALUES (:a,:b,:c,:d,:monh,:year,:e,:z,:f, :mode_of_payment, :discount)";
+    $sql = "INSERT INTO sales (invoice_number,cashier,date,type,month,year,amount,profit,due_date, mode_of_payment, discount, customer_id, sale_type)
+        VALUES (:a,:b,:c,:d,:monh,:year,:e,:z,:f, :mode_of_payment, :discount, :customerId, 'Service')";
     $q   = $db->prepare($sql);
-    $q->execute(array(':a' => $a, ':b' => $b, ':c' => $c, ':d' => $d, ':monh' => $monthName, ':year' => $salesyear, ':e' => $e, ':z' => $z, ':f' => $f, ':mode_of_payment' => $mode_of_payment, ':discount'=>$discount));
+    $q->execute(array(':a' => $a, ':b' => $b, ':c' => $c, ':d' => $d, ':monh' => $monthName, ':year' => $salesyear, ':e' => $e, ':z' => $z, ':f' => $f, ':mode_of_payment' => $mode_of_payment, ':discount' => $discount,
+                      ':customerId' => $customer_id));
 
 
     $query = $db->prepare("UPDATE flight_purchases SET status = 1 WHERE invoice_id = :invoiceId");
     $query->execute(array(
-       ':invoiceId' => $a
+        ':invoiceId' => $a
     ));
 
     header("location: flight_preview.php?invoice=$a");

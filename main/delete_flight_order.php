@@ -37,7 +37,9 @@ if($flight_purchase_id > 0) {
     $str_query = str_replace('booking_id=' . $flight_purchase_id, "", $str_query);
 }
 
-$location = sprintf("location: flight_picker.php?" . $str_query);
+$location = sprintf("flight_picker.php?" . $str_query);
 
-header($location);
 ?>
+<script type="text/javascript">
+    window.location = '<?=$location?>';
+</script>

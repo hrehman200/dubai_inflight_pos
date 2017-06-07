@@ -1,6 +1,7 @@
 <html>
 <?php
-require_once('auth.php');
+include('../connect.php');
+session_start();
 ?>
 <head>
     <title>
@@ -8,24 +9,23 @@ require_once('auth.php');
     </title>
     <link href="css/bootstrap.css" rel="stylesheet">
 
-    <link rel="stylesheet" type="text/css" href="css/DT_bootstrap.css">
-
     <link rel="stylesheet" href="css/font-awesome.min.css">
     <style type="text/css">
         body {
-            padding-top: 60px;
             padding-bottom: 40px;
         }
 
         .sidebar-nav {
             padding: 9px 0;
         }
+
+        .table tr {
+            background-color: #ffffff;
+        }
     </style>
     <link href="css/bootstrap-responsive.css" rel="stylesheet">
 
 
-    <link href="../style.css" media="screen" rel="stylesheet" type="text/css"/>
-    <link rel="stylesheet" type="text/css" href="tcal.css"/>
     <script type="text/javascript" src="tcal.js"></script>
     <script language="javascript">
         function Clickheretoprint() {
@@ -46,8 +46,6 @@ require_once('auth.php');
     <script language="javascript" type="text/javascript">
         /* Visit http://www.yaldex.com/ for full source code
          and get more free JavaScript, CSS and DHTML scripts! */
-        <
-        !--Begin
         var timerID = null;
         var timerRunning = false;
         function stopclock() {
@@ -74,8 +72,13 @@ require_once('auth.php');
             showtime();
         }
         window.onload = startclock;
-        // End -->
     </SCRIPT>
+
+    <script src="js/jquery-1.12.4.min.js" type="text/javascript"></script>
+
+    <link rel="stylesheet" type="text/css" href="css/bootstrap-datepicker.standalone.css">
+    <script src="js/bootstrap-datepicker.min.js" type="text/javascript"></script>
+
 </head>
 <?php
 function createRandomPassword() {
@@ -127,12 +130,12 @@ $finalcode = 'RS-' . createRandomPassword();
         </div><!--/span-->
         <div class="span10">
             <div class="contentheader">
-                <i class="icon-bar-chart"></i> Sales Report
+                <i class="icon-bar-chart"></i> Flight History
             </div>
             <ul class="breadcrumb">
                 <li><a href="index.php">Dashboard</a></li>
                 /
-                <li class="active">Sales Report</li>
+                <li class="active">Flight History</li>
             </ul>
 
             <div style="margin-top: -19px; margin-bottom: 21px;">
@@ -150,79 +153,122 @@ $finalcode = 'RS-' . createRandomPassword();
 
 
             </div>
-            <form action="salesreport.php" method="get">
-                <center><strong>From : <input type="text" style="width: 223px; padding:3px;height: 30px;" name="d1"
-                                              class="tcal" value=""/> To: <input type="text"
-                                                                                 style="width: 223px; padding:3px;height: 30px;"
-                                                                                 name="d2" class="tcal" value=""/>
+            <form action="flight_history.php" method="get">
+                <div>
+                    <strong>
+                        <input type="hidden" id="customerId" name="customerId" value="<?=$_GET['customerId']?>" />
+
+                        Customer:
+                        <input type="text" id="customerName" name="customerName" value="<?=$_GET['customerName']?>" style="width: 223px; padding:3px;height: 30px;" />
+                        From :
+                        <input type="text" style="width: 223px; padding:3px;height: 30px;" id="startDate" name="startDate" value="<?=$_GET['startDate']?>"/>
+                        To:
+                        <input type="text" style="width: 223px; padding:3px;height: 30px;" id="endDate" name="endDate" value="<?=$_GET['endDate']?>"/>
+
                         <button class="btn btn-info" style="width: 123px; height:35px; margin-top:-8px;margin-left:8px;"
                                 type="submit"><i class="icon icon-search icon-large"></i> Search
                         </button>
-                    </strong></center>
+                    </strong>
+                </div>
             </form>
             <div class="content" id="content">
                 <div style="font-weight:bold; text-align:center;font-size:14px;margin-bottom: 15px;">
-                    Sales Report from&nbsp;<?php echo $_GET['d1'] ?>&nbsp;to&nbsp;<?php echo $_GET['d2'] ?>
+                    Flight History from&nbsp;<?php echo @$_GET['startDate'] ?>
+                    &nbsp;to&nbsp;<?php echo @$_GET['endDate'] ?>
                 </div>
-                <table class="table table-bordered" id="resultTable" data-responsive="table" style="text-align: left;">
+
+                <table class="table table-bordered table-striped" data-responsive="table">
                     <thead>
                     <tr>
-                        <th width="13%"> Transaction ID</th>
-                        <th width="13%"> Transaction Date</th>
-                        <th width="20%"> Customer Name</th>
-                        <th width="20%"> Sale Type</th>
-                        <th width="16%"> Invoice Number</th>
-                        <th width="18%"> Amount</th>
-                        <th width="13%"> Profit</th>
+                        <th> Customer</th>
+                        <th> Package</th>
+                        <th> Flight Offer</th>
+                        <th> Price</th>
+                        <th> Minutes</th>
+                        <th> Purchase Date </th>
                     </tr>
                     </thead>
                     <tbody>
 
                     <?php
-                    include('../connect.php');
-                    $d1     = $_GET['d1'];
-                    $d2     = $_GET['d2'];
-                    $result = $db->prepare("SELECT s.*, c.customer_name FROM sales s
-                        LEFT JOIN customer c ON s.customer_id = c.customer_id
-                        WHERE date BETWEEN :a AND :b ORDER by transaction_id DESC ");
-                    $result->bindParam(':a', $d1);
-                    $result->bindParam(':b', $d2);
-                    $result->execute();
-                    $total_sale = 0;
-                    $total_profit = 0;
+                    if(isset($_GET)) {
 
-                    for ($i = 0; $row = $result->fetch(); $i++) {
-                        $current_cost = $row['amount'];
-                        // for flight_service we added a discount
-                        if($row['sale_type'] == 'Service') {
-                            $discount = floor($current_cost*$row['discount']/100);
-                            $current_cost -= $discount;
+                        $sql = "SELECT fp.id AS flight_purchase_id, fo.code, fpkg.package_name, fo.offer_name, fo.price, fo.duration, c.customer_name, DATE_FORMAT(fp.created,'%b %d, %Y') AS created
+                              FROM flight_purchases fp
+                              LEFT JOIN flight_offers fo ON fp.flight_offer_id = fo.id
+                              LEFT JOIN flight_packages fpkg ON fo.package_id = fpkg.id
+                              LEFT JOIN flight_bookings fb ON fb.flight_purchase_id = fp.id
+                              INNER JOIN customer c ON fp.customer_id = c.customer_id";
+
+                        $where = array();
+                        if ($_GET['customerName'] != '') {
+                            $where[] = sprintf('c.customer_name LIKE "%%%s%%" ', $_GET['customerName']);
                         }
-                        $total_sale += $current_cost;
-                        $total_profit += $row['profit'];
-                        ?>
-                        <tr class="record">
-                            <td>STI-00<?php echo $row['transaction_id']; ?></td>
-                            <td><?php echo $row['date']; ?></td>
-                            <td><?php echo ($row['customer_name']) ? $row['customer_name'] : $row['name']; ?></td>
-                            <td><?= $row['sale_type'] ?></td>
-                            <td><?php echo $row['invoice_number']; ?></td>
-                            <td><?=number_format($current_cost)?></td>
-                            <td><?=number_format($row['profilt'])?></td>
-                        </tr>
-                        <?php
-                    }
-                    ?>
 
-                    </tbody>
-                    <thead>
-                    <tr>
-                        <th colspan="5" style="border-top:1px solid #999999"> Total:</th>
-                        <th colspan="1" style="border-top:1px solid #999999"><?=number_format($total_sale)?></th>
-                        <th colspan="1" style="border-top:1px solid #999999"><?=number_format($total_profit)?></th>
-                    </tr>
-                    </thead>
-                </table>
+                        if ($_GET['startDate'] != '' && $_GET['endDate'] != '') {
+                            $where[] = sprintf("(
+                                (fp.created >= '%s' AND fp.created <= '%s')
+                                    OR
+                                (fb.flight_time >= '%s' AND fb.flight_time <= '%s'))",
+                                $_GET['startDate'], $_GET['endDate'], $_GET['startDate'], $_GET['endDate']);
+                        }
+
+                        if ($_GET['customerId'] > 0) {
+                            $where[] = sprintf('fp.customer_id = %d', $_GET['customerId']);
+                        }
+
+                        if (count($where) > 0) {
+                            $sql .= ' WHERE ' . implode(" AND ", $where);
+                        }
+                        $result = $db->query($sql);
+
+                        $total_cost     = 0;
+                        $total_duration = 0;
+                        while ($row = $result->fetch()) {
+                            $total_cost += $row['price'];
+                            $total_duration += $row['duration'];
+                            ?>
+                            <tr>
+                                <td><?php echo $row['customer_name']; ?></td>
+                                <td><?php echo $row['package_name']; ?></td>
+                                <td><?php echo $row['offer_name'] ? $row['offer_name'] : 'Deduct from balance'; ?></td>
+                                <td><?php echo number_format($row['price']); ?></td>
+                                <td><?php echo $row['duration']; ?></td>
+                                <td><?= $row['created'] ?></td>
+                            </tr>
+
+                            <?php
+                            $query2 = $db->prepare('SELECT * FROM flight_bookings WHERE flight_purchase_id = :flight_purchase_id');
+                            $query2->bindParam(':flight_purchase_id', $row['flight_purchase_id']);
+                            $query2->execute();
+                            while ($row2 = $query2->fetch()) {
+                                ?>
+                                <tr>
+                                    <td colspan="2"></td>
+                                    <td style="text-align: center; font-size:12px;"><b>Flight time: </b><?= substr($row2['flight_time'], 0, -3) ?></td>
+                                    <td></td>
+                                    <td></td><?= $row2['duration'] ?></td>
+                                    <td></td>
+                                </tr>
+                                <?php
+                            }
+                            ?>
+
+                            <?php
+                        }
+                        ?>
+                        <tr>
+                            <td colspan="3" style="text-align: right;">Totals:</td>
+                            <td><b></b><?= number_format($total_cost) ?></b></td>
+                            <td colspan="2"><b></b><?= $total_duration ?></b></td>
+                        </tr>
+                        </tbody>
+                    </table>
+
+                <?php
+                } // isset $_GET
+                ?>
+
             </div>
             <div class="clearfix"></div>
         </div>
@@ -230,7 +276,7 @@ $finalcode = 'RS-' . createRandomPassword();
 </div>
 
 </body>
-<script src="js/jquery.js"></script>
+
 <script type="text/javascript">
     $(function () {
 
@@ -265,16 +311,19 @@ $finalcode = 'RS-' . createRandomPassword();
         });
 
     });
-</script>
-<script type="text/javascript">
+
+    $("#startDate").datepicker({
+        format: 'yyyy-mm-dd'
+    });
+
+    $("#endDate").datepicker({
+        format: 'yyyy-mm-dd'
+    });
 
     function convertToCSV() {
         exportTableToCSV($('#resultTable'), 'filename.csv');
     }
-</script>
 
-
-<script type="text/javascript">
     function exportTableToCSV($table, filename) {
 
         // var $rows = $table.find('tr:has(td)'),
@@ -331,13 +380,6 @@ $finalcode = 'RS-' . createRandomPassword();
         } else {
             alert('CSV export only works in Chrome, Firefox, and Opera.');
         }
-
-        // $(this)
-        //     .attr({
-        //     'download': filename,
-        //         'href': csvData,
-        //         'target': '_blank'
-        // });
     }
 </script>
 <?php include('footer.php'); ?>
