@@ -12,7 +12,7 @@ unset($_SESSION['SESS_LAST_NAME']);
     <title>
         POS
     </title>
-    <link rel="shortcut icon" href="main/images/pos.jpg">
+    <link rel="shortcut icon" href="main/img/pos.jpg">
 
     <link href="main/css/bootstrap.css" rel="stylesheet">
 
@@ -40,7 +40,7 @@ unset($_SESSION['SESS_LAST_NAME']);
         </div>
 
     </div>
-    <div id="login">
+    <div id="login" style="padding-top:5px;">
         <?php
         if (isset($_SESSION['ERRMSG_ARR']) && is_array($_SESSION['ERRMSG_ARR']) && count($_SESSION['ERRMSG_ARR']) > 0) {
             foreach ($_SESSION['ERRMSG_ARR'] as $msg) {
@@ -51,9 +51,7 @@ unset($_SESSION['SESS_LAST_NAME']);
         ?>
         <form action="login.php" method="post">
 
-            <font style=" font:bold 44px 'Aleo'; text-shadow:1px 1px 15px #000; color:#fff;">
-                <center>Inflight Dubai</center>
-            </font>
+            <img src="main/img/inflight_logo.png" width="180" />
             <br>
 
 

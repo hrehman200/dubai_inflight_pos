@@ -18,7 +18,7 @@ function deleteFlightBooking($booking_id, $flight_purchase_id = null) {
         $result->bindParam(':booking_id', $booking_id);
     } else {
         $result = $db->prepare("DELETE FROM flight_bookings WHERE flight_purchase_id= :flight_purchase_id");
-        $result->bindParam(':flight_purchase_id', $booking_id);
+        $result->bindParam(':flight_purchase_id', $flight_purchase_id);
     }
     $result->execute();
 }
@@ -34,10 +34,10 @@ if($flight_purchase_id > 0) {
 } else if ($booking_id > 0) {
 
     deleteFlightBooking($booking_id);
-    $str_query = str_replace('booking_id=' . $flight_purchase_id, "", $str_query);
+    $str_query = str_replace('booking_id=' . $booking_id, "", $str_query);
 }
 
-$location = sprintf("flight_picker.php?" . $str_query);
+$location = sprintf("flight_picker.php?%s", $str_query);
 
 ?>
 <script type="text/javascript">

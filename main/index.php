@@ -125,25 +125,14 @@ $position = $_SESSION['SESS_LAST_NAME'];
             <div class="contentheader">
                 <i class="icon-dashboard"></i> Dashboard
 
-                <font style=" font:bold 44px 'Aleo'; text-shadow:1px 1px 25px #000; color:#fff;">
-                    <center>Inflight Dubai</center>
-                </font>
+                <div align="center">
+                    <img src="img/inflight_logo.png" />
+                </div>
 
                 <?php
                 include('main-menu.php');
                 ?>
-                <!--<div id="mainmain">
 
-
-                    <a href="sales.php?id=cash&invoice=<?php /*echo $finalcode */?>"><i class="icon-shopping-cart icon-2x"></i><br> Sales</a>
-                    <a href="products.php"><i class="icon-list-alt icon-2x"></i><br> Products</a>
-                    <a href="customer.php"><i class="icon-group icon-2x"></i><br> Customers</a>
-                    <a href="bookingcalander.php"><i class="icon-group icon-2x"></i><br> Booking Calander</a>
-                    <a href="salesreport.php?d1=0&d2=0"><i class="icon-bar-chart icon-2x"></i><br> Sales Report</a>
-                    <a href="../index.php"><font color="red"><i class="icon-off icon-2x"></i></font><br> Logout</a>
-
-                    <div class="clearfix"></div>
-                </div>-->
             </div>
         </div>
     </div>
