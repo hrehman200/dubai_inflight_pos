@@ -35,17 +35,19 @@ function updateCustomerFlightBalance($customer_id, $flight_purchase_id, $minutes
 }
 
 /**
- * Deducts mentioned amount from flight_credits rows collectively
+ * Deducts mentioned amount from flight_credits rows (for same offer) collectively
  * @param $customer_id
  * @param $balance
  */
-function deductFromBalance($customer_id, $balance) {
+function deductFromBalance($customer_id, $flight_offer_id, $balance) {
     global $db;
 
-    $query = $db->prepare('SELECT * FROM flight_credits
-      WHERE customer_id = :customer_id');
+    $query = $db->prepare('SELECT fc.flight_purchase_id, fc.minutes FROM flight_credits fc
+      INNER JOIN flight_purchases fp ON fc.flight_purchase_id = fp.id
+      WHERE fc.customer_id = :customer_id AND fp.flight_offer_id = :flightOfferId');
     $query->execute(array(
-        ':customer_id' => $customer_id
+        ':customer_id' => $customer_id,
+        ':flightOfferId' => $flight_offer_id
     ));
     $result = $query->fetchAll();
 
@@ -73,20 +75,23 @@ function deductFromBalance($customer_id, $balance) {
 }
 
 /**
+ * @param $invoice_id
  * @param $flight_offer_id
  * @param $customer_id
+ * @param int $use_balance
  * @return string
  */
-function insertFlightPurchase($invoice_id, $flight_offer_id, $customer_id) {
+function insertFlightPurchase($invoice_id, $flight_offer_id, $customer_id, $use_balance = 0) {
     global $db;
 
-    $sql = "INSERT INTO flight_purchases(invoice_id, flight_offer_id, customer_id)
-                VALUES (:invoice_id, :flight_offer_id, :customer_id)";
+    $sql = "INSERT INTO flight_purchases(invoice_id, flight_offer_id, customer_id, deduct_from_balance)
+                VALUES (:invoice_id, :flight_offer_id, :customer_id, :use_balance)";
     $q   = $db->prepare($sql);
     $arr = array(
         ':invoice_id' => $invoice_id,
         ':flight_offer_id' => $flight_offer_id,
-        ':customer_id' => $customer_id
+        ':customer_id' => $customer_id,
+        ':use_balance' => $use_balance
     );
     $q->execute($arr);
 
@@ -98,6 +103,7 @@ function insertFlightPurchase($invoice_id, $flight_offer_id, $customer_id) {
  * @param $flight_purchase_id
  * @param $flight_time
  * @param $duration
+ * @param int $use_balance
  * @return string
  */
 function insertFlightBooking($flight_purchase_id, $flight_time, $duration) {
@@ -127,10 +133,9 @@ $customer_id = $_POST['customerId'];
 
 if($_POST['useBalance'] == 1) {
     // insert balance use
-    $flight_offer_id = -1;
-    $flight_purchase_id = insertFlightPurchase($invoice, $flight_offer_id, $customer_id);
+    $flight_purchase_id = insertFlightPurchase($invoice, $flight_offer_id, $customer_id, 1);
     insertFlightBooking($flight_purchase_id, $flight_time, $flight_duration);
-    deductFromBalance($customer_id, $flight_duration);
+    deductFromBalance($customer_id, $flight_offer_id, $flight_duration);
 
 } else {
 

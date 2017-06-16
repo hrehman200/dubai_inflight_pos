@@ -1,5 +1,4 @@
 <?php
-session_start();
 include('../connect.php');
 $a               = $_POST['invoice'];
 $b               = $_POST['cashier'];
@@ -27,12 +26,12 @@ if ($d == 'cash') {
     $f = $_POST['due'];
 }
 
-if ($_POST['savingflight'] == 1) {
+if (@$_POST['savingflight'] == 1) {
 
     $sql = "INSERT INTO sales (invoice_number,cashier,date,type,month,year,amount,profit,due_date, mode_of_payment, discount, customer_id, sale_type)
-        VALUES (:a,:b,:c,:d,:monh,:year,:e,:z,:f, :mode_of_payment, :discount, :customerId, 'Service')";
+        VALUES (:a,:b,:c,:d,:monh,:year,:e,:z,:due_date, :mode_of_payment, :discount, :customerId, 'Service')";
     $q   = $db->prepare($sql);
-    $q->execute(array(':a' => $a, ':b' => $b, ':c' => $c, ':d' => $d, ':monh' => $monthName, ':year' => $salesyear, ':e' => $e, ':z' => $z, ':f' => $f, ':mode_of_payment' => $mode_of_payment, ':discount' => $discount,
+    $q->execute(array(':a' => $a, ':b' => $b, ':c' => $c, ':d' => $d, ':monh' => $monthName, ':year' => $salesyear, ':e' => $e, ':z' => $z, ':due_date' => $f, ':mode_of_payment' => $mode_of_payment, ':discount' => $discount,
                       ':customerId' => $customer_id));
 
 
@@ -46,9 +45,9 @@ if ($_POST['savingflight'] == 1) {
 } else {
 
     $sql = "INSERT INTO sales (invoice_number,cashier,date,type,month,year,amount,profit,due_date, mode_of_payment)
-        VALUES (:a,:b,:c,:d,:monh,:year,:e,:z,:f, :mode_of_payment)";
+        VALUES (:a,:b,:c,:d,:monh,:year,:e,:z,:due_date, :mode_of_payment)";
     $q   = $db->prepare($sql);
-    $q->execute(array(':a' => $a, ':b' => $b, ':c' => $c, ':d' => $d, ':monh' => $monthName, ':year' => $salesyear, ':e' => $e, ':z' => $z, ':f' => $f, 'mode_of_payment' => $mode_of_payment));
+    $q->execute(array(':a' => $a, ':b' => $b, ':c' => $c, ':d' => $d, ':monh' => $monthName, ':year' => $salesyear, ':e' => $e, ':z' => $z, ':due_date' => $f, 'mode_of_payment' => $mode_of_payment));
 
     header("location: preview.php?invoice=$a");
 }

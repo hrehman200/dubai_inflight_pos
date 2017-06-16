@@ -193,7 +193,7 @@ $finalcode = 'RS-' . createRandomPassword();
                     <?php
                     if(isset($_GET)) {
 
-                        $sql = "SELECT fp.id AS flight_purchase_id, fo.code, fpkg.package_name, fo.offer_name, fo.price, fo.duration, c.customer_name, DATE_FORMAT(fp.created,'%b %d, %Y') AS created
+                        $sql = "SELECT fp.id AS flight_purchase_id, fp.deduct_from_balance, fo.code, fpkg.package_name, fo.offer_name, fo.price, fo.duration, c.customer_name, DATE_FORMAT(fp.created,'%b %d, %Y') AS created
                               FROM flight_purchases fp
                               LEFT JOIN flight_offers fo ON fp.flight_offer_id = fo.id
                               LEFT JOIN flight_packages fpkg ON fo.package_id = fpkg.id
@@ -225,15 +225,17 @@ $finalcode = 'RS-' . createRandomPassword();
                         $total_cost     = 0;
                         $total_duration = 0;
                         while ($row = $result->fetch()) {
-                            $total_cost += $row['price'];
-                            $total_duration += $row['duration'];
+                            if($row['deduct_from_balance']==0) {
+                                $total_cost += $row['price'];
+                                $total_duration += $row['duration'];
+                            }
                             ?>
                             <tr>
                                 <td><?php echo $row['customer_name']; ?></td>
                                 <td><?php echo $row['package_name']; ?></td>
-                                <td><?php echo $row['offer_name'] ? $row['offer_name'] : 'Deduct from balance'; ?></td>
-                                <td><?php echo number_format($row['price']); ?></td>
-                                <td><?php echo $row['duration']; ?></td>
+                                <td><?php echo $row['deduct_from_balance']==1 ? $row['offer_name'].' (Deduct from balance)' : $row['offer_name'] ; ?></td>
+                                <td><?php echo $row['deduct_from_balance']==1 ? '-' : number_format($row['price']); ?></td>
+                                <td><?php echo $row['deduct_from_balance']==1 ? '-' :$row['duration']; ?></td>
                                 <td><?= $row['created'] ?></td>
                             </tr>
 

@@ -8,9 +8,16 @@ function getTimeslotsForFlightDate() {
     global $db;
 
     $duration_required = $_POST['duration'];
+    $show_slots_with_minutes_only = $_POST['show_slots_with_minutes_only'];
+    $office_time_slots = $_POST['office_time_slots'];
 
     $start = "00:00"/*date('i')>=30 ? date('H:30') : date('H:00')*/;
     $end   = "23:30";
+
+    if($office_time_slots == 1) {
+        $start = "09:30";
+        $end   = "19:00";
+    }
 
     $tStart = strtotime($start);
     $tEnd   = strtotime($end);
@@ -43,10 +50,11 @@ function getTimeslotsForFlightDate() {
             $previous_loop_duration = 0;
         }
 
+        $unbooked_duration = 30 - $row['bookedDuration'];
         $percent_booked = (int)floor($row['bookedDuration'] / 30 * 100);
         $percent_unbooked = 100 - $percent_booked;
 
-        if ($counter % 6 == 0) {
+        if ($counter > 0 && $counter % 6 == 0) {
             $str .= '<br/><br/>';
         }
 
@@ -59,6 +67,15 @@ function getTimeslotsForFlightDate() {
         }
 
         $tooltip_title = sprintf('Booked Time: %d <br> Time Remaining: %d', $row['bookedDuration'], 30 - $row['bookedDuration']);
+
+        // nobody books 60 min slot and also we have only 30 min slots
+        if($duration_required > 30) {
+            $duration_required = 30;
+        }
+        if($show_slots_with_minutes_only == 1 && $unbooked_duration < $duration_required) {
+            $tNow = strtotime("+{$slot_increment} minutes", $tNow);
+            continue;
+        }
 
         $str .= sprintf('<span class="label lb-lg" data-toggle="tooltip" title="%s" style="
             background: %s;
@@ -126,30 +143,37 @@ function searchCustomers() {
 function getDetailsForNewBookingModal() {
     global $db;
     $post = $_POST;
+    $unbooked_duration = 0;
 
-    $query = $db->prepare("SELECT * FROM flight_purchases fp
+    // if making another booking from same purchase
+    if($post['flightPurchaseId'] > 0) {
+        $query = $db->prepare("SELECT * FROM flight_purchases fp
                     INNER JOIN flight_offers fo ON fp.flight_offer_id = fo.id
                     WHERE fp.id = :flightPurchaseId");
-    $query->execute(array(
-        ':flightPurchaseId' => $post['flightPurchaseId']
-    ));
-    $row = $query->fetch();
-    $total_duration = $row['duration'];
+        $query->execute(array(
+            ':flightPurchaseId' => $post['flightPurchaseId']
+        ));
+        $row            = $query->fetch();
+        $total_duration = $row['duration'];
 
-    $query = $db->prepare("SELECT SUM(duration) AS booked_duration FROM flight_bookings WHERE flight_purchase_id=:flightPurchaseId");
-    $query->execute(array(
-        ':flightPurchaseId' => $post['flightPurchaseId']
-    ));
-    $row = $query->fetch();
-    $booked_duration  = $row['booked_duration'];
-    $unbooked_duration = $total_duration - $booked_duration;
+        $query = $db->prepare("SELECT SUM(duration) AS booked_duration FROM flight_bookings WHERE flight_purchase_id=:flightPurchaseId");
+        $query->execute(array(
+            ':flightPurchaseId' => $post['flightPurchaseId']
+        ));
+        $row               = $query->fetch();
+        $booked_duration   = $row['booked_duration'];
+        $unbooked_duration = $total_duration - $booked_duration;
+    }
 
     // get balance only from paid invoices
     $query = $db->prepare("SELECT SUM(minutes) AS balance FROM flight_credits fc
                            INNER JOIN flight_purchases fp ON fc.flight_purchase_id = fp.id
-                           WHERE fc.customer_id=:customerId AND fp.status = 1");
+                           WHERE fc.customer_id = :customerId
+                           AND fp.status = 1
+                           AND fp.flight_offer_id = :flightOfferId ");
     $query->execute(array(
-        ':customerId' => $post['customerId']
+        ':customerId' => $post['customerId'],
+        ':flightOfferId' => $post['flightOfferId']
     ));
     $row = $query->fetch();
 
@@ -170,34 +194,51 @@ function getCustomerBookings() {
 
     $post = $_POST;
 
-    $query = $db->prepare("SELECT fp.id AS flight_purchase_id, fo.code, fo.offer_name, fo.price, fo.duration FROM flight_purchases fp
-                  INNER JOIN flight_offers fo ON fp.flight_offer_id = fo.id
-                  WHERE fp.customer_id= :customerId AND fp.status = 1");
+    $query = $db->prepare("SELECT fo.offer_name, DATE_FORMAT(fp.created, '%D %M %Y') AS created, fo.duration, fc.flight_purchase_id, fc.minutes
+        FROM flight_credits fc
+        INNER JOIN flight_purchases fp ON fc.flight_purchase_id = fp.id
+        INNER JOIN flight_offers fo ON fp.flight_offer_id = fo.id
+        WHERE fp.customer_id = :customerId AND fc.minutes > 0 AND fp.status = 1");
+
     $query->execute(array(
-        ':customerId' => '%'.$post['customerId'].'%'
+        ':customerId' => $post['customerId']
     ));
 
-    $tbody = '';
-    while($row = $query->fetch()) {
+    $table = '<table class="table table-striped table-bordered">
+        <tr>
+            <td>Offer</td>
+            <td>Purchaed  Date</td>
+            <td>Minutes</td>
+            <td>Remaining</td>
+        </tr>';
 
-        $query2 = $db->prepare('SELECT * FROM flight_bookings WHERE flight_purchase_id = :flight_purchase_id');
-        $query2->bindParam(':flight_purchase_id', $row['flight_purchase_id']);
-        $query2->execute();
-        while ($row2 = $query2->fetch()) {
-            $tbody .= sprintf('
-                <tr>
-                    <td>%s</td>
-                    <td>%d</td>
-                </tr>', substr($row['flight_time'],0,-3), $row['duration']);
-
+    if($query->rowCount() > 0) {
+        while ($row = $query->fetch()) {
+            $table .= sprintf('
+            <tr>
+                <td>%s</td>
+                <td>%s</td>
+                <td>%d</td>
+                <td>%d</td>
+            </tr>', $row['offer_name'], $row['created'], $row['duration'], $row['minutes']);
         }
+    } else {
+        $table .= '<tr><td colspan="4">No previous bookings with pending balance found</td></tr>';
     }
-
-
-
+    $table .= '</table>';
+    
     echo json_encode(array(
         'success'=>1,
         'msg'=>'',
-        'data'=>$a
+        'data'=>$table
     ));
+}
+
+function verifyPassword() {
+    if(sha1($_POST['password']) == '17874598808386e981a2bc4723c9bd38c5de4982') {
+        $_SESSION['beyond_office_allowed'] = 1;
+        echo json_encode(array('success'=>1));
+    } else {
+        echo json_encode(array('success'=>0));
+    }
 }

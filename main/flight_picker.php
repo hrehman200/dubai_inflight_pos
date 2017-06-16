@@ -210,21 +210,21 @@ $position = $_SESSION['SESS_LAST_NAME'];
                         <div id="datePicker"></div>
                     </div>
 
-                    <div class="span5" id="timeslots">
+                    <div class="span5" >
+                        <input type="checkbox" id="chkOnlySlotsWithDuration" name="chkOnlySlotsWithDuration" value="1" />
+                        <label style="display: inline;" for="chkOnlySlotsWithDuration">Show slots that have <b><span id="spMinutes"></span> minutes</b> available</label>
+                        <br/>
+
+                        <input type="checkbox" id="chkOnlyOfficeTimeSlots" name="chkOnlyOfficeTimeSlots" value="1" checked />
+                        <label style="display: inline;" for="chkOnlyOfficeTimeSlots">Show office time slots only</label>
+                        <br/><br/>
+
+                        <div id="timeslots">
+                        </div>
                     </div>
 
-                    <div class="span3">
-                        <!--<h3></h3>
-                        <table class="table table-bordered">
-                            <thead>
-                                <tr>
-                                    <th>Time</th>
-                                    <th>Duration</th>
-                                </tr>
-                            </thead>
-                            <tbody id="tblCustomerBookings">
-                            </tbody>
-                        </table>-->
+                    <h4>Customer's previous bookings with pending balance</h4>
+                    <div class="span3" id="divCustomerDetails">
                     </div>
                 </div>
 
@@ -248,7 +248,7 @@ $position = $_SESSION['SESS_LAST_NAME'];
                 $url = 'http://' . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'];
                 $str_query = parse_url($url, PHP_URL_QUERY);
 
-                $result = $db->prepare("SELECT fp.id AS flight_purchase_id, fo.code, fpkg.package_name, fo.offer_name, fo.price, fo.duration FROM flight_purchases fp
+                $result = $db->prepare("SELECT fp.id AS flight_purchase_id, fp.deduct_from_balance, fo.code, fpkg.package_name, fo.offer_name, fo.price, fo.duration FROM flight_purchases fp
                   LEFT JOIN flight_offers fo ON fp.flight_offer_id = fo.id
                   LEFT JOIN flight_packages fpkg ON fo.package_id = fpkg.id
                   WHERE fp.invoice_id= :invoiceId");
@@ -258,15 +258,17 @@ $position = $_SESSION['SESS_LAST_NAME'];
                 $total_cost = 0;
                 $total_duration = 0;
                 while($row = $result->fetch()) {
-                    $total_cost += $row['price'];
-                    $total_duration += $row['duration'];
+                    if($row['deduct_from_balance']==0) {
+                        $total_cost += $row['price'];
+                        $total_duration += $row['duration'];
+                    }
                     ?>
                     <tr class="record">
                         <td><?php echo $row['code']; ?></td>
                         <td><?php echo $row['package_name']; ?></td>
-                        <td><?php echo $row['offer_name'] ? $row['offer_name'] : 'Deduct from balance'; ?></td>
-                        <td><?php echo $row['price']; ?></td>
-                        <td><?php echo $row['duration']; ?></td>
+                        <td><?php echo $row['deduct_from_balance']==1 ? $row['offer_name'].' (Deduct from balance)' : $row['offer_name']; ?></td>
+                        <td><?php echo $row['deduct_from_balance']==1 ? '-' : $row['price']; ?></td>
+                        <td><?php echo $row['deduct_from_balance']==1 ? '-' : $row['duration']; ?></td>
                         <td width="90"><a
                                 href="delete_flight_order.php?flight_purchase_id=<?php echo $row['flight_purchase_id'] . "&" . $str_query; ?>">
                                 <button class="btn btn-mini btn-warning"><i class="icon icon-remove"></i> Cancel</button>
@@ -315,7 +317,7 @@ $position = $_SESSION['SESS_LAST_NAME'];
                cashier=<?php echo $_SESSION['SESS_FIRST_NAME'] ?>&
                savingflight=1&
                customerId=<?=$_GET['customer_id']?>">
-                <button class="btn btn-success btn-large btn-block"><i class="icon icon-save icon-large"></i> SAVE
+                <button class="btn btn-success btn-large btn-block"><i class="icon icon-save icon-large"></i> PROCEED
                 </button>
             </a>
             <div class="clearfix"></div>
@@ -345,9 +347,22 @@ $position = $_SESSION['SESS_LAST_NAME'];
 
 <script type="text/javascript">
 
+    $('#flightOffer').on('change', function(e){
+        var minutes = $(this).find('option:selected').data('duration');
+        if(minutes > 30) {
+            minutes = 30;
+        }
+        $('#spMinutes').html(minutes);
+    }).trigger('change');
+
+    $('#chkOnlySlotsWithDuration, #chkOnlyOfficeTimeSlots').on('change', function(e) {
+        $('#datePicker').trigger('changeDate');
+    });
+
     $("#customer").typeahead({
         onSelect: function(item) {
             $('#customerId').val(item.value);
+            _getCustomerBookings(item.value);
         },
         ajax: {
             url: "api.php",
@@ -372,6 +387,33 @@ $position = $_SESSION['SESS_LAST_NAME'];
         }
     }).val("<?=$_GET['customer_name']?>");
 
+    var _getCustomerBookings = function(customerId) {
+        $.ajax({
+            url:'api.php',
+            method: 'POST',
+            data: {
+                'call': 'getCustomerBookings',
+                'customerId': customerId
+            },
+            dataType: 'json',
+            success: function(response) {
+                if(response.success == 1) {
+                    $('#divCustomerDetails').html(response.data);
+                }
+            }
+        });
+    };
+
+    <?php
+    // hack for auto selecting customer
+    if($_GET['customer_id'] > 0) {
+    ?>
+        $('.typeahead.dropdown-menu').append('<li data-value="<?=$_GET['customer_id']?>" class="active"><a href="#"><?=$_GET['customer_name']?></a></li>');
+        $('.typeahead.dropdown-menu li').click();
+    <?php
+    }
+    ?>
+
     var _getTimeslots = function(flightDate, flightOfferId, duration) {
 
         if(duration == undefined) {
@@ -386,7 +428,9 @@ $position = $_SESSION['SESS_LAST_NAME'];
                 'call': 'getTimeslotsForFlightDate',
                 'flight_date': flightDate,
                 'flight_offer_id': flightOfferId,
-                'duration': duration
+                'duration': duration,
+                'show_slots_with_minutes_only': $('#chkOnlySlotsWithDuration').is(':checked') ? 1 : 0,
+                'office_time_slots': $('#chkOnlyOfficeTimeSlots').is(':checked') ? 1 : 0
             },
             dataType: 'json',
             success: function(response) {
@@ -451,28 +495,86 @@ $position = $_SESSION['SESS_LAST_NAME'];
 
     $('#timeslots').on('click', '.label', function(e) {
 
-        $('#flightTime').val($(e.target).text());
+        var flightTime = $(e.target).text();
+        var selectedDate = $("#datePicker").data('datepicker').getFormattedDate('yyyy-mm-dd');
+        var selectedTime = new Date(selectedDate+" "+flightTime);
+
+        var officeStart = new Date(selectedDate+" 09:30");
+        var officeClose = new Date(selectedDate+" 19:00");
+
+        var beyondOfficeAllowed = '<?=$_SESSION['beyond_office_allowed']?>';
+
+        if(beyondOfficeAllowed != '1' &&
+            (selectedTime.getTime() < officeStart.getTime() || selectedTime.getTime() > officeClose.getTime())
+        ) {
+            bootbox.dialog({
+                title: 'Enter password to book slot',
+                message: '<div> \
+                    <input type="password" id="txtPassword" /> \
+                </div>',
+                buttons: {
+                    btn1: {
+                        label: 'Verify',
+                        className: 'btn-success',
+                        callback: function (result) {
+                            $.ajax({
+                                url: 'api.php',
+                                method: 'POST',
+                                data: {
+                                    'call': 'verifyPassword',
+                                    'password': $('#txtPassword').val()
+                                },
+                                dataType: 'json',
+                                success: function (response) {
+                                    if (response.success == 1) {
+                                        _bookSlot(flightTime);
+                                    } else {
+                                        alert('Wrong password');
+                                    }
+                                }
+                            });
+                        }
+                    }
+                }
+            });
+        } else {
+            _bookSlot(flightTime);
+        }
+    });
+
+    var _bookSlot = function(flightTime) {
+
+        $('#flightTime').val(flightTime);
 
         var duration = $('#flightOffer option:selected').data('duration');
         $('#offerDuration').val(duration);
 
-        $.ajax({
-            url:'api.php',
-            method: 'POST',
-            data: {
-                'call': 'getDetailsForNewBookingModal',
-                'flightPurchaseId': $('#flightPurchaseId').val(),
-                'customerId': $('#customerId').val(),
-            },
-            dataType: 'json',
-            success: function(response) {
-                if(response.success == 1) {
-                    var data = response.data;
-                    _showSelectMinutesDialog(duration, data.unbooked_duration, data.balance);
+        if($('#flightOffer option:selected').text().indexOf('FTF') != -1) {
+            var minutes = $('#flightOffer option:selected').data('duration');
+            $('#flightPurchaseId').val('');
+            $('#flightDuration').val(minutes);
+            $('#formFlightTime').submit();
+
+        } else {
+            $.ajax({
+                url: 'api.php',
+                method: 'POST',
+                data: {
+                    'call': 'getDetailsForNewBookingModal',
+                    'flightOfferId': $('#flightOffer').val(),
+                    'flightPurchaseId': $('#flightPurchaseId').val(),
+                    'customerId': $('#customerId').val()
+                },
+                dataType: 'json',
+                success: function (response) {
+                    if (response.success == 1) {
+                        var data = response.data;
+                        _showSelectMinutesDialog(duration, data.unbooked_duration, data.balance);
+                    }
                 }
-            }
-        });
-    });
+            });
+        }
+    };
 
     var _showSelectMinutesDialog = function(duration, unbookedDuration, balance) {
 

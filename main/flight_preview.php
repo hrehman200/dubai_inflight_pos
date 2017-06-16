@@ -1,3 +1,9 @@
+<?php
+include('../connect.php');
+
+$invoice=$_GET['invoice'];
+?>
+
 <!DOCTYPE html>
 <html>
 <head>
@@ -37,8 +43,6 @@
         }
     </script>
     <?php
-    $invoice=$_GET['invoice'];
-    include('../connect.php');
     $result = $db->prepare("SELECT * FROM sales WHERE invoice_number= :userid");
     $result->bindParam(':userid', $invoice);
     $result->execute();
@@ -158,7 +162,6 @@
         </div><!--/span-->
 
         <div class="span10">
-            <a href="javascript:window.history.back();" class="btn btn-default"><i class="icon-arrow-left"></i> Back to Sales</a>
 
             <div class="content" id="content">
                 <div style="margin: 0 auto; padding: 20px; width: 900px; font-weight: normal;">
@@ -212,7 +215,7 @@
                             <?php
                             $invoice_id=$_GET['invoice'];
 
-                            $result = $db->prepare("SELECT fp.id AS flight_purchase_id, fo.code, fpkg.package_name, fo.offer_name, fo.price, fo.duration FROM flight_purchases fp
+                            $result = $db->prepare("SELECT fp.id AS flight_purchase_id, fp.deduct_from_balance, fo.code, fpkg.package_name, fo.offer_name, fo.price, fo.duration FROM flight_purchases fp
                                       LEFT JOIN flight_offers fo ON fp.flight_offer_id = fo.id
                                       LEFT JOIN flight_packages fpkg ON fo.package_id = fpkg.id
                                       WHERE fp.invoice_id= :invoiceId");
@@ -222,15 +225,17 @@
                             $total_cost = 0;
                             $total_duration = 0;
                             while($row = $result->fetch()) {
-                                $total_cost += $row['price'];
-                                $total_duration += $row['duration'];
+                                if($row['deduct_from_balance']==0) {
+                                    $total_cost += $row['price'];
+                                    $total_duration += $row['duration'];
+                                }
                                 ?>
                                 <tr class="record">
                                     <td><?php echo $row['code']; ?></td>
                                     <td><?php echo $row['package_name']; ?></td>
-                                    <td><?php echo $row['offer_name'] ? $row['offer_name'] : 'Deduct from balance'; ?></td>
-                                    <td><?php echo $row['price']; ?></td>
-                                    <td><?php echo $row['duration']; ?></td>
+                                    <td><?php echo $row['deduct_from_balance']==1 ? $row['offer_name'].' (Deduct from balance)' : $row['offer_name']; ?></td>
+                                    <td><?php echo $row['deduct_from_balance']==1 ? '-' : number_format($row['price']); ?></td>
+                                    <td><?php echo $row['deduct_from_balance']==1 ? '-' : $row['duration']; ?></td>
                                 </tr>
 
                                 <?php
@@ -254,7 +259,7 @@
                             ?>
                             <tr>
                                 <td colspan="3" style="text-align: right;">Sub Total:</td>
-                                <td><?=$total_cost?></td>
+                                <td><?=number_format($total_cost)?></td>
                                 <td colspan="2"><?=$total_duration?></td>
                             </tr>
                             <tr>
@@ -266,11 +271,27 @@
                                 <td colspan="2"></td>
                             </tr>
                             <tr>
-                                <td colspan="3" style="text-align: right;">Total:</td>
-                                <td><?php
+                                <td colspan="3" style="text-align: right;"><b>Total:</b></td>
+                                <td><b><?php
                                     $total = $total_cost - $discount_value;
-                                    echo $total;
+                                    echo number_format($total);
+                                    ?></b></td>
+                                <td colspan="2"></td>
+                            </tr>
+                            <tr>
+                                <td colspan="3" style="text-align: right;">Cash Collected:</td>
+                                <td><?php
+                                    $sales_query = $db->prepare("SELECT amount, due_date from sales WHERE invoice_number= :invoiceId");
+                                    $sales_query->bindParam(':invoiceId', $invoice_id);
+                                    $sales_query->execute();
+                                    $sales_row = $sales_query->fetch();
+                                    echo number_format($sales_row['due_date']);
                                     ?></td>
+                                <td colspan="2"></td>
+                            </tr>
+                            <tr>
+                                <td colspan="3" style="text-align: right;">Change:</td>
+                                <td><?php echo number_format($sales_row['amount'] - $sales_row['due_date']); ?></td>
                                 <td colspan="2"></td>
                             </tr>
 

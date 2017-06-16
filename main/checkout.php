@@ -111,8 +111,8 @@
         <input type="hidden" name="ptype" value="<?php echo $_GET['pt']; ?>"/>
         <input type="hidden" name="cashier" value="<?php echo $_GET['cashier']; ?>"/>
         <input type="hidden" name="profit" value="<?php echo $_GET['totalprof']; ?>"/>
-        <input type="hidden" name="savingflight" value="<?php echo $_GET['savingflight']; ?>"/>
-        <input type="hidden" name="customerId" value="<?php echo $_GET['customerId']; ?>"/>
+        <input type="hidden" name="savingflight" value="<?php echo @$_GET['savingflight']; ?>"/>
+        <input type="hidden" name="customerId" value="<?php echo @$_GET['customerId']; ?>"/>
 
         <center>
 
@@ -136,12 +136,13 @@
                     <option value="Account">Account</option>
                 </select>
 
-
+                <br/>
+                <span style="vertical-align: middle; width: auto; padding-right:0">AED</span>
                 <input type="number" name="cash" placeholder="Cash"
-                       style="width: 268px; height:30px;  margin-bottom: 15px;" value="<?=$_GET['total']?>" required/>
+                       style="width: 225px; height:30px;  margin-bottom: 15px;" value="<?=$_GET['total']?>" required/>
 
                 <?php
-                if(@$_GET['savingflight'] == 1) {
+                if(isset($_GET['savingflight']) && $_GET['savingflight'] == 1) {
                     ?>
                     <input type="number" name="discount" placeholder="Discount %" style="width: 268px; height:30px;  margin-bottom: 15px;" required />
                     <?php
