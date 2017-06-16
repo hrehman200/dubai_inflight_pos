@@ -242,3 +242,20 @@ function verifyPassword() {
         echo json_encode(array('success'=>0));
     }
 }
+
+function getPONo() {
+    global $db;
+
+    $query = $db->prepare('SELECT DISTINCT po_no, po_amount FROM purchases WHERE po_no LIKE :search ORDER BY transaction_id DESC');
+    $query->execute(array(
+        ':search' => '%'.$_POST['search'].'%'
+    ));
+
+    $result = $query->fetchAll(PDO::FETCH_ASSOC);
+
+    echo json_encode(array(
+        'success'=>1,
+        'msg'=>'',
+        'data'=>$result
+    ));
+}

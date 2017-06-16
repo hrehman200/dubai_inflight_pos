@@ -152,9 +152,17 @@ $finalcode = 'RS-' . createRandomPassword();
             </div>
             <input type="text" name="filter" style="height:35px; margin-top: -1px;" value="" id="filter"
                    placeholder="Search Supplier..." autocomplete="off"/>
-            <a rel="facebox" href="addsupplier.php">
-                <Button type="submit" class="btn btn-info" style="float:right; width:230px; height:35px;"/>
-                <i class="icon-plus-sign icon-large"></i> Add Supplier</button></a><br><br>
+
+            <?php
+            // accountant should not add supplier
+            if($_SESSION['SESS_LAST_NAME'] != 'account') {
+                ?>
+                <a rel="facebox" href="addsupplier.php">
+                    <Button type="submit" class="btn btn-info" style="float:right; width:230px; height:35px;"/>
+                    <i class="icon-plus-sign icon-large"></i> Add Supplier</button></a><br><br>
+                <?php
+            }
+            ?>
 
 
             <table class="table table-bordered" id="resultTable" data-responsive="table" style="text-align: left;">

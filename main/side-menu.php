@@ -42,7 +42,7 @@ if ($position == 'cashier') {
 
 } else if ($position == 'Procurement') {
     echo '<li class="active"><a href="index.php"><i class="icon-dashboard icon-2x"></i> Dashboard </a></li>
-				<li><a href="purchaseslist.php?d1=0&d2=0"><i class="icon-bar-chart icon-2x"></i> Procurement</a></li>
+				<li><a href="purchaseslist.php"><i class="icon-bar-chart icon-2x"></i> Procurement</a></li>
 				<li><a href="supplier.php"><i class="icon-group icon-2x"></i> Suppliers</a></li>
 				<li><a href="partners.php"><i class="icon-group icon-2x"></i> Partners</a></li>';
 

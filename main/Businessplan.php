@@ -108,18 +108,6 @@ $finalcode = 'RS-' . createRandomPassword();
                     <?php
                     include "side-menu.php";
                     ?>
-                    <!--    <li><a href="index.php"><i class="icon-dashboard icon-2x"></i> Dashboard </a></li>
-			<li><a href="sales.php?id=cash&invoice=<?php echo $finalcode ?>"><i class="icon-shopping-cart icon-2x"></i> Sales</a>  </li>             
-			<li><a href="products.php"><i class="icon-list-alt icon-2x"></i> Products</a>                                     </li>
-			<li><a href="customer.php"><i class="icon-group icon-2x"></i> Customers</a>                                    </li>
-			<li><a href="supplier.php"><i class="icon-group icon-2x"></i> Partners</a> 
-			<li class="active"><a href="Businessplan.php"><i class="icon-group icon-2x"></i> Business Plan</a>                                    </li>
-			<li><a href="accounts.php"><i class="icon-group icon-2x"></i> Accounts</a>                                    </li>
-			<li><a href="supplier.php"><i class="icon-group icon-2x"></i> Operators</a>                                    </li>
-			<li><a href="salesreport.php?d1=0&d2=0"><i class="icon-bar-chart icon-2x"></i> Sales Report</a>                </li>
-			<li><a href="bookingcalander.php?d1=0&d2=0"><i class="icon-bar-chart icon-2x"></i> Booking Calander</a>                </li>
-
-			-->
                     <br><br><br>
                     <li>
                         <div class="hero-unit-clock">
@@ -195,7 +183,10 @@ $finalcode = 'RS-' . createRandomPassword();
                 <?php
                 include('../connect.php');
 
-                $result = $db->prepare("SELECT * FROM forecast_table INNER JOIN cogs ON forecast_table.month = cogs.month INNER join hrm on forecast_table.month = hrm.month INNER JOIN operation_cost on forecast_table.month = operation_cost.month ");
+                $result = $db->prepare("SELECT * FROM forecast_table
+                  INNER JOIN cogs ON forecast_table.month = cogs.month
+                  INNER join hrm on forecast_table.month = hrm.month
+                  INNER JOIN operation_cost on forecast_table.month = operation_cost.month ");
                 $result->execute();
                 for ($i = 0; $row = $result->fetch(); $i++) {
 

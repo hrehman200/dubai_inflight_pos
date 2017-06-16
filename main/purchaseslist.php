@@ -26,7 +26,10 @@
     <link href="../style.css" media="screen" rel="stylesheet" type="text/css"/>
     <!--sa poip up-->
     <link href="src/facebox.css" media="screen" rel="stylesheet" type="text/css"/>
-    <script src="lib/jquery.js" type="text/javascript"></script>
+
+    <script src="js/jquery-1.12.4.min.js" type="text/javascript"></script>
+    <script src="js/bootstrap.min.js"></script>
+
     <script src="js/application.js" type="text/javascript" charset="utf-8"></script>
     <script src="src/facebox.js" type="text/javascript"></script>
     <script type="text/javascript">
@@ -74,9 +77,16 @@
                 </div>
                 <input type="text" name="filter" style="height:35px; margin-top: -1px;" value="" id="filter"
                        placeholder="Search Supplier..." autocomplete="off"/>
-                <a rel="facebox" href="purchases.php">
-                    <Button type="submit" class="btn btn-info" style="float:right; width:230px; height:35px;"/>
-                    <i class="icon-plus-sign icon-large"></i> Add Purchases</button></a><br><br>
+
+                <?php
+                if($_SESSION['SESS_LAST_NAME'] != 'account') {
+                    ?>
+                    <a rel="facebox" href="purchases.php">
+                        <Button type="submit" class="btn btn-info" style="float:right; width:230px; height:35px;"/>
+                        <i class="icon-plus-sign icon-large"></i> Add Purchases</button></a><br><br>
+                    <?php
+                }
+                ?>
 
                 <table class="table table-bordered" id="resultTable" data-responsive="table" style="text-align: left;">
                     <thead>
@@ -138,7 +148,6 @@
                 </table>
                 <div class="clearfix"></div>
             </div>
-            <script src="js/jquery.js"></script>
             <script type="text/javascript">
                 $(function () {
 
