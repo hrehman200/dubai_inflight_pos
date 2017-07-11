@@ -4,7 +4,7 @@
         POS
     </title>
     <?php
-    require_once('auth.php');
+    require_once('../connect.php');
     ?>
     <link href="css/bootstrap.css" rel="stylesheet">
 
@@ -20,6 +20,10 @@
         .sidebar-nav {
             padding: 9px 0;
         }
+
+        .table td {
+            background-color: white;
+        }
     </style>
     <link href="css/bootstrap-responsive.css" rel="stylesheet">
 
@@ -29,7 +33,7 @@
     <script src="jeffartagame.js" type="text/javascript" charset="utf-8"></script>
     <script src="js/application.js" type="text/javascript" charset="utf-8"></script>
     <link href="src/facebox.css" media="screen" rel="stylesheet" type="text/css"/>
-    <script src="lib/jquery.js" type="text/javascript"></script>
+    <script src="js/jquery-1.12.4.min.js" type="text/javascript"></script>
     <script src="src/facebox.js" type="text/javascript"></script>
     <script type="text/javascript">
         jQuery(document).ready(function ($) {
@@ -68,8 +72,6 @@ $finalcode = 'RS-' . createRandomPassword();
 <script language="javascript" type="text/javascript">
     /* Visit http://www.yaldex.com/ for full source code
      and get more free JavaScript, CSS and DHTML scripts! */
-    <
-    !--Begin
     var timerID = null;
     var timerRunning = false;
     function stopclock() {
@@ -78,18 +80,18 @@ $finalcode = 'RS-' . createRandomPassword();
         timerRunning = false;
     }
     function showtime() {
-        var now = new Date();
-        var hours = now.getHours();
-        var minutes = now.getMinutes();
-        var seconds = now.getSeconds()
+        var now       = new Date();
+        var hours     = now.getHours();
+        var minutes   = now.getMinutes();
+        var seconds   = now.getSeconds()
         var timeValue = "" + ((hours > 12) ? hours - 12 : hours)
         if (timeValue == "0") timeValue = 12;
         timeValue += ((minutes < 10) ? ":0" : ":") + minutes
         timeValue += ((seconds < 10) ? ":0" : ":") + seconds
         timeValue += (hours >= 12) ? " P.M." : " A.M."
         document.clock.face.value = timeValue;
-        timerID = setTimeout("showtime()", 1000);
-        timerRunning = true;
+        timerID                   = setTimeout("showtime()", 1000);
+        timerRunning              = true;
     }
     function startclock() {
         stopclock();
@@ -132,140 +134,130 @@ $finalcode = 'RS-' . createRandomPassword();
                 <li class="active">Business Plan</li>
             </ul>
 
-
-            <div style="margin-top: -19px; margin-bottom: 21px;">
-                <a href="index.php">
-                    <button class="btn btn-default btn-large" style="float: left;"><i
-                            class="icon icon-circle-arrow-left icon-large"></i> Back
-                    </button>
-                </a>
-                <?php
-                include('../connect.php');
-                $result = $db->prepare("SELECT * FROM forecast_table INNER JOIN cogs ON forecast_table.month = cogs.month AND forecast_table.year = cogs.year");
-                $result->execute();
-                $rowcount = $result->rowcount();
-                ?>
-                <div style="text-align:center;">
-                    Total Number of Partners: <font color="green"
-                                                    style="font:bold 22px 'Aleo';"><?php echo $rowcount; ?></font>
-                </div>
-            </div>
-            <input type="text" name="filter" style="height:35px; margin-top: -1px;" value="" id="filter"
-                   placeholder="Search By Month" autocomplete="off"/>
-            <a rel="facebox" href="addsupplier.php">
-
-
-                <Button type="submit" class="btn btn-info" style="float:right; width:230px; height:35px;"/>
-                <i class="icon-plus-sign icon-large"></i> Add Partner</button></a><br><br>
-
             <Button type="button" onclick="convertToCSV()" id="exportCSV" class="btn btn-info"
-                    style="float:right; width:230px; height:35px;"/>
-            <i class="icon-plus-sign icon-large"></i> Export </button>
-            <br><br>
+                    style="float:right; width:230px; height:35px;">
+                <i class="icon-plus-sign icon-large"></i> Export
+            </button>
+
+            <form id="bpForm" method="get" action="<?= $_SERVER['PHP_SELF'] ?>">
+                <input type="hidden" name="monthIndex" id="monthIndex" value="<?= $_GET['monthIndex'] ?>"/>
+                <select id="year" name="year">
+                    <?php
+                    for ($year = 2017; $year <= 2027; $year++) {
+                        echo sprintf('<option %s>%d</option>', $_GET['year'] == $year ? 'selected' : '', $year);
+                    }
+                    ?>
+                </select>
+            </form>
 
 
-            <table class="table table-bordered" id="resultTable" data-responsive="table" style="text-align: left;">
-                <thead>
+            <table class="table table-striped table-bordered">
+
+                <?php
+                $month_index = (int)$_GET['monthIndex'];
+                $months      = array(
+                    array('Jan', 'Feb', 'Mar'),
+                    array('Apr', 'May', 'Jun'),
+                    array('Jul', 'Aug', 'Sep'),
+                    array('Oct', 'Nov', 'Dec'),
+                );
+                ?>
+
+                <thead id="tblHead">
                 <tr>
-                    <th> Month</th>
-                    <th> Year</th>
-                    <th> Revenue</th>
-                    <th> COGS.</th>
-                    <th> HR Cost</th>
-                    <th> Operation Cost</th>
-                    <th> Business Forcast</th>
-                    <th> Actual Sale</th>
-                    <th> Difference</th>
+                    <th>
+                        <button class="btn btn-small btn-primary btnPrevMonths"> <</button>
+                        <button class="btn btn-small btn-primary btnNextMonths"> ></button>
+                    </th>
+                    <th><?= $_GET['year'] ?><br/><?= $months[$month_index][0] ?></th>
+                    <th><?= $_GET['year'] ?><br/><?= $months[$month_index][0] ?></th>
+                    <th><?= $_GET['year'] ?><br/><?= $months[$month_index][1] ?></th>
+                    <th><?= $_GET['year'] ?><br/><?= $months[$month_index][1] ?></th>
+                    <th><?= $_GET['year'] ?><br/><?= $months[$month_index][2] ?></th>
+                    <th><?= $_GET['year'] ?><br/><?= $months[$month_index][2] ?></th>
+                    <th><?= $_GET['year'] ?><br/>FY Total</th>
+                    <th><?= $_GET['year'] ?><br/>FY Total</th>
+                    <th><?= $_GET['year'] ?><br/>Deviation</th>
                 </tr>
                 </thead>
                 <tbody>
-
                 <?php
-                include('../connect.php');
-
-                $result = $db->prepare("SELECT * FROM forecast_table
-                  INNER JOIN cogs ON forecast_table.month = cogs.month
-                  INNER join hrm on forecast_table.month = hrm.month
-                  INNER JOIN operation_cost on forecast_table.month = operation_cost.month ");
+                $result = $db->prepare("SELECT * FROM business_plan_entities WHERE parent_id = 0");
                 $result->execute();
-                for ($i = 0; $row = $result->fetch(); $i++) {
-
-                    //echo (int)$row['year'];
-                    //echo $row['month'];
-
-                    $monthlySales = 0;
-
-                    $resultSales = $db->prepare("SELECT * FROM sales WHERE month=:month AND year=:year");
-                    $resultSales->execute(array(':month' => $row['month'], ':year' => $row['year']));
-                    for ($i = 0; $row12 = $resultSales->fetch(); $i++) {
-                        $monthlySales = $monthlySales + $row12['amount'];
-                    }
-                    // echo $monthlySales;
+                while ($row = $result->fetch()) {
                     ?>
-                    <tr class="record">
+                    <tr>
                         <td>
-                            <a href="bp-productwise.php?month=<?php echo $row['month']; ?>&year=<?php echo $row['year']; ?>"><?php echo $row['month']; ?></a>
-                        </td>
-                        <td><?php echo $row['year']; ?></td>
-                        <td><?php echo $row['Total Revenue'] ?></td>
-                        <td><?php echo $row['Total COGS'] ?></td>
-                        <td><?php echo $row['hr-cost'] ?></td>
-                        <td><?php echo $row['Total Operating Expenses'] ?></td>
-                        <td><?php echo $row['Total COGS'] + $row['Total Revenue'] - ($row['hr-cost'] - $row['Total Operating Expenses']); ?></td>
-                        <td><?php echo $monthlySales ?></td>
-                        <td><?php echo ($row['Total COGS'] + $row['Total Revenue'] - ($row['hr-cost'] - $row['Total Operating Expenses'])) - $monthlySales; ?></td>
-
-                        <!-- 		<td><?php echo $row['note']; ?></td>
-			<td><a rel="facebox" href="editsupplier.php?id=<?php echo $row['suplier_id']; ?>"><button class="btn btn-warning btn-mini"><i class="icon-edit"></i> Edit </button></a>
-			<a href="#" id="<?php echo $row['suplier_id']; ?>" class="delbutton" title="Click To Delete"><button class="btn btn-danger btn-mini"><i class="icon-trash"></i> Delete</button></a></td>
- -->            </tr>
+                            <button class="btn btn-small btn-secondary btnParentRow"> +</button>
+                            <b><span><?= $row['name'] ?></span></b></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                    </tr>
+                    <?php
+                    $sql     = "SELECT bpe.id, bpe.name, bpy.month, bpy.value
+                      FROM business_plan_entities bpe
+                      LEFT JOIN business_plan_yearly bpy ON bpy.business_plan_entity_id = bpe.id AND bpy.year = :years
+                      WHERE bpe.parent_id = :parentId";
+                    $result2 = $db->prepare($sql);
+                    $arr     = array(
+                        ':parentId' => $row['id'],
+                        ':years'    => $_GET['year']
+                    );
+                    $result2->execute($arr);
+                    while ($row2 = $result2->fetch()) {
+                        ?>
+                        <tr class="row_<?= $row['name'] ?>">
+                            <td><?= $row2['name'] ?></td>
+                            <td><input type="text" class="input-small" data-entity-id="<?= $row2['id'] ?>"
+                                       data-index="1"
+                                       value="<?= $row2['month'] == $months[$month_index][0] ? $row2['value'] : '' ?>"/>
+                            </td>
+                            <td></td>
+                            <td><input type="text" class="input-small" data-entity-id="<?= $row2['id'] ?>"
+                                       data-index="3"
+                                       value="<?= $row2['month'] == $months[$month_index][1] ? $row2['value'] : '' ?>"/>
+                            </td>
+                            <td></td>
+                            <td><input type="text" class="input-small" data-entity-id="<?= $row2['id'] ?>"
+                                       data-index="5"
+                                       value="<?= $row2['month'] == $months[$month_index][2] ? $row2['value'] : '' ?>"/>
+                            </td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                        </tr>
+                        <?php
+                    }
+                    ?>
+                    <tr>
+                        <td><b>Total</b></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                    </tr>
                     <?php
                 }
                 ?>
-
                 </tbody>
             </table>
             <div class="clearfix"></div>
         </div>
     </div>
 </div>
-
-<script src="js/jquery.js"></script>
-<script type="text/javascript">
-    $(function () {
-
-
-        $(".delbutton").click(function () {
-
-//Save the link in a variable called element
-            var element = $(this);
-
-//Find the id of the link that was clicked
-            var del_id = element.attr("id");
-
-//Built a url to send
-            var info = 'id=' + del_id;
-            if (confirm("Are you sure want to delete? There is NO undo!")) {
-
-                $.ajax({
-                    type: "GET",
-                    url: "deletesupplier.php",
-                    data: info,
-                    success: function () {
-
-                    }
-                });
-                $(this).parents(".record").animate({backgroundColor: "#fbc7c7"}, "fast")
-                    .animate({opacity: "hide"}, "slow");
-
-            }
-
-            return false;
-
-        });
-
-    });
-</script>
 
 <script type="text/javascript">
 
@@ -280,21 +272,21 @@ $finalcode = 'RS-' . createRandomPassword();
 
         // var $rows = $table.find('tr:has(td)'),
 
-        var $rows = $table.find('tr:has(td,th)'),
+        var $rows       = $table.find('tr:has(td,th)'),
 
-        // Temporary delimiter characters unlikely to be typed by keyboard
-        // This is to avoid accidentally splitting the actual contents
+            // Temporary delimiter characters unlikely to be typed by keyboard
+            // This is to avoid accidentally splitting the actual contents
             tmpColDelim = String.fromCharCode(11), // vertical tab character
             tmpRowDelim = String.fromCharCode(0), // null character
 
-        // actual delimiter characters for CSV format
-            colDelim = '","',
-            rowDelim = '"\r\n"',
+            // actual delimiter characters for CSV format
+            colDelim    = '","',
+            rowDelim    = '"\r\n"',
 
-        // Grab text from table into CSV formatted string
-            csv = '"' + $rows.map(function (i, row) {
-                    var $row = $(row),
-                    // $cols = $row.find('td');
+            // Grab text from table into CSV formatted string
+            csv         = '"' + $rows.map(function (i, row) {
+                    var $row  = $(row),
+                        // $cols = $row.find('td');
                         $cols = $row.find('td,th');
 
                     return $cols.map(function (j, col) {
@@ -309,10 +301,10 @@ $finalcode = 'RS-' . createRandomPassword();
                     .split(tmpRowDelim).join(rowDelim)
                     .split(tmpColDelim).join(colDelim) + '"',
 
-        // Data URI
-            csvData = 'data:application/csv;charset=utf-8,' + encodeURIComponent(csv);
+            // Data URI
+            csvData     = 'data:application/csv;charset=utf-8,' + encodeURIComponent(csv);
 
-        blob = new Blob([csvData], {type: 'text/csv;charset=utf8;'}); //new way
+        blob       = new Blob([csvData], {type: 'text/csv;charset=utf8;'}); //new way
         var csvUrl = URL.createObjectURL(blob);
 
         $(this)
@@ -347,3 +339,67 @@ $finalcode = 'RS-' . createRandomPassword();
 <?php include('footer.php'); ?>
 
 </html>
+
+<script type="text/javascript">
+
+    $('#year').on('change', function (e) {
+        $(e.target).parent().submit();
+    });
+
+    $('.btnPrevMonths').on('click', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        var monthIndex = $('#monthIndex').val();
+        if (monthIndex > 0) {
+            monthIndex--;
+            $('#monthIndex').val(monthIndex);
+            $('#bpForm').submit();
+        }
+    });
+
+    $('.btnNextMonths').on('click', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        var monthIndex = $('#monthIndex').val();
+        if (monthIndex < 3) {
+            monthIndex++;
+            $('#monthIndex').val(monthIndex);
+            $('#bpForm').submit();
+        }
+    });
+
+    $('.btnParentRow').on('click', function (e) {
+        var parentName = $(this).parent().find('span').text();
+        $('.row_' + parentName).toggleClass('hidden');
+    });
+
+    $('input[type="text"]').off('blur').on('blur', function (e) {
+        var tdIndex   = $(e.target).data('index');
+        var monthYear = $('#tblHead th:eq(' + tdIndex + ')').html();
+        monthYear     = monthYear.split("<br>");
+        var month     = monthYear[1];
+        var year      = monthYear[0];
+        var entityId  = $(e.target).data('entity-id');
+        var value     = $(e.target).val();
+
+        if (value > 0) {
+            $.ajax({
+                url: 'api.php',
+                method: 'POST',
+                data: {
+                    'call': 'saveBusinessPlanRow',
+                    'entityId': entityId,
+                    'month': month,
+                    'year': year,
+                    'value': value
+                },
+                dataType: 'json',
+                success: function (response) {
+                    if (response.success == 1) {
+
+                    }
+                }
+            });
+        }
+    });
+</script>
