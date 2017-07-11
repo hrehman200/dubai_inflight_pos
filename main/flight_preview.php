@@ -215,12 +215,17 @@ $invoice=$_GET['invoice'];
                             <?php
                             $invoice_id=$_GET['invoice'];
 
-                            $result = $db->prepare("SELECT fp.id AS flight_purchase_id, fp.deduct_from_balance, fo.code, fpkg.package_name, fo.offer_name, fo.price, fo.duration FROM flight_purchases fp
+                            $result = $db->prepare("SELECT fp.id AS flight_purchase_id, fp.deduct_from_balance, fo.code, fpkg.package_name, fo.offer_name, fo.price, fo.duration, s.mode_of_payment, s.due_date
+                                      FROM flight_purchases fp
                                       LEFT JOIN flight_offers fo ON fp.flight_offer_id = fo.id
                                       LEFT JOIN flight_packages fpkg ON fo.package_id = fpkg.id
+                                      INNER JOIN sales s ON fp.invoice_id = s.invoice_number
                                       WHERE fp.invoice_id= :invoiceId");
                             $result->bindParam(':invoiceId', $invoice_id);
                             $result->execute();
+
+                            $mode_of_payment = '';
+                            $due_date = '';
 
                             $total_cost = 0;
                             $total_duration = 0;
@@ -229,6 +234,8 @@ $invoice=$_GET['invoice'];
                                     $total_cost += $row['price'];
                                     $total_duration += $row['duration'];
                                 }
+                                $mode_of_payment = $row['mode_of_payment'];
+                                $due_date = $row['due_date'];
                                 ?>
                                 <tr class="record">
                                     <td><?php echo $row['code']; ?></td>
@@ -281,19 +288,41 @@ $invoice=$_GET['invoice'];
                             <tr>
                                 <td colspan="3" style="text-align: right;">Cash Collected:</td>
                                 <td><?php
-                                    $sales_query = $db->prepare("SELECT amount, due_date from sales WHERE invoice_number= :invoiceId");
-                                    $sales_query->bindParam(':invoiceId', $invoice_id);
-                                    $sales_query->execute();
-                                    $sales_row = $sales_query->fetch();
-                                    echo number_format($sales_row['due_date']);
+
+                                    if($mode_of_payment == 'account') {
+                                        echo '0';
+
+                                    } else {
+
+                                        $sales_query = $db->prepare("SELECT amount, due_date from sales WHERE invoice_number= :invoiceId");
+                                        $sales_query->bindParam(':invoiceId', $invoice_id);
+                                        $sales_query->execute();
+                                        $sales_row = $sales_query->fetch();
+                                        echo number_format((int)$sales_row['balance']);
+                                    }
                                     ?></td>
                                 <td colspan="2"></td>
                             </tr>
-                            <tr>
-                                <td colspan="3" style="text-align: right;">Change:</td>
-                                <td><?php echo number_format($sales_row['amount'] - $sales_row['due_date']); ?></td>
-                                <td colspan="2"></td>
-                            </tr>
+
+                            <?php
+                            if($mode_of_payment == 'account') {
+                                ?>
+                                <tr>
+                                    <td colspan="3" style="text-align: right;">Due Date:</td>
+                                    <td><?=$due_date?></td>
+                                    <td colspan="2"></td>
+                                </tr>
+                                <?php
+                            } else {
+                                ?>
+                                <tr>
+                                    <td colspan="3" style="text-align: right;">Change:</td>
+                                    <td><?php echo number_format($sales_row['amount'] - $sales_row['balance']); ?></td>
+                                    <td colspan="2"></td>
+                                </tr>
+                                <?php
+                            }
+                            ?>
 
                             </tbody>
                         </table>

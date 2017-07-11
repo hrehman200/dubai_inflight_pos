@@ -195,7 +195,21 @@ $position = $_SESSION['SESS_LAST_NAME'];
                 <input type="hidden" name="date" value="<?php echo date("m/d/y"); ?>"/>
 
                 <br/>
-                <input type="text" class="form-contorl span6" placeholder="Search Customers" id="customer" name="customer" autocomplete="off" />
+                <select class="span3" name="partnerId" id="partnerId">
+                    <option value="0">- Select Partner -</option>
+                    <?php
+                    $result = $db->prepare("SELECT * FROM partners ORDER BY partner_name ASC");
+                    $result->execute();
+                    for ($i = 0; $row = $result->fetch(); $i++) {
+                        ?>
+                        <option value="<?php echo $row['partner_id']; ?>" <?php echo $_GET['partnerId']==$row['partner_id'] ? 'selected' : ''?> >
+                            <?php echo $row['partner_name']; ?>
+                        </option>
+                        <?php
+                    }
+                    ?>
+                </select>
+                <input type="text" class="form-contorl span3" placeholder="Search Customers" id="customer" name="customer" autocomplete="off" />
 
                 <button class="btn btn-info" style="margin-bottom: 9px;" id="btnFlightHistory">
                     Flight History
@@ -309,7 +323,7 @@ $position = $_SESSION['SESS_LAST_NAME'];
             </table>
             <!--<button class="btn btn-mini btn-warning"><i class="icon icon-remove"></i> Cancel</button>-->
             <br>
-            <a rel="facebox"
+            <a rel="facebox" id="btnProceed"
                href="checkout.php?pt=cash&
                invoice=<?php echo $_GET['invoice'] ?>&
                total=<?php echo $total_cost ?>&
@@ -347,12 +361,39 @@ $position = $_SESSION['SESS_LAST_NAME'];
 
 <script type="text/javascript">
 
+    var _updateURLParameter = function(url, param, paramVal){
+        var newAdditionalURL = "";
+        var tempArray = url.split("?");
+        var baseURL = tempArray[0];
+        var additionalURL = tempArray[1];
+        var temp = "";
+        if (additionalURL) {
+            tempArray = additionalURL.split("&");
+            for (var i=0; i<tempArray.length; i++){
+                if(tempArray[i].split('=')[0] != param){
+                    newAdditionalURL += temp + tempArray[i];
+                    temp = "&";
+                }
+            }
+        }
+
+        var rows_txt = temp + "" + param + "=" + paramVal;
+        return baseURL + "?" + newAdditionalURL + rows_txt;
+    };
+
     $('#flightOffer').on('change', function(e){
         var minutes = $(this).find('option:selected').data('duration');
         if(minutes > 30) {
             minutes = 30;
         }
         $('#spMinutes').html(minutes);
+    }).trigger('change');
+
+    $('#partnerId').on('change', function(e){
+        var partnerId = $(this).val();
+        var href = $('#btnProceed').attr('href');
+        href = _updateURLParameter(href, 'partnerId', partnerId);
+        $('#btnProceed').attr('href', href);
     }).trigger('change');
 
     $('#chkOnlySlotsWithDuration, #chkOnlyOfficeTimeSlots').on('change', function(e) {
@@ -640,7 +681,7 @@ $position = $_SESSION['SESS_LAST_NAME'];
                 }
             }
         });
-    }
+    };
 
 
 

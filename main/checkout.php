@@ -1,3 +1,6 @@
+<?php
+include '../connect.php';
+?>
 <html>
 <head>
     <title>Checkout</title>
@@ -108,55 +111,67 @@
         <input type="hidden" name="date" value="<?php echo date("m/d/y"); ?>"/>
         <input type="hidden" name="invoice" value="<?php echo $_GET['invoice']; ?>"/>
         <input type="hidden" name="amount" value="<?php echo $_GET['total']; ?>"/>
-        <input type="hidden" name="ptype" value="<?php echo $_GET['pt']; ?>"/>
         <input type="hidden" name="cashier" value="<?php echo $_GET['cashier']; ?>"/>
         <input type="hidden" name="profit" value="<?php echo $_GET['totalprof']; ?>"/>
         <input type="hidden" name="savingflight" value="<?php echo @$_GET['savingflight']; ?>"/>
         <input type="hidden" name="customerId" value="<?php echo @$_GET['customerId']; ?>"/>
+        <input type="hidden" name="partnerId" value="<?php echo @$_GET['partnerId']; ?>"/>
 
-        <center>
-
+        <div style="text-align: center;">
 
             <?php
-            $asas = $_GET['pt'];
-            if ($asas == 'credit') {
-                ?>Due Date: <input type="date" name="due" placeholder="Due Date"
-                                   style="width: 268px; height:30px; margin-bottom: 15px;"/><br>
-                <?php
-            }
-            if ($asas == 'cash') {
-                ?>
-
-
-                <select name="mode_of_payment" id="mode_of_payment"
-                        style="width: 268px; height:30px;  margin-bottom: 15px;" required>
-                    <option value="-1">-- Mode of Payment--</option>
-                    <option value="Cash">Cash</option>
-                    <option value="Card">Card</option>
-                    <option value="Account">Account</option>
-                </select>
-
-                <br/>
-                <span style="vertical-align: middle; width: auto; padding-right:0">AED</span>
-                <input type="number" name="cash" placeholder="Cash"
-                       style="width: 225px; height:30px;  margin-bottom: 15px;" value="<?=$_GET['total']?>" required/>
-
-                <?php
-                if(isset($_GET['savingflight']) && $_GET['savingflight'] == 1) {
-                    ?>
-                    <input type="number" name="discount" placeholder="Discount %" style="width: 268px; height:30px;  margin-bottom: 15px;" required />
-                    <?php
-                }
-                ?>
-
-                <br>
-                <?php
+            if($_GET['partnerId'] > 0) {
+                $query = $db->prepare('SELECT * FROM partners WHERE partner_id=?');
+                $query->execute(array($_GET['partnerId']));
+                $row = $query->fetch();
+                $discount = (int)$row['discount'];
             }
             ?>
-            <button class="btn btn-success btn-block btn-large" style="width:267px;"><i
+
+            <select name="mode_of_payment" id="mode_of_payment" <?=isset($discount)?'disabled':''?>
+                    style="width: 268px; height:30px;  margin-bottom: 15px;" required>
+                <option value="-1">-- Mode of Payment--</option>
+                <option value="Cash">Cash</option>
+                <option value="Card">Card</option>
+                <option value="Account" <?=isset($discount)?'selected':''?> >Account</option>
+            </select>
+
+            <br/>
+            <span style="vertical-align: middle; width: auto; padding-right:0">AED</span>
+            <input type="number" name="cash" placeholder="Cash"
+                   style="width: 225px; height:30px;  margin-bottom: 15px;" value="<?=$_GET['total']?>" required/>
+
+            <?php
+            if(isset($_GET['savingflight']) && $_GET['savingflight'] == 1) {
+                if($_GET['partnerId'] > 0) {
+                    $query = $db->prepare('SELECT * FROM partners WHERE partner_id=?');
+                    $query->execute(array($_GET['partnerId']));
+                    $row = $query->fetch();
+                    $discount = (int)$row['discount'];
+
+                    $days     = (int)$row['payment_term'];
+                    $due_date = date('Y-m-d', strtotime(date('Y-m-d') . ' +30 day'));
+                }
+                ?>
+                <input type="number" name="discount" placeholder="Discount %" style="width: 268px; height:30px;  margin-bottom: 15px;" required value="<?=$discount?>"  />
+                <?php
+
+                if($due_date != '') {
+                    echo sprintf('<span style="width:auto;">Due Date: %s</span>
+                        <input type="hidden" name="due_date" value="%s" />
+                        <input type="hidden" name="ptype" value="account" /> ', $due_date, $due_date);
+                }
+            } else {
+                echo sprintf('<input type="hidden" name="ptype" value="%s" /> ', $_GET['pt']);
+            }
+            ?>
+
+            <br>
+
+            <button class="btn btn-success btn-block btn-large"><i
                     class="icon icon-save icon-large"></i> Save
             </button>
-        </center>
+        </div>
     </div>
 </form>
 </body>
