@@ -176,8 +176,7 @@ if ($position == 'cashier') {
                     for ($i = 0; $row = $result->fetch(); $i++) {
                         ?>
                         <option value="<?php echo $row['product_id']; ?>"><?php echo $row['product_code']; ?>
-                            - <?php echo $row['gen_name']; ?> - <?php echo $row['product_name']; ?> | Expires
-                            at: <?php echo $row['expiry_date']; ?></option>
+                            - <?php echo $row['gen_name']; ?> - <?php echo $row['product_name']; ?></option>
                         <?php
                     }
                     ?>

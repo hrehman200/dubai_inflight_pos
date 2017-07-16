@@ -24,6 +24,10 @@
         .table td {
             background-color: white;
         }
+
+        .rowTotal td {
+            font-weight: bold;
+        }
     </style>
     <link href="css/bootstrap-responsive.css" rel="stylesheet">
 
@@ -150,10 +154,10 @@ $finalcode = 'RS-' . createRandomPassword();
                 </select>
             </form>
 
-
             <table class="table table-striped table-bordered">
 
                 <?php
+                $year = isset($_GET['year']) ? $_GET['year'] : date('Y');
                 $month_index = (int)$_GET['monthIndex'];
                 $months      = array(
                     array('Jan', 'Feb', 'Mar'),
@@ -161,13 +165,107 @@ $finalcode = 'RS-' . createRandomPassword();
                     array('Jul', 'Aug', 'Sep'),
                     array('Oct', 'Nov', 'Dec'),
                 );
+                $all_months = array('Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec');
+
+                // merchandise sale
+                $result = $db->prepare("SELECT SUM(amount) AS amount FROM sales WHERE sale_type = 'Merchandise'
+                  AND month = :month AND year = :year");
+                $result->execute(array(
+                    ':month' => $months[$month_index][0],
+                    ':year'  => $year
+                ));
+                $row = $result->fetch();
+                $merchandise_1 = $row['amount'];
+
+                $result = $db->prepare("SELECT SUM(amount) AS amount FROM sales WHERE sale_type = 'Merchandise'
+                  AND month = :month AND year = :year");
+                $result->execute(array(
+                    ':month' => $months[$month_index][1],
+                    ':year'  => $year
+                ));
+                $row = $result->fetch();
+                $merchandise_2 = $row['amount'];
+
+                $result = $db->prepare("SELECT SUM(amount) AS amount FROM sales WHERE sale_type = 'Merchandise'
+                  AND month = :month AND year = :year");
+                $result->execute(array(
+                    ':month' => $months[$month_index][2],
+                    ':year'  => $year
+                ));
+                $row = $result->fetch();
+                $merchandise_3 = $row['amount'];
+
+                $placeholders = rtrim(str_repeat('?, ', count($all_months)), ', ') ;
+                $stmt = $db->prepare("SELECT SUM(amount) AS amount FROM sales WHERE sale_type = 'Merchandise'
+                  AND month IN ($placeholders) AND year = ?");
+                $stmt->execute(array_merge($all_months, array($year)));
+                $row = $stmt->fetch();
+                $total_merchandise = $row['amount'];
+
+                $stmt = $db->prepare("SELECT SUM(value) AS value FROM business_plan_yearly bpy
+                  INNER JOIN business_plan_entities bpe ON bpy.business_plan_entity_id = bpe.id
+                  WHERE bpe.name = 'Merchandise'
+                  AND bpy.month IN ($placeholders) AND year = ?");
+                $stmt->execute(array_merge($all_months, array($year)));
+                $row = $stmt->fetch();
+                $fy_estimated_merchandise = $row['value'];
+
+                // --------------- FTF ----------------
+                $query = "SELECT SUM(s.amount) AS amount FROM sales s
+                    INNER JOIN flight_purchases fp ON s.invoice_number = fp.invoice_id
+                    INNER JOIN flight_offers fo ON fp.flight_offer_id = fo.id
+                    WHERE fo.offer_name LIKE '%FTF%'
+                    AND s.month = :month
+                    AND s.year = :year";
+
+                $stmt = $db->prepare($query);
+                $stmt->execute(array(
+                    ':month' => $months[$month_index][0],
+                    ':year'  => $year
+                ));
+                $row = $stmt->fetch();
+                $ftf_1 = $row['amount'];
+
+                $stmt = $db->prepare($query);
+                $stmt->execute(array(
+                    ':month' => $months[$month_index][1],
+                    ':year'  => $year
+                ));
+                $row = $stmt->fetch();
+                $ftf_2 = $row['amount'];
+
+                $stmt = $db->prepare($query);
+                $stmt->execute(array(
+                    ':month' => $months[$month_index][2],
+                    ':year'  => $year
+                ));
+                $row = $stmt->fetch();
+                $ftf_3 = $row['amount'];
+
+                $stmt = $db->prepare("SELECT SUM(s.amount) AS amount FROM sales s
+                    INNER JOIN flight_purchases fp ON s.invoice_number = fp.invoice_id
+                    INNER JOIN flight_offers fo ON fp.flight_offer_id = fo.id
+                    WHERE fo.offer_name LIKE '%FTF%'
+                    AND s.month IN ($placeholders)
+                    AND s.year = ?");
+                $stmt->execute(array_merge($all_months, array($year)));
+                $row = $stmt->fetch();
+                $total_ftf = $row['amount'];
+
+                $stmt = $db->prepare("SELECT SUM(value) AS value FROM business_plan_yearly bpy
+                  INNER JOIN business_plan_entities bpe ON bpy.business_plan_entity_id = bpe.id
+                  WHERE bpe.name LIKE '%FTF%'
+                  AND bpy.month IN ($placeholders) AND year = ?");
+                $stmt->execute(array_merge($all_months, array($year)));
+                $row = $stmt->fetch();
+                $fy_estimated_ftf = $row['value'];
                 ?>
 
                 <thead id="tblHead">
                 <tr>
                     <th>
-                        <button class="btn btn-small btn-primary btnPrevMonths"> <</button>
-                        <button class="btn btn-small btn-primary btnNextMonths"> ></button>
+                        <button class="btn btn-small btn-primary btnPrevMonths"> < </button>
+                        <button class="btn btn-small btn-primary btnNextMonths"> > </button>
                     </th>
                     <th><?= $_GET['year'] ?><br/><?= $months[$month_index][0] ?></th>
                     <th><?= $_GET['year'] ?><br/><?= $months[$month_index][0] ?></th>
@@ -188,7 +286,7 @@ $finalcode = 'RS-' . createRandomPassword();
                     ?>
                     <tr>
                         <td>
-                            <button class="btn btn-small btn-secondary btnParentRow"> +</button>
+                            <button class="btn btn-small btn-secondary btnParentRow" data-parent-id="<?=$row['id']?>" > +</button>
                             <b><span><?= $row['name'] ?></span></b></td>
                         <td></td>
                         <td></td>
@@ -201,7 +299,7 @@ $finalcode = 'RS-' . createRandomPassword();
                         <td></td>
                     </tr>
                     <?php
-                    $sql     = "SELECT bpe.id, bpe.name, bpy.month, bpy.value
+                    $sql     = "SELECT bpe.id, bpe.parent_id, bpe.name, bpy.month, bpy.value
                       FROM business_plan_entities bpe
                       LEFT JOIN business_plan_yearly bpy ON bpy.business_plan_entity_id = bpe.id AND bpy.year = :years
                       WHERE bpe.parent_id = :parentId";
@@ -211,43 +309,131 @@ $finalcode = 'RS-' . createRandomPassword();
                         ':years'    => $_GET['year']
                     );
                     $result2->execute($arr);
+
+                    $arr_to_display = array();
                     while ($row2 = $result2->fetch()) {
+                        $arr_to_display[$row2['name']][] = array(
+                            'month'=>$row2['month'],
+                            'value'=>$row2['value'],
+                            'id'=>$row2['id'],
+                            'parent_id'=>$row2['parent_id']
+                        );
+                    }
+
+                    function getMonthValue($needle, $arr) {
+                        $index = array_search($needle, array_map(function ($v) {
+                            return $v['month'];
+                        }, $arr));
+
+                        return $index !== false ? $arr[$index]['value'] : 0;
+                    }
+
+                    foreach ($arr_to_display as $entity_name=>$arr_monthwise_data) {
                         ?>
-                        <tr class="row_<?= $row['name'] ?>">
-                            <td><?= $row2['name'] ?></td>
-                            <td><input type="text" class="input-small" data-entity-id="<?= $row2['id'] ?>"
+                        <tr class="row_<?=$arr_monthwise_data[0]['parent_id']?>">
+                            <td><?= $entity_name ?></td>
+                            <td><input type="text" class="input-small" data-entity-id="<?= $arr_monthwise_data[0]['id'] ?>"
                                        data-index="1"
-                                       value="<?= $row2['month'] == $months[$month_index][0] ? $row2['value'] : '' ?>"/>
+                                       value="<?= getMonthValue($months[$month_index][0], $arr_monthwise_data) ?>"/>
                             </td>
-                            <td></td>
-                            <td><input type="text" class="input-small" data-entity-id="<?= $row2['id'] ?>"
+                            <td>
+                                <?php
+                                switch($entity_name) {
+                                    case 'Merchandise':
+                                        echo $merchandise_1;
+                                        break;
+                                    case 'FTF':
+                                        echo $ftf_1;
+                                        break;
+                                }
+                                ?>
+                            </td>
+                            <td><input type="text" class="input-small" data-entity-id="<?= $arr_monthwise_data[0]['id'] ?>"
                                        data-index="3"
-                                       value="<?= $row2['month'] == $months[$month_index][1] ? $row2['value'] : '' ?>"/>
+                                       value="<?= getMonthValue($months[$month_index][1], $arr_monthwise_data) ?>"/>
                             </td>
-                            <td></td>
-                            <td><input type="text" class="input-small" data-entity-id="<?= $row2['id'] ?>"
+                            <td>
+                                <?php
+                                switch($entity_name) {
+                                    case 'Merchandise':
+                                        echo $merchandise_2;
+                                        break;
+                                    case 'FTF':
+                                        echo $ftf_2;
+                                        break;
+                                }
+                                ?>
+                            </td>
+                            <td><input type="text" class="input-small" data-entity-id="<?= $arr_monthwise_data[0]['id'] ?>"
                                        data-index="5"
-                                       value="<?= $row2['month'] == $months[$month_index][2] ? $row2['value'] : '' ?>"/>
+                                       value="<?= getMonthValue($months[$month_index][2], $arr_monthwise_data) ?>"/>
                             </td>
-                            <td></td>
-                            <td></td>
-                            <td></td>
-                            <td></td>
+                            <td>
+                                <?php
+                                switch($entity_name) {
+                                    case 'Merchandise':
+                                        echo (int)$merchandise_3;
+                                        break;
+                                    case 'FTF':
+                                        echo $ftf_3;
+                                        break;
+                                }
+                                ?>
+                            </td>
+                            <td class="fyEstimted">
+                                <?php
+                                switch($entity_name) {
+                                    case 'Merchandise':
+                                        echo $fy_estimated_merchandise;
+                                        break;
+                                    case 'FTF':
+                                        echo $fy_estimated_ftf;
+                                        break;
+                                }
+                                ?>
+                            </td>
+                            <td>
+                                <?php
+                                switch($entity_name) {
+                                    case 'Merchandise':
+                                        echo $total_merchandise;
+                                        break;
+                                    case 'FTF':
+                                        echo $total_ftf;
+                                        break;
+                                }
+                                ?>
+                            </td>
+                            <td class="derivation">
+                                <?php
+                                switch($entity_name) {
+                                    case 'Merchandise':
+                                        echo $fy_estimated_merchandise - $total_merchandise;
+                                        break;
+                                    case 'FTF':
+                                        echo $fy_estimated_ftf - $total_ftf;
+                                        break;
+                                }
+                                ?>
+                            </td>
                         </tr>
                         <?php
                     }
                     ?>
-                    <tr>
+                    <tr class="rowTotal" data-parent-id="<?=$row['id']?>">
                         <td><b>Total</b></td>
-                        <td></td>
-                        <td></td>
-                        <td></td>
-                        <td></td>
-                        <td></td>
-                        <td></td>
-                        <td></td>
-                        <td></td>
-                        <td></td>
+                        <td data-index="1"></td>
+                        <td data-index="2"></td>
+                        <td data-index="3"></td>
+                        <td data-index="4"></td>
+                        <td data-index="5"></td>
+                        <td data-index="6"></td>
+                        <td data-index="7"></td>
+                        <td data-index="8"></td>
+                        <td data-index="9"></td>
+                    </tr>
+                    <tr>
+                        <td colspan="10">&nbsp;</td>
                     </tr>
                     <?php
                 }
@@ -264,10 +450,7 @@ $finalcode = 'RS-' . createRandomPassword();
     function convertToCSV() {
         exportTableToCSV($('#resultTable'), 'filename.csv');
     }
-</script>
 
-
-<script type="text/javascript">
     function exportTableToCSV($table, filename) {
 
         // var $rows = $table.find('tr:has(td)'),
@@ -369,8 +552,8 @@ $finalcode = 'RS-' . createRandomPassword();
     });
 
     $('.btnParentRow').on('click', function (e) {
-        var parentName = $(this).parent().find('span').text();
-        $('.row_' + parentName).toggleClass('hidden');
+        var parentId = $(this).data('parent-id');
+        $('.row_' + parentId).toggleClass('hidden');
     });
 
     $('input[type="text"]').off('blur').on('blur', function (e) {
@@ -378,11 +561,11 @@ $finalcode = 'RS-' . createRandomPassword();
         var monthYear = $('#tblHead th:eq(' + tdIndex + ')').html();
         monthYear     = monthYear.split("<br>");
         var month     = monthYear[1];
-        var year      = monthYear[0];
+        var year      = $('#year').val();
         var entityId  = $(e.target).data('entity-id');
         var value     = $(e.target).val();
 
-        if (value > 0) {
+        if (value != '') {
             $.ajax({
                 url: 'api.php',
                 method: 'POST',
@@ -396,10 +579,35 @@ $finalcode = 'RS-' . createRandomPassword();
                 dataType: 'json',
                 success: function (response) {
                     if (response.success == 1) {
-
+                        _recalculate();
                     }
                 }
             });
         }
     });
+
+    var _recalculate = function() {
+        $('.rowTotal td').each(function(index, obj) {
+            if(index != 0) {
+                var rowTotal = $(this).parent();
+                var parentId = rowTotal.data('parent-id');
+                var prevRows = rowTotal.prevAll('.row_' + parentId);
+                var sum      = 0;
+                $(prevRows).find('td:eq(' + index + ')').each(function (index2, obj2) {
+                    var input = $(obj2).find('input[type="text"]');
+                    var value = 0;
+                    if (input.length > 0) {
+                        value = $(input).val();
+                    } else {
+                        value = $(obj2).html();
+                    }
+                    value = Number(value);
+                    sum += value;
+                });
+                $(obj).html(sum);
+            }
+        });
+    };
+
+    _recalculate();
 </script>
