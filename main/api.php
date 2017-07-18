@@ -67,6 +67,11 @@ function getTimeslotsForFlightDate() {
             $background = "linear-gradient(to left, #51a351 {$percent_unbooked}%, #ee5f5b {$percent_booked}%)";
         }
 
+        if ($tNow <= strtotime("09:30") || $tNow >= strtotime("19:00")) {
+            # code...
+            $background = "linear-gradient(to left, #bfbfbf {$percent_unbooked}%, #ee5f5b {$percent_booked}%)";
+        } 
+
         $tooltip_title = sprintf('Booked Time: %d <br> Time Remaining: %d', $row['bookedDuration'], 30 - $row['bookedDuration']);
 
         // nobody books 60 min slot and also we have only 30 min slots

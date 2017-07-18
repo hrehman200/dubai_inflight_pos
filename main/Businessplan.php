@@ -280,6 +280,15 @@ $finalcode = 'RS-' . createRandomPassword();
                 </thead>
                 <tbody>
                 <?php
+
+                function getMonthValue($needle, $arr) {
+                    $index = array_search($needle, array_map(function ($v) {
+                        return $v['month'];
+                    }, $arr));
+
+                    return $index !== false ? $arr[$index]['value'] : 0;
+                }
+
                 $result = $db->prepare("SELECT * FROM business_plan_entities WHERE parent_id = 0");
                 $result->execute();
                 while ($row = $result->fetch()) {
@@ -318,14 +327,6 @@ $finalcode = 'RS-' . createRandomPassword();
                             'id'=>$row2['id'],
                             'parent_id'=>$row2['parent_id']
                         );
-                    }
-
-                    function getMonthValue($needle, $arr) {
-                        $index = array_search($needle, array_map(function ($v) {
-                            return $v['month'];
-                        }, $arr));
-
-                        return $index !== false ? $arr[$index]['value'] : 0;
                     }
 
                     foreach ($arr_to_display as $entity_name=>$arr_monthwise_data) {
@@ -421,7 +422,7 @@ $finalcode = 'RS-' . createRandomPassword();
                     }
                     ?>
                     <tr class="rowTotal" data-parent-id="<?=$row['id']?>">
-                        <td><b>Total</b></td>
+                        <td data-index="0"><b>Total</b></td>
                         <td data-index="1"></td>
                         <td data-index="2"></td>
                         <td data-index="3"></td>
@@ -588,12 +589,13 @@ $finalcode = 'RS-' . createRandomPassword();
 
     var _recalculate = function() {
         $('.rowTotal td').each(function(index, obj) {
-            if(index != 0) {
+            var _index = $(this).data('index');
+            if(_index != 0) {
                 var rowTotal = $(this).parent();
                 var parentId = rowTotal.data('parent-id');
                 var prevRows = rowTotal.prevAll('.row_' + parentId);
                 var sum      = 0;
-                $(prevRows).find('td:eq(' + index + ')').each(function (index2, obj2) {
+                $(prevRows).find('td:eq(' + _index + ')').each(function (index2, obj2) {
                     var input = $(obj2).find('input[type="text"]');
                     var value = 0;
                     if (input.length > 0) {
