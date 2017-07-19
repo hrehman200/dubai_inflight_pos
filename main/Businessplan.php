@@ -157,108 +157,98 @@ $finalcode = 'RS-' . createRandomPassword();
             <table class="table table-striped table-bordered">
 
                 <?php
-                $year = isset($_GET['year']) ? $_GET['year'] : date('Y');
-                $month_index = (int)$_GET['monthIndex'];
-                $months      = array(
+                $year               = isset($_GET['year']) ? $_GET['year'] : date('Y');
+                $month_index        = (int)$_GET['monthIndex'];
+                $months             = array(
                     array('Jan', 'Feb', 'Mar'),
                     array('Apr', 'May', 'Jun'),
                     array('Jul', 'Aug', 'Sep'),
                     array('Oct', 'Nov', 'Dec'),
                 );
-                $all_months = array('Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec');
+                $all_months         = array('Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec');
+                $month_placeholders = rtrim(str_repeat('?, ', count($all_months)), ', ') ;
 
-                // merchandise sale
-                $result = $db->prepare("SELECT SUM(amount) AS amount FROM sales WHERE sale_type = 'Merchandise'
-                  AND month = :month AND year = :year");
-                $result->execute(array(
-                    ':month' => $months[$month_index][0],
-                    ':year'  => $year
-                ));
-                $row = $result->fetch();
-                $merchandise_1 = $row['amount'];
+                function getFYEstimatedForEntity($entity_name, $entity_id=null) {
 
-                $result = $db->prepare("SELECT SUM(amount) AS amount FROM sales WHERE sale_type = 'Merchandise'
-                  AND month = :month AND year = :year");
-                $result->execute(array(
-                    ':month' => $months[$month_index][1],
-                    ':year'  => $year
-                ));
-                $row = $result->fetch();
-                $merchandise_2 = $row['amount'];
+                    global $db, $all_months, $month_placeholders, $year;
 
-                $result = $db->prepare("SELECT SUM(amount) AS amount FROM sales WHERE sale_type = 'Merchandise'
-                  AND month = :month AND year = :year");
-                $result->execute(array(
-                    ':month' => $months[$month_index][2],
-                    ':year'  => $year
-                ));
-                $row = $result->fetch();
-                $merchandise_3 = $row['amount'];
+                    $query = "SELECT SUM(value) AS value FROM business_plan_yearly bpy
+                      INNER JOIN business_plan_entities bpe ON bpy.business_plan_entity_id = bpe.id
+                      WHERE ";
+                    if($entity_id != null) {
+                        $query .= "bpe.id = ".$entity_id;
+                    } else {
+                        $query .= "bpe.name = '".$entity_name."'";
+                    }
+                    $query .=  " AND bpy.month IN ($month_placeholders) AND year = ?";
+                    $stmt = $db->prepare($query);
+                    $stmt->execute(array_merge($all_months, array($year)));
+                    $row = $stmt->fetch();
+                    return round($row['value'], 1);
+                }
 
-                $placeholders = rtrim(str_repeat('?, ', count($all_months)), ', ') ;
+                // --------------- MERCHANDISE ----------------
+                function getMerchandiseSale($month, $year) {
+                    global $db;
+                    $stmt_merchandise = $db->prepare("SELECT SUM(amount) AS amount FROM sales WHERE sale_type = 'Merchandise'
+                      AND month = :month AND year = :year");
+                    $stmt_merchandise->execute(array(
+                        ':month' => $month,
+                        ':year'  => $year
+                    ));
+                    $row = $stmt_merchandise->fetch();
+                    return round($row['amount'], 1);
+                }
+
+                $merchandise_1 = getMerchandiseSale($months[$month_index][0], $year);
+                $merchandise_2 = getMerchandiseSale($months[$month_index][1], $year);
+                $merchandise_3 = getMerchandiseSale($months[$month_index][2], $year);
+
                 $stmt = $db->prepare("SELECT SUM(amount) AS amount FROM sales WHERE sale_type = 'Merchandise'
-                  AND month IN ($placeholders) AND year = ?");
+                  AND month IN ($month_placeholders) AND year = ?");
                 $stmt->execute(array_merge($all_months, array($year)));
                 $row = $stmt->fetch();
                 $total_merchandise = $row['amount'];
 
-                $stmt = $db->prepare("SELECT SUM(value) AS value FROM business_plan_yearly bpy
-                  INNER JOIN business_plan_entities bpe ON bpy.business_plan_entity_id = bpe.id
-                  WHERE bpe.name = 'Merchandise'
-                  AND bpy.month IN ($placeholders) AND year = ?");
-                $stmt->execute(array_merge($all_months, array($year)));
-                $row = $stmt->fetch();
-                $fy_estimated_merchandise = $row['value'];
+                $fy_estimated_merchandise = getFYEstimatedForEntity(null, 9);
 
                 // --------------- FTF ----------------
-                $query = "SELECT SUM(s.amount) AS amount FROM sales s
-                    INNER JOIN flight_purchases fp ON s.invoice_number = fp.invoice_id
-                    INNER JOIN flight_offers fo ON fp.flight_offer_id = fo.id
-                    WHERE fo.offer_name LIKE '%FTF%'
-                    AND s.month = :month
-                    AND s.year = :year";
+                function getFTFSale($month, $year) {
+                    global $db;
+                    $query = "SELECT SUM(s.amount) AS amount FROM sales s
+                        INNER JOIN flight_purchases fp ON s.invoice_number = fp.invoice_id
+                        INNER JOIN flight_offers fo ON fp.flight_offer_id = fo.id
+                        WHERE fo.offer_name LIKE '%FTF%'
+                        AND s.month = :month
+                        AND s.year = :year";
 
-                $stmt = $db->prepare($query);
-                $stmt->execute(array(
-                    ':month' => $months[$month_index][0],
-                    ':year'  => $year
-                ));
-                $row = $stmt->fetch();
-                $ftf_1 = $row['amount'];
+                    $stmt = $db->prepare($query);
+                    $stmt->execute(array(
+                        ':month' => $month,
+                        ':year'  => $year
+                    ));
+                    $row = $stmt->fetch();
+                    return round($row['amount'], 1);
+                }
 
-                $stmt = $db->prepare($query);
-                $stmt->execute(array(
-                    ':month' => $months[$month_index][1],
-                    ':year'  => $year
-                ));
-                $row = $stmt->fetch();
-                $ftf_2 = $row['amount'];
-
-                $stmt = $db->prepare($query);
-                $stmt->execute(array(
-                    ':month' => $months[$month_index][2],
-                    ':year'  => $year
-                ));
-                $row = $stmt->fetch();
-                $ftf_3 = $row['amount'];
+                $ftf_1 = getFTFSale($months[$month_index][0], $year);
+                $ftf_2 = getFTFSale($months[$month_index][0], $year);
+                $ftf_3 = getFTFSale($months[$month_index][0], $year);
 
                 $stmt = $db->prepare("SELECT SUM(s.amount) AS amount FROM sales s
                     INNER JOIN flight_purchases fp ON s.invoice_number = fp.invoice_id
                     INNER JOIN flight_offers fo ON fp.flight_offer_id = fo.id
                     WHERE fo.offer_name LIKE '%FTF%'
-                    AND s.month IN ($placeholders)
+                    AND s.month IN ($month_placeholders)
                     AND s.year = ?");
                 $stmt->execute(array_merge($all_months, array($year)));
                 $row = $stmt->fetch();
                 $total_ftf = $row['amount'];
 
-                $stmt = $db->prepare("SELECT SUM(value) AS value FROM business_plan_yearly bpy
-                  INNER JOIN business_plan_entities bpe ON bpy.business_plan_entity_id = bpe.id
-                  WHERE bpe.name LIKE '%FTF%'
-                  AND bpy.month IN ($placeholders) AND year = ?");
-                $stmt->execute(array_merge($all_months, array($year)));
-                $row = $stmt->fetch();
-                $fy_estimated_ftf = $row['value'];
+                $fy_estimated_ftf = getFYEstimatedForEntity('FTF');
+
+                // --------------- COGS Merchandise ----------------
+                $fy_estimated_merchandise_cogs = getFYEstimatedForEntity(null, 24);
                 ?>
 
                 <thead id="tblHead">
@@ -289,9 +279,13 @@ $finalcode = 'RS-' . createRandomPassword();
                     return $index !== false ? $arr[$index]['value'] : 0;
                 }
 
-                $result = $db->prepare("SELECT * FROM business_plan_entities WHERE parent_id = 0");
-                $result->execute();
-                while ($row = $result->fetch()) {
+                function getNPercentOf($n, $total) {
+                    return round($n * $total / 100, 1);
+                }
+
+                $stmt_merchandise = $db->prepare("SELECT * FROM business_plan_entities WHERE parent_id = 0");
+                $stmt_merchandise->execute();
+                while ($row = $stmt_merchandise->fetch()) {
                     ?>
                     <tr>
                         <td>
@@ -329,6 +323,8 @@ $finalcode = 'RS-' . createRandomPassword();
                         );
                     }
 
+                    $is_cogs = ($row['name'] == 'Cost of Goods Sold (COGS)');
+
                     foreach ($arr_to_display as $entity_name=>$arr_monthwise_data) {
                         ?>
                         <tr class="row_<?=$arr_monthwise_data[0]['parent_id']?>">
@@ -341,7 +337,11 @@ $finalcode = 'RS-' . createRandomPassword();
                                 <?php
                                 switch($entity_name) {
                                     case 'Merchandise':
-                                        echo $merchandise_1;
+                                        if($is_cogs) {
+                                            echo getNPercentOf(30, $merchandise_1);
+                                        } else {
+                                            echo $merchandise_1;
+                                        }
                                         break;
                                     case 'FTF':
                                         echo $ftf_1;
@@ -357,7 +357,11 @@ $finalcode = 'RS-' . createRandomPassword();
                                 <?php
                                 switch($entity_name) {
                                     case 'Merchandise':
-                                        echo $merchandise_2;
+                                        if($is_cogs) {
+                                            echo getNPercentOf(30, $merchandise_2);
+                                        } else {
+                                            echo $merchandise_2;
+                                        }
                                         break;
                                     case 'FTF':
                                         echo $ftf_2;
@@ -373,7 +377,11 @@ $finalcode = 'RS-' . createRandomPassword();
                                 <?php
                                 switch($entity_name) {
                                     case 'Merchandise':
-                                        echo (int)$merchandise_3;
+                                        if($is_cogs) {
+                                            echo getNPercentOf(30, $merchandise_3);
+                                        } else {
+                                            echo $merchandise_3;
+                                        }
                                         break;
                                     case 'FTF':
                                         echo $ftf_3;
@@ -385,7 +393,11 @@ $finalcode = 'RS-' . createRandomPassword();
                                 <?php
                                 switch($entity_name) {
                                     case 'Merchandise':
-                                        echo $fy_estimated_merchandise;
+                                        if($is_cogs) {
+                                            echo $fy_estimated_merchandise_cogs;
+                                        } else {
+                                            echo $fy_estimated_merchandise;
+                                        }
                                         break;
                                     case 'FTF':
                                         echo $fy_estimated_ftf;
@@ -397,6 +409,9 @@ $finalcode = 'RS-' . createRandomPassword();
                                 <?php
                                 switch($entity_name) {
                                     case 'Merchandise':
+                                        if($is_cogs) {
+                                            $total_merchandise = getNPercentOf(30, $total_merchandise);
+                                        }
                                         echo $total_merchandise;
                                         break;
                                     case 'FTF':
@@ -409,10 +424,14 @@ $finalcode = 'RS-' . createRandomPassword();
                                 <?php
                                 switch($entity_name) {
                                     case 'Merchandise':
-                                        echo $fy_estimated_merchandise - $total_merchandise;
+                                        if($is_cogs) {
+                                            echo round($fy_estimated_merchandise_cogs - $total_merchandise, 1);
+                                        } else {
+                                            echo round($fy_estimated_merchandise - $total_merchandise, 1);
+                                        }
                                         break;
                                     case 'FTF':
-                                        echo $fy_estimated_ftf - $total_ftf;
+                                        echo round($fy_estimated_ftf - $total_ftf, 1);
                                         break;
                                 }
                                 ?>
@@ -606,7 +625,7 @@ $finalcode = 'RS-' . createRandomPassword();
                     value = Number(value);
                     sum += value;
                 });
-                $(obj).html(sum);
+                $(obj).html(sum.toFixed(1));
             }
         });
     };
