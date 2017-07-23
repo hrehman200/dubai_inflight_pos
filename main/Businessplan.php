@@ -187,6 +187,37 @@ $finalcode = 'RS-' . createRandomPassword();
                     return round($row['value'], 1);
                 }
 
+                function getFlightSaleForMonth($offer_name, $month, $year) {
+                    global $db;
+                    $query = "SELECT SUM(s.amount) AS amount FROM sales s
+                        INNER JOIN flight_purchases fp ON s.invoice_number = fp.invoice_id
+                        INNER JOIN flight_offers fo ON fp.flight_offer_id = fo.id
+                        WHERE fo.offer_name LIKE '%".$offer_name."%'
+                        AND s.month = :month
+                        AND s.year = :year";
+
+                    $stmt = $db->prepare($query);
+                    $stmt->execute(array(
+                        ':month' => $month,
+                        ':year'  => $year
+                    ));
+                    $row = $stmt->fetch();
+                    return round($row['amount'], 1);
+                }
+
+                function getFlightSaleForYear($offer_name, $year) {
+                    global $db, $month_placeholders, $all_months;
+                        $stmt = $db->prepare("SELECT SUM(s.amount) AS amount FROM sales s
+                        INNER JOIN flight_purchases fp ON s.invoice_number = fp.invoice_id
+                        INNER JOIN flight_offers fo ON fp.flight_offer_id = fo.id
+                        WHERE fo.offer_name LIKE '%".$offer_name."%'
+                        AND s.month IN ($month_placeholders)
+                        AND s.year = ?");
+                    $stmt->execute(array_merge($all_months, array($year)));
+                    $row = $stmt->fetch();
+                    return round($row['amount'], 1);
+                }
+
                 // --------------- MERCHANDISE ----------------
                 function getMerchandiseSale($month, $year) {
                     global $db;
@@ -213,42 +244,21 @@ $finalcode = 'RS-' . createRandomPassword();
                 $fy_estimated_merchandise = getFYEstimatedForEntity(null, 9);
 
                 // --------------- FTF ----------------
-                function getFTFSale($month, $year) {
-                    global $db;
-                    $query = "SELECT SUM(s.amount) AS amount FROM sales s
-                        INNER JOIN flight_purchases fp ON s.invoice_number = fp.invoice_id
-                        INNER JOIN flight_offers fo ON fp.flight_offer_id = fo.id
-                        WHERE fo.offer_name LIKE '%FTF%'
-                        AND s.month = :month
-                        AND s.year = :year";
-
-                    $stmt = $db->prepare($query);
-                    $stmt->execute(array(
-                        ':month' => $month,
-                        ':year'  => $year
-                    ));
-                    $row = $stmt->fetch();
-                    return round($row['amount'], 1);
-                }
-
-                $ftf_1 = getFTFSale($months[$month_index][0], $year);
-                $ftf_2 = getFTFSale($months[$month_index][0], $year);
-                $ftf_3 = getFTFSale($months[$month_index][0], $year);
-
-                $stmt = $db->prepare("SELECT SUM(s.amount) AS amount FROM sales s
-                    INNER JOIN flight_purchases fp ON s.invoice_number = fp.invoice_id
-                    INNER JOIN flight_offers fo ON fp.flight_offer_id = fo.id
-                    WHERE fo.offer_name LIKE '%FTF%'
-                    AND s.month IN ($month_placeholders)
-                    AND s.year = ?");
-                $stmt->execute(array_merge($all_months, array($year)));
-                $row = $stmt->fetch();
-                $total_ftf = $row['amount'];
-
+                $ftf_1 = getFlightSaleForMonth('FTF', $months[$month_index][0], $year);
+                $ftf_2 = getFlightSaleForMonth('FTF', $months[$month_index][0], $year);
+                $ftf_3 = getFlightSaleForMonth('FTF', $months[$month_index][0], $year);
+                $total_ftf = getFlightSaleForYear('FTF', $year);
                 $fy_estimated_ftf = getFYEstimatedForEntity('FTF');
 
                 // --------------- COGS Merchandise ----------------
                 $fy_estimated_merchandise_cogs = getFYEstimatedForEntity(null, 24);
+
+                // --------------- SKyDivers ----------------
+                $skydivers_1 = getFlightSaleForMonth('Skydivers', $months[$month_index][0], $year);
+                $skydivers_2 = getFlightSaleForMonth('Skydivers', $months[$month_index][0], $year);
+                $skydivers_3 = getFlightSaleForMonth('Skydivers', $months[$month_index][0], $year);
+                $total_skydivers = getFlightSaleForYear('Skydivers', $year);
+                $fy_estimated_skydivers = getFYEstimatedForEntity('SkyDivers');
                 ?>
 
                 <thead id="tblHead">
@@ -346,6 +356,9 @@ $finalcode = 'RS-' . createRandomPassword();
                                     case 'FTF':
                                         echo $ftf_1;
                                         break;
+                                    case 'SkyDivers':
+                                        echo $skydivers_1;
+                                        break;
                                 }
                                 ?>
                             </td>
@@ -365,6 +378,9 @@ $finalcode = 'RS-' . createRandomPassword();
                                         break;
                                     case 'FTF':
                                         echo $ftf_2;
+                                        break;
+                                    case 'SkyDivers':
+                                        echo $skydivers_2;
                                         break;
                                 }
                                 ?>
@@ -386,6 +402,9 @@ $finalcode = 'RS-' . createRandomPassword();
                                     case 'FTF':
                                         echo $ftf_3;
                                         break;
+                                    case 'SkyDivers':
+                                        echo $skydivers_3;
+                                        break;
                                 }
                                 ?>
                             </td>
@@ -402,6 +421,9 @@ $finalcode = 'RS-' . createRandomPassword();
                                     case 'FTF':
                                         echo $fy_estimated_ftf;
                                         break;
+                                    case 'SkyDivers':
+                                        echo $fy_estimated_skydivers;
+                                        break;
                                 }
                                 ?>
                             </td>
@@ -416,6 +438,9 @@ $finalcode = 'RS-' . createRandomPassword();
                                         break;
                                     case 'FTF':
                                         echo $total_ftf;
+                                        break;
+                                    case 'SkyDivers':
+                                        echo $total_skydivers;
                                         break;
                                 }
                                 ?>
@@ -432,6 +457,9 @@ $finalcode = 'RS-' . createRandomPassword();
                                         break;
                                     case 'FTF':
                                         echo round($fy_estimated_ftf - $total_ftf, 1);
+                                        break;
+                                    case 'SkyDivers':
+                                        echo $fy_estimated_skydivers - $total_skydivers;
                                         break;
                                 }
                                 ?>
