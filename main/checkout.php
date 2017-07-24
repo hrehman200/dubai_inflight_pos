@@ -160,6 +160,8 @@ include '../connect.php';
                     echo sprintf('<span style="width:auto;">Due Date: %s</span>
                         <input type="hidden" name="due_date" value="%s" />
                         <input type="hidden" name="ptype" value="account" /> ', $due_date, $due_date);
+                } else {
+                    echo sprintf('<input type="hidden" name="ptype" value="%s" /> ', $_GET['pt']);
                 }
             } else {
                 echo sprintf('<input type="hidden" name="ptype" value="%s" /> ', $_GET['pt']);

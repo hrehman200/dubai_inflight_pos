@@ -21,6 +21,8 @@ $monthName = $dateObj->format('M');
 $specificyear = date_parse_from_format("m/d/y", $c);
 $salesyear    = $specificyear["year"];
 
+$due_date = '0000-00-00';
+
 if ($d == 'cash' || $d == 'credit') {
     $f        = $_POST['cash'];
     $due_date = '0000-00-00';
@@ -43,7 +45,7 @@ if (@$_POST['savingflight'] == 1) {
                  ':e'               => $e,
                  ':z'               => $z,
                  ':balance'         => (int)$f,
-                 ':mode_of_payment' => $d,
+                 ':mode_of_payment' => $mode_of_payment,
                  ':discount'        => $discount,
                  ':customerId'      => $customer_id,
                  ':dueDate'         => $due_date);

@@ -75,6 +75,21 @@ function deductFromBalance($customer_id, $flight_offer_id, $balance) {
 }
 
 /**
+ * @param $customer_id
+ * @param $minutes
+ */
+function deductFromCustomerCredit($customer_id, $minutes) {
+    global $db;
+
+    $query = $db->prepare('UPDATE customer SET credit_time = credit_time - :minutes
+          WHERE customer_id = :customerId');
+    $query->execute(array(
+        ':customerId' => $customer_id,
+        ':minutes'    => $minutes,
+    ));
+}
+
+/**
  * @param $invoice_id
  * @param $flight_offer_id
  * @param $customer_id
@@ -131,7 +146,13 @@ $flight_duration = $_POST['flightDuration'];
 $flight_purchase_id = $_POST['flightPurchaseId'];
 $customer_id = $_POST['customerId'];
 
-if($_POST['useBalance'] == 1) {
+if($_POST['useCredit'] == 1) {
+    // insert balance use
+    $flight_purchase_id = insertFlightPurchase($invoice, $flight_offer_id, $customer_id, 1);
+    insertFlightBooking($flight_purchase_id, $flight_time, $flight_duration);
+    deductFromCustomerCredit($customer_id, $flight_duration);
+
+} else if($_POST['useBalance'] == 1) {
     // insert balance use
     $flight_purchase_id = insertFlightPurchase($invoice, $flight_offer_id, $customer_id, 1);
     insertFlightBooking($flight_purchase_id, $flight_time, $flight_duration);

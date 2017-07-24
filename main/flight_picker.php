@@ -169,6 +169,7 @@ $position = $_SESSION['SESS_LAST_NAME'];
                 <input type="hidden" name="customerId" id="customerId" value="<?=$_GET['customer_id']?>" />
                 <input type="hidden" name="flightPurchaseId" id="flightPurchaseId" value="" />
                 <input type="hidden" name="useBalance" id="useBalance" value="0" />
+                <input type="hidden" name="useCredit" id="useCredit" value="0" />
 
 
                 <?php
@@ -195,7 +196,7 @@ $position = $_SESSION['SESS_LAST_NAME'];
                 <input type="hidden" name="date" value="<?php echo date("m/d/y"); ?>"/>
 
                 <br/>
-                <select class="span3" name="partnerId" id="partnerId">
+                <!--<select class="span3" name="partnerId" id="partnerId">
                     <option value="0">- Select Partner -</option>
                     <?php
                     $result = $db->prepare("SELECT * FROM partners ORDER BY partner_name ASC");
@@ -208,7 +209,7 @@ $position = $_SESSION['SESS_LAST_NAME'];
                         <?php
                     }
                     ?>
-                </select>
+                </select>-->
                 <input type="text" class="form-contorl span3" placeholder="Search Customers" id="customer" name="customer" autocomplete="off" />
 
                 <button class="btn btn-info" style="margin-bottom: 9px;" id="btnFlightHistory">
@@ -610,14 +611,14 @@ $position = $_SESSION['SESS_LAST_NAME'];
                 success: function (response) {
                     if (response.success == 1) {
                         var data = response.data;
-                        _showSelectMinutesDialog(duration, data.unbooked_duration, data.balance);
+                        _showSelectMinutesDialog(duration, data.unbooked_duration, data.balance, data.credit);
                     }
                 }
             });
         }
     };
 
-    var _showSelectMinutesDialog = function(duration, unbookedDuration, balance) {
+    var _showSelectMinutesDialog = function(duration, unbookedDuration, balance, credit) {
 
         unbookedDuration = unbookedDuration < 0 ? 0 : unbookedDuration;
         balance = balance < 0 ? 0 : balance;
@@ -674,6 +675,24 @@ $position = $_SESSION['SESS_LAST_NAME'];
                                 $('#formFlightTime').submit();
                             } else {
                                 alert('Balance does not have' + minutes + ' minutes.');
+                                return false;
+                            }
+                        }
+                    }
+                },
+                btn4: {
+                    label: 'Deduct from credit ('+credit+')',
+                    className: 'btn',
+                    callback: function (result) {
+                        var minutes = $('#txtMinutes').val();
+                        if(minutes !== null) {
+                            if (minutes <= credit) {
+                                $('#useCredit').val(1);
+                                $('#flightPurchaseId').val('');
+                                $('#flightDuration').val(minutes);
+                                $('#formFlightTime').submit();
+                            } else {
+                                alert('Credit does not have' + minutes + ' minutes.');
                                 return false;
                             }
                         }

@@ -183,9 +183,19 @@ function getDetailsForNewBookingModal() {
     ));
     $row = $query->fetch();
 
+    // get customer credit
+    $query = $db->prepare("SELECT credit_time FROM customer
+                           WHERE customer_id = :customerId");
+    $query->execute(array(
+        ':customerId'    => $post['customerId']
+    ));
+    $row = $query->fetch();
+    $customer_credit = $row['credit_time'];
+
     $data = array(
         'unbooked_duration' => (int)$unbooked_duration,
-        'balance'           => (int)$row['balance']
+        'balance'           => (int)$row['balance'],
+        'credit'            => (int)$customer_credit
     );
 
     echo json_encode(array(
