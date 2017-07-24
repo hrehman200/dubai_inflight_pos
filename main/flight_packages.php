@@ -59,8 +59,6 @@
     <script language="javascript" type="text/javascript">
         /* Visit http://www.yaldex.com/ for full source code
          and get more free JavaScript, CSS and DHTML scripts! */
-        <
-        !--Begin
         var timerID = null;
         var timerRunning = false;
         function stopclock() {
@@ -87,7 +85,6 @@
             showtime();
         }
         window.onload = startclock;
-        // End -->
     </SCRIPT>
 </head>
 <body>

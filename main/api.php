@@ -182,6 +182,7 @@ function getDetailsForNewBookingModal() {
         ':flightOfferId' => $post['flightOfferId']
     ));
     $row = $query->fetch();
+    $balance = $row['balance'];
 
     // get customer credit
     $query = $db->prepare("SELECT credit_time FROM customer
@@ -194,7 +195,7 @@ function getDetailsForNewBookingModal() {
 
     $data = array(
         'unbooked_duration' => (int)$unbooked_duration,
-        'balance'           => (int)$row['balance'],
+        'balance'           => (int)$balance,
         'credit'            => (int)$customer_credit
     );
 

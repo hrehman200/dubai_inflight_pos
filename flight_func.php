@@ -54,11 +54,15 @@ function addBalance($booking_id) {
       FROM flight_bookings fb
       INNER JOIN flight_purchases fp ON fb.flight_purchase_id = fp.id
       INNER JOIN flight_offers fo ON fp.flight_offer_id = fo.id
-      WHERE fb.id = :bookingId');
+      WHERE fb.id = :bookingId AND fp.deduct_from_balance = 1');
     $query->execute(array(
         ':bookingId' => $booking_id
     ));
     $row = $query->fetch();
+    if(!$row) {
+        return;
+    }
+
     $customer_id = $row['customer_id'];
     $flight_offer_id = $row['flight_offer_id'];
     $balance = $row['duration'];
