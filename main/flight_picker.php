@@ -196,7 +196,20 @@ $position = $_SESSION['SESS_LAST_NAME'];
                 <input type="hidden" name="date" value="<?php echo date("m/d/y"); ?>"/>
 
                 <br/>
-                <!--<select class="span3" name="partnerId" id="partnerId">
+                <input type="text" class="form-contorl span3" placeholder="Search Customers" id="customer" name="customer" autocomplete="off" />
+
+                <button class="btn btn-info" style="margin-bottom: 9px;" id="btnFlightHistory">
+                    Flight History
+                </button>
+
+                <button id="btnAddCustomer" data-href="user_login.php" class="btn btn-secondary" style="margin-bottom:9px;">
+                    Add Customer
+                </button>
+
+                <br/>
+                <input type="checkbox" id="chkIsPartner" name="chkIsPartner" value="1" <?=($_GET['partnerId']>0)?'checked="checked':''?> />
+                <label style="display: inline;" for="partnerId">Partner</label>
+                <select class="span3" name="partnerId" id="partnerId" style="display: none;">
                     <option value="0">- Select Partner -</option>
                     <?php
                     $result = $db->prepare("SELECT * FROM partners ORDER BY partner_name ASC");
@@ -209,16 +222,7 @@ $position = $_SESSION['SESS_LAST_NAME'];
                         <?php
                     }
                     ?>
-                </select>-->
-                <input type="text" class="form-contorl span3" placeholder="Search Customers" id="customer" name="customer" autocomplete="off" />
-
-                <button class="btn btn-info" style="margin-bottom: 9px;" id="btnFlightHistory">
-                    Flight History
-                </button>
-
-                <button id="btnAddCustomer" data-href="user_login.php" class="btn btn-secondary" style="margin-bottom:9px;">
-                    Add Customer
-                </button>
+                </select>
 
                 <div class="row">
                     <div class="span3" style="margin-left:25px;">
@@ -388,6 +392,10 @@ $position = $_SESSION['SESS_LAST_NAME'];
             minutes = 30;
         }
         $('#spMinutes').html(minutes);
+    }).trigger('change');
+
+    $('#chkIsPartner').on('change', function(e) {
+        $('#partnerId').toggle();
     }).trigger('change');
 
     $('#partnerId').on('change', function(e){
