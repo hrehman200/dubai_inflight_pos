@@ -138,7 +138,7 @@ include '../connect.php';
 
             <br/>
             <span style="vertical-align: middle; width: auto; padding-right:0">AED</span>
-            <input type="number" name="cash" placeholder="Cash"
+            <input type="text" name="cash" placeholder="Cash"
                    style="width: 225px; height:30px;  margin-bottom: 15px;" value="<?=$_GET['total']?>" required/>
 
             <?php
