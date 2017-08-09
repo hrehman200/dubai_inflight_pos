@@ -395,7 +395,11 @@ $position = $_SESSION['SESS_LAST_NAME'];
     }).trigger('change');
 
     $('#chkIsPartner').on('change', function(e) {
-        $('#partnerId').toggle();
+        if($(this).is(':checked')) {
+            $('#partnerId').show();
+        } else {
+            $('#partnerId').hide();
+        }
     }).trigger('change');
 
     $('#partnerId').on('change', function(e){
