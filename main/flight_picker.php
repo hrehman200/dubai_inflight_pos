@@ -207,6 +207,10 @@ $position = $_SESSION['SESS_LAST_NAME'];
                     Add Customer
                 </button>
 
+                <button id="btnTransferCredit" class="btn btn-tertiary" style="margin-bottom:9px;">
+                    Transfer Credit
+                </button>
+
                 <div class="row">
                     <div class="span3" style="margin-left:25px;">
                         <div id="datePicker"></div>
@@ -709,6 +713,113 @@ $position = $_SESSION['SESS_LAST_NAME'];
             }
         });
     }
+
+    function reschedule(flightBookingId) {
+        var dialog = bootbox.dialog({
+            title: 'Reschedule Flight Time',
+            message: '<div> \
+                <input type="datetime-local" id="bookingTime" value="" /> \
+            </div>',
+            buttons: {
+                btn1: {
+                    label: 'Reschedule',
+                    className: 'btn-success',
+                    callback: function (result) {
+                        var selectedDateTime = $('#bookingTime').val();
+                        var d = new Date(selectedDateTime);
+                        var now = new Date();
+                        if(d < now) {
+                            alert('You cannot schedule in the past time');
+                            return false;
+                        } else {
+                            $.ajax({
+                                url: 'api.php',
+                                method: 'POST',
+                                data: {
+                                    'call': 'rescheduleFlightTime',
+                                    'flight_booking_id': flightBookingId,
+                                    'flight_time': selectedDateTime
+                                },
+                                dataType: 'json',
+                                success: function (response) {
+                                    if (response.success == 1) {
+                                        window.location.href = window.location.href;
+                                    }
+                                }
+                            });
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    function showTransferDialog(e) {
+        e.preventDefault();
+        var toCustomerId = 0;
+
+        var dialog = bootbox.dialog({
+            title: 'Reschedule Flight Time',
+            show: false,
+            message: '<div> \
+                <select id="customerInDialog"></select> \
+                <input type="text" class="form-control" placeholder="Enter credit to transfer" id="credit_to_transfer" /> \
+            </div>',
+            buttons: {
+                btn1: {
+                    label: 'Transfer Credit',
+                    className: 'btn-success',
+                    callback: function (result) {
+
+                        if($('#customerId').val() == '') {
+                            alert('Select customer to transfer credit from');
+                            return;
+                        }
+
+
+                        $.ajax({
+                            url: 'api.php',
+                            method: 'POST',
+                            data: {
+                                'call': 'transferCredit',
+                                'from_customer_id': $('#customerId').val(),
+                                'to_customer_id': $('#customerInDialog').val(),
+                                'credit_to_transfer': $('#credit_to_transfer').val()
+                            },
+                            dataType: 'json',
+                            success: function (response) {
+                                if (response.success == 1) {
+                                    window.location.href = window.location.href;
+                                } else {
+                                    alert(response.msg);
+                                }
+                            }
+                        });
+                    }
+                }
+            }
+        });
+
+        dialog.on("shown.bs.modal", function() {
+            $.ajax({
+                url: 'api.php',
+                method: 'POST',
+                data: {
+                    'call': 'getCustomerOptions'
+                },
+                dataType: 'json',
+                success: function (response) {
+                    if (response.success == 1) {
+                        $('#customerInDialog').html(response.data);
+                    }
+                }
+            });
+        });
+
+        dialog.modal('show');
+    }
+
+    $('#btnTransferCredit').click(showTransferDialog);
 
 function toGetDate(date) {
     var str = '';

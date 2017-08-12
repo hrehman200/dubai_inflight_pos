@@ -146,6 +146,26 @@ function searchCustomers() {
     ));
 }
 
+function getCustomerOptions() {
+    global $db;
+
+    $query = $db->prepare('SELECT customer_id, customer_name FROM customer ORDER BY customer_name ASC');
+    $query->execute();
+    $result = $query->fetchAll(PDO::FETCH_ASSOC);
+
+    $str = '';
+    foreach($result as $row) {
+        $str .= sprintf('<option value="%s">%s</option>', $row['customer_id'], $row['customer_name']);
+    }
+
+    echo json_encode(array(
+        'success' => 1,
+        'msg'     => '',
+        'data'    => $str
+    ));
+}
+
+
 function getDetailsForNewBookingModal() {
     global $db;
     $post              = $_POST;
@@ -218,11 +238,14 @@ function getCustomerBookings() {
 
     // new query
    $query = $db->prepare(" SELECT fo.offer_name, DATE_FORMAT(fp.created, '%D %M %Y') 
-                           AS created, fo.duration, fc.flight_purchase_id, fc.minutes, customer.credit_time, fo.id
+                           AS created, fo.duration, fc.flight_purchase_id, fc.minutes,
+                           customer.customer_id, customer.credit_time, fo.id,
+                           fb.id AS flight_booking_id, fb.flight_time
                            FROM flight_credits fc 
                            INNER JOIN flight_purchases fp ON fc.flight_purchase_id = fp.id 
                            INNER JOIN flight_offers fo ON fp.flight_offer_id = fo.id 
-                           INNER JOIN customer ON customer.customer_id = fp.customer_id 
+                           INNER JOIN customer ON customer.customer_id = fp.customer_id
+                           INNER JOIN flight_bookings fb ON fb.flight_purchase_id = fp.id
                            WHERE fp.customer_id =:customerId AND fc.minutes > 0 AND fp.status = 1");
 
    // $query = $db->prepare("SELECT fp.id AS flight_purchase_id, fp.deduct_from_balance, fo.code, fpkg.package_name, fo.offer_name, fo.price, fo.duration, c.customer_name, DATE_FORMAT(fp.created,'%b %d, %Y') AS created
@@ -242,21 +265,28 @@ function getCustomerBookings() {
         <tr>
             <td>Offer</td>
             <td>Purchaed  Date</td>
+            <td>Flight Time</td>
             <td>Minutes</td>
             <td>Remaining</td>
             <td>Credit Time</td>
+            <td>Action</td>
         </tr>';
 
     if ($query->rowCount() > 0) {
         while ($row = $query->fetch()) {
             $table .= sprintf('
             <tr>
-               <td><a href="#" onclick="deductFromBalance(\''.$row['duration'].'\', \''.$row['minutes'].'\', \''.$row['id'].'\');">%s</a></td>
+                <td>%s</td>
+                <td>%s</td>
                 <td>%s</td>
                 <td>%d</td>
                 <td>%d</td>
                 <td>%d</td>
-            </tr>', $row['offer_name'], $row['created'], $row['duration'], $row['minutes'], $row['credit_time']);
+                <td>
+                    <a href="#" onclick="deductFromBalance(\''.$row['duration'].'\', \''.$row['minutes'].'\', \''.$row['id'].'\');" class="btn btn-sm">Deduct from balance</a>
+                    <a href="#" onclick="reschedule('.$row['flight_booking_id'].')" class="btn btn-sm">Reschedule</a>
+                </td>
+            </tr>', $row['offer_name'], $row['created'], $row['flight_time'], $row['duration'], $row['minutes'], $row['credit_time']);
         }
     } else {
         $table .= '<tr><td colspan="4">No previous bookings with pending balance found</td></tr>';
@@ -333,5 +363,62 @@ function saveBusinessPlanRow() {
         'success' => 1,
         'msg'     => '',
         'data'    => $result
+    ));
+}
+
+function rescheduleFlightTime() {
+    global $db;
+    $post = $_POST;
+
+    $sql   = "UPDATE flight_bookings SET flight_time = :flightTime
+          WHERE id = :flightBookingId";
+    $query = $db->prepare($sql);
+    $query->execute(array(
+        'flightTime' => $post['flight_time'],
+        'flightBookingId' => $post['flight_booking_id']
+    ));
+
+    echo json_encode(array(
+        'success' => 1,
+        'msg'     => ''
+    ));
+}
+
+function transferCredit() {
+    global $db;
+    $post = $_POST;
+
+    $query = $db->prepare('SELECT credit_time FROM customer WHERE customer_id = :customerId');
+    $query->execute(array(
+       'customerId' => $post['customer_id']
+    ));
+    $row = $query->fetch();
+    if($row['credit_time'] < $post['credit_to_transfer']) {
+        echo json_encode(array(
+           'success' => 0,
+           'msg' => 'Selected customer does not have mentioned credit'
+        ));
+        return;
+    }
+
+    $sql   = "UPDATE customer SET credit_time = credit_time + :creditToTransfer
+          WHERE customer_id = :toCustomerId";
+    $query = $db->prepare($sql);
+    $query->execute(array(
+        'creditToTransfer' => $post['credit_to_transfer'],
+        'toCustomerId' => $post['to_customer_id']
+    ));
+
+    $sql   = "UPDATE customer SET credit_time = credit_time - :creditToTransfer
+          WHERE customer_id = :customerId";
+    $query = $db->prepare($sql);
+    $query->execute(array(
+        'creditToTransfer' => $post['credit_to_transfer'],
+        'customerId' => $post['customer_id']
+    ));
+
+    echo json_encode(array(
+        'success' => 1,
+        'msg'     => ''
     ));
 }
