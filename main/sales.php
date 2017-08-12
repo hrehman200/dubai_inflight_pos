@@ -216,8 +216,9 @@ if ($position == 'cashier') {
                     <tr class="record">
                         <td hidden><?php echo $row['product']; ?></td>
                         <td><?php echo $row['product_code']; ?></td>
-                        <td><?php echo $row['gen_name']; ?></td>
-                        <td><?php echo $row['name']; ?></td>
+                        <td><?php $salesType = $row['gen_name']; echo $row['gen_name']; ?></td>
+                        <td><?php $productName = $row['name']; echo $row['name']; ?></td>
+
                         <td>
                             <?php
                             $ppp = $row['price'];
@@ -309,6 +310,8 @@ if ($position == 'cashier') {
                invoice=<?php echo $_GET['invoice'] ?>&
                total=<?php echo $fgfg ?>&
                totalprof=<?php echo $asd ?>&
+               salesType=<?php echo $salesType ?>&
+               productName=<?php echo $productName ?>&
                cashier=<?php echo $_SESSION['SESS_FIRST_NAME'] ?>">
                 <button class="btn btn-success btn-large btn-block"><i class="icon icon-save icon-large"></i> SAVE
                 </button>

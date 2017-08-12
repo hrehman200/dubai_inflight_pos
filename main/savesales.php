@@ -6,11 +6,25 @@ $c               = $_POST['date'];
 $d               = $_POST['ptype'];
 $e               = $_POST['amount'];
 $z               = $_POST['profit'];
-$mode_of_payment = $_POST['mode_of_payment'];
 $cname           = $_POST['cname'];
-$discount        = $_POST['discount'];
 $customer_id     = $_POST['customerId'];
-$partner_id      = $_POST['partnerId'];
+$salesType   = $_POST['salesType'];
+$productName = $_POST['productName'];
+
+$mode_of_payment = $_POST['mode_of_payment'];
+$mode_of_payment_1 = $_POST['mode_of_payment_1'];
+$total_cash = $_POST['total_cash'];
+
+$cash = $_POST['cash'];
+$remaining_cash = $_POST['remaining_cash'];
+$discountedValue = $_POST['discountedValue'];
+
+$discount = $_POST['discount'];
+
+if ($salesType == '' || empty($salesType )) {
+    # code...
+    $salesType ='Service';
+}
 
 $monthNumber = date_parse_from_format("m/d/y", $c);
 $monthNum    = $monthNumber["month"];
@@ -21,52 +35,61 @@ $monthName = $dateObj->format('M');
 $specificyear = date_parse_from_format("m/d/y", $c);
 $salesyear    = $specificyear["year"];
 
-$due_date = '0000-00-00';
-
-if ($d == 'cash' || $d == 'credit') {
-    $f        = $_POST['cash'];
-    $due_date = '0000-00-00';
-
-} else if ($d == 'account') {
-    $due_date = $_POST['due_date'];
+if ($d == 'cash') {
+    $f = $_POST['cash'] + $remaining_cash;
+} else if ($d == 'credit') {
+    $f = $_POST['due'];
 }
 
 if (@$_POST['savingflight'] == 1) {
 
-    $sql = "INSERT INTO sales (invoice_number,cashier,date,type,month,year,amount,profit,balance, mode_of_payment, discount, customer_id, due_date, sale_type)
-        VALUES (:a,:b,:c,:d,:monh,:year,:e,:z,:balance, :mode_of_payment, :discount, :customerId, :dueDate, 'Service')";
+    $sql = "INSERT INTO sales (invoice_number,cashier,date,type,month,year,amount,profit,due_date, mode_of_payment, discount, customer_id, sale_type, mode_of_payment_1, mop_amount, mop1_amount, after_dis)
+        VALUES (:a,:b,:c,:d,:monh,:year,:e,:z,:due_date, :mode_of_payment, :discount, :customerId, :Service, :mode_of_payment_1, :mop_amount, :mop1_amount, :discountedValue)";
     $q   = $db->prepare($sql);
-    $arr = array(':a'               => $a,
-                 ':b'               => $b,
-                 ':c'               => $c,
-                 ':d'               => $d,
-                 ':monh'            => $monthName,
-                 ':year'            => $salesyear,
-                 ':e'               => $e,
-                 ':z'               => $z,
-                 ':balance'         => (int)$f,
-                 ':mode_of_payment' => $mode_of_payment,
-                 ':discount'        => $discount,
-                 ':customerId'      => $customer_id,
-                 ':dueDate'         => $due_date);
-    $q->execute($arr);
+    $q->execute(array(':a' => $a, ':b' => $b, ':c' => $c, ':d' => $d, ':monh' => $monthName, ':year' => $salesyear, ':e' => $e, ':z' => $z, ':due_date' => $f, ':mode_of_payment' => $mode_of_payment, ':discount' => $discount, ':customerId' => $customer_id, ':Service' => $salesType, ':mode_of_payment_1' => $mode_of_payment_1
+        , ':mop_amount' => $cash, ':mop1_amount' => $remaining_cash, ':discountedValue' => $discountedValue));
 
+    if ($mode_of_payment == 'credit_cash') {
+        # code...
+        $result = $db->prepare("SELECT * FROM customer WHERE customer_id = :customer_id");
+        $result->execute(array('customer_id'=>$_POST['customerId']));
+        $row = $result->fetch();
+
+        $credit_cash = $row['credit_cash'];
+        $remainingCreditCash = $credit_cash - $_POST['cash'];
+
+        $queryCS = $db->prepare("UPDATE customer SET credit_cash =:credit_cash WHERE customer_id = :customer_id");
+        $queryCS->execute(array(':credit_cash' => $remainingCreditCash, ':customer_id' => $_POST['customerId']));
+    }
 
     $query = $db->prepare("UPDATE flight_purchases SET status = 1 WHERE invoice_id = :invoiceId");
     $query->execute(array(
         ':invoiceId' => $a
     ));
 
-    header("location: flight_preview.php?invoice=$a");
+    header("location: flight_preview.php?invoice=$a&payfirst=$cash&paysecond=$remaining_cash");
+    //header("location: flight_preview.php?invoice=$a");
 
 } else {
 
-    $sql = "INSERT INTO sales (invoice_number,cashier,date,type,month,year,amount,profit,balance, mode_of_payment)
-        VALUES (:a,:b,:c,:d,:monh,:year,:e,:z,:balance, :mode_of_payment)";
+  /*  $sql = "INSERT INTO sales (invoice_number,cashier,date,type,month,year,amount,profit,due_date, mode_of_payment)
+        VALUES (:a,:b,:c,:d,:monh,:year,:e,:z,:due_date, :mode_of_payment)";
     $q   = $db->prepare($sql);
-    $q->execute(array(':a' => $a, ':b' => $b, ':c' => $c, ':d' => $d, ':monh' => $monthName, ':year' => $salesyear, ':e' => $e, ':z' => $z, ':balance' => $f, 'mode_of_payment' => $mode_of_payment));
+    $q->execute(array(':a' => $a, ':b' => $b, ':c' => $c, ':d' => $d, ':monh' => $monthName, ':year' => $salesyear, ':e' => $e, ':z' => $z, ':due_date' => $f, 'mode_of_payment' => $mode_of_payment));
 
-    header("location: preview.php?invoice=$a");
+*/
+    $salesType ='Merchandise';
+
+    $sql = "INSERT INTO sales (invoice_number,cashier,date,type,month,year,amount,profit,due_date, mode_of_payment, discount, customer_id, sale_type, mode_of_payment_1, mop_amount, mop1_amount, after_dis)
+        VALUES (:a,:b,:c,:d,:monh,:year,:e,:z,:due_date, :mode_of_payment, :discount, :customerId, :Service, :mode_of_payment_1, :mop_amount, :mop1_amount, :discountedValue)";
+    $q   = $db->prepare($sql);
+    $q->execute(array(':a' => $a, ':b' => $b, ':c' => $c, ':d' => $d, ':monh' => $monthName, ':year' => $salesyear, ':e' => $e, ':z' => $z, ':due_date' => $f, ':mode_of_payment' => $mode_of_payment, ':discount' => $discount, ':customerId' => $customer_id, ':Service' => $salesType, ':mode_of_payment_1' => $mode_of_payment_1
+        , ':mop_amount' => $cash, ':mop1_amount' => $remaining_cash, ':discountedValue' => $discountedValue));
+
+
+
+    header("location: preview.php?invoice=$a&payfirst=$cash&paysecond=$remaining_cash&sale_type=&d1=&d2=");
+   // header("location: flight_preview.php?invoice=$a&payfirst=$cash&paysecond=$remaining_cash");
 }
 
 

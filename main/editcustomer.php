@@ -16,6 +16,11 @@
 <span>Address : </span><input type="text" style="width:265px; height:30px;" name="address" value="<?php echo $row['address']; ?>" /><br>
 <span>Contact : </span><input type="text" style="width:265px; height:30px;" name="contact" value="<?php echo $row['contact']; ?>" /><br>
 <span>Product Name : </span><textarea style="width:265px; height:60px;" name="prod_name"><?php echo $row['prod_name']; ?></textarea><br>
+
+<span>User Credit-Time : </span><input type="text" style="width:265px; height:30px;" name="user_credit_time" value="<?php echo $row['credit_time']; ?>" /><br>
+<span>User Credit-Cash : </span><input type="text" style="width:265px; height:30px;" name="user_credit_cash" value="<?php echo $row['credit_cash']; ?>" /><br>
+<span>Purchased Date : </span><input type="date" style="width:265px; height:30px;" name="purchased_date" value="<?php echo $row['purchased_date']; ?>" /><br>
+
 <span>Total : </span><input type="text" style="width:265px; height:30px;" name="memno" value="<?php echo $row['membership_number']; ?>" /><br>
 <span>Note : </span><textarea style="height:60px; width:265px;" name="note"><?php echo $row['note'];?></textarea><br>
 <span>Expected Date: </span><input type="date" style="width:265px; height:30px;" name="date" value="<?php echo $row['expected_date']; ?>" placeholder="Date"/><br>

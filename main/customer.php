@@ -163,11 +163,14 @@ $finalcode='RS-'.createRandomPassword();
 			<th width="17%"> Full Name </th>
 			<th width="10%"> Address </th>
 			<th width="10%"> Contact Number</th>
-			<th width="23%"> Product Name</th>
-			<th width="9%"> Total </th>
-			<th width="17%"> Note </th>
-			<th width="9%"> Due Date </th>
-			<th width="14%"> Action </th>
+
+			<th width="10%"> User Credit-Time</th>
+			<th width="10%"> User Credit-Cash</th>
+
+			<th width="9%"> Customer ID</th>
+			<th width="15%"> Note </th>
+			<th width="10%"> Due Date </th>
+			<th width="19%"> Action </th>
 		</tr>
 	</thead>
 	<tbody>
@@ -182,7 +185,10 @@ $finalcode='RS-'.createRandomPassword();
 			<td><?php echo $row['customer_name']; ?></td>
 			<td><?php echo $row['address']; ?></td>
 			<td><?php echo $row['contact']; ?></td>
-			<td><?php echo $row['prod_name']; ?></td>
+
+			<td><?php echo $row['credit_time']; ?></td>
+		    <td><?php echo $row['credit_cash']; ?></td>
+
 			<td>P <?php echo $row['membership_number']; ?>.00</td>
 			<td><?php echo $row['note']; ?></td>
 			<td><?php echo $row['expected_date']; ?></td>

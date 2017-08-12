@@ -205,9 +205,9 @@ window.onload=startclock;
 <table class="hoverTable" id="resultTable" data-responsive="table" style="text-align: left;">
 	<thead>
 		<tr>
-			<th width="12%"> Product Name </th>
 			<th width="14%"> Product Code</th>
 			<th width="13%"> Category / Description </th>
+			<th width="12%"> Product Name </th>
 			<th width="7%"> Partner </th>
 			<th width="9%"> Date Received </th>
 			<th width="10%"> Offer Expiry Date </th>
@@ -215,7 +215,7 @@ window.onload=startclock;
 			<th width="6%"> Selling Price </th>
 			<th width="6%"> QTY </th>
 			<th width="5%"> Qty Left </th>
-			<th width="8%"> Total </th>
+			<!--<th width="8%"> Total </th>-->
 			<th width="8%"> Action </th>
 		</tr>
 	</thead>
@@ -258,7 +258,7 @@ window.onload=startclock;
 			<td><?php echo $row['date_arrival']; ?></td>
 			<td><?php echo $row['expiry_date']; ?></td>
 			<td><?php
-			$oprice=$row['o_price'];
+			//$oprice=$row['o_price'];
 			echo formatMoney($oprice, true);
 			?></td>
 			<td><?php
@@ -267,10 +267,10 @@ window.onload=startclock;
 			?></td>
 			<td><?php echo $row['qty_sold']; ?></td>
 			<td><?php echo $row['qty']; ?></td>
-			<td>
+			<!--<td>-->
 			<?php
-			$total=$row['total'];
-			echo formatMoney($total, true);
+			//$total=$row['total'];
+			//echo formatMoney($total, true);
 			?>
 			</td>			<td><a rel="facebox" title="Click to edit the product" href="editproduct.php?id=<?php echo $row['product_id']; ?>"><button class="btn btn-warning"><i class="icon-edit"></i> </button> </a>
 			<a href="#" id="<?php echo $row['product_id']; ?>" class="delbutton" title="Click to Delete the product"><button class="btn btn-danger"><i class="icon-trash"></i></button></a></td>

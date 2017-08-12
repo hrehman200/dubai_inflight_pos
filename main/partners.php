@@ -164,12 +164,8 @@ $finalcode = 'RS-' . createRandomPassword();
                     <th> Contact Person</th>
                     <th> Address</th>
                     <th> Contact No.</th>
-                    <th> Email</th>
-                    <th> Category</th>
-                    <th> Payment Term</th>
-                    <th> Discount</th>
                     <th> Note</th>
-                    <th> Action</th>
+                    <th width="120"> Action</th>
                 </tr>
                 </thead>
                 <tbody>
@@ -185,10 +181,6 @@ $finalcode = 'RS-' . createRandomPassword();
                         <td><?php echo $row['contact_person']; ?></td>
                         <td><?php echo $row['partner_address']; ?></td>
                         <td><?php echo $row['partner_contact']; ?></td>
-                        <td><?=$row['email']?></td>
-                        <td><?=$row['category']?></td>
-                        <td><?=$row['payment_term']?></td>
-                        <td><?=$row['discount']?></td>
                         <td><?php echo $row['note']; ?></td>
                         <td><a rel="facebox" href="editpartner.php?id=<?php echo $row['partner_id']; ?>">
                                 <button class="btn btn-warning btn-mini"><i class="icon-edit"></i> Edit</button>

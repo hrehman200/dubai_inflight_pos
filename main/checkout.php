@@ -1,6 +1,3 @@
-<?php
-include '../connect.php';
-?>
 <html>
 <head>
     <title>Checkout</title>
@@ -106,75 +103,227 @@ include '../connect.php';
 <body onLoad="document.getElementById('country').focus();">
 <form action="savesales.php" method="post">
     <div id="ac">
-        <center><h4><i class="icon icon-money icon-large"></i> Cash</h4></center>
+        <center><h4><i class="icon icon-money icon-large"></i> Collection</h4></center>
         <hr>
         <input type="hidden" name="date" value="<?php echo date("m/d/y"); ?>"/>
         <input type="hidden" name="invoice" value="<?php echo $_GET['invoice']; ?>"/>
         <input type="hidden" name="amount" value="<?php echo $_GET['total']; ?>"/>
+        <input type="hidden" name="ptype" value="<?php echo $_GET['pt']; ?>"/>
         <input type="hidden" name="cashier" value="<?php echo $_GET['cashier']; ?>"/>
         <input type="hidden" name="profit" value="<?php echo $_GET['totalprof']; ?>"/>
         <input type="hidden" name="savingflight" value="<?php echo @$_GET['savingflight']; ?>"/>
         <input type="hidden" name="customerId" value="<?php echo @$_GET['customerId']; ?>"/>
-        <input type="hidden" name="partnerId" value="<?php echo @$_GET['partnerId']; ?>"/>
 
-        <div style="text-align: center;">
+        <center>
 
+<?php
+        include('../connect.php');
+    
+        $result = $db->prepare("SELECT * FROM customer WHERE customer_id = :customer_id");
+        $result->execute(array('customer_id'=>$_GET['customerId']));
+        $row = $result->fetch();
+
+        echo '<input type="hidden" name="credit_time" id="credit_time" value="'.$row['credit_time'].'" />';
+        echo '<input type="hidden" name="credit_cash" id="credit_cash" value="'.$row['credit_cash'].'" />';
+?>
             <?php
-            if($_GET['partnerId'] > 0) {
-                $query = $db->prepare('SELECT * FROM partners WHERE partner_id=?');
-                $query->execute(array($_GET['partnerId']));
-                $row = $query->fetch();
-                $discount = (int)$row['discount'];
-            }
-            ?>
-
-            <select name="mode_of_payment" id="mode_of_payment" <?=isset($discount)?'disabled':''?>
-                    style="width: 268px; height:30px;  margin-bottom: 15px;" required>
-                <option value="-1">-- Mode of Payment--</option>
-                <option value="Cash">Cash</option>
-                <option value="Card">Card</option>
-                <option value="Account" <?=isset($discount)?'selected':''?> >Account</option>
-            </select>
-
-            <br/>
-            <span style="vertical-align: middle; width: auto; padding-right:0">AED</span>
-            <input type="text" name="cash" placeholder="Cash"
-                   style="width: 225px; height:30px;  margin-bottom: 15px;" value="<?=$_GET['total']?>" required/>
-
-            <?php
-            if(isset($_GET['savingflight']) && $_GET['savingflight'] == 1) {
-                if($_GET['partnerId'] > 0) {
-                    $query = $db->prepare('SELECT * FROM partners WHERE partner_id=?');
-                    $query->execute(array($_GET['partnerId']));
-                    $row = $query->fetch();
-                    $discount = (int)$row['discount'];
-
-                    $days     = (int)$row['payment_term'];
-                    $due_date = date('Y-m-d', strtotime(date('Y-m-d') . ' +30 day'));
-                }
-                ?>
-                <input type="number" name="discount" placeholder="Discount %" style="width: 268px; height:30px;  margin-bottom: 15px;" required value="<?=$discount?>"  />
+            $asas = $_GET['pt'];
+            if ($asas == 'credit') {
+                ?>Due Date: <input type="date" name="due" placeholder="Due Date"
+                                   style="width: 268px; height:30px; margin-bottom: 15px;"/><br>
                 <?php
-
-                if($due_date != '') {
-                    echo sprintf('<span style="width:auto;">Due Date: %s</span>
-                        <input type="hidden" name="due_date" value="%s" />
-                        <input type="hidden" name="ptype" value="account" /> ', $due_date, $due_date);
-                } else {
-                    echo sprintf('<input type="hidden" name="ptype" value="%s" /> ', $_GET['pt']);
-                }
-            } else {
-                echo sprintf('<input type="hidden" name="ptype" value="%s" /> ', $_GET['pt']);
             }
+            if ($asas == 'cash') {
+                ?>
+
+                <span style="vertical-align: middle; width: auto; padding-right:0">AED</span>
+                <input type="number" name="total_cash" id = "total_cash" placeholder="Cash"
+                       style="width: 225px; height:30px;  margin-bottom: 15px;" value="<?=$_GET['total']?>" readonly/>
+
+                <br>
+
+<!-- for discounted Value Start-->
+
+<!--                 <?php
+                //if(isset($_GET['savingflight']) && $_GET['savingflight'] == 1) {
+                    ?>
+ -->                    <input type="number" name="discount" placeholder="Discount %" step="any" style="width: 268px; height:30px;  margin-bottom: 15px;" value="" onkeyup="myDiscountedInputFunction(this);" required />
+                   <!--  <?php
+                }
+                ?> -->
+
+                <br/>
+                <span style="vertical-align: middle; width: auto; padding-right:0">AED</span>
+                <input type="text" name="discountedValue" placeholder="Discounted Value" id="discountedValue" 
+                       style="width: 225px; height:30px;  margin-bottom: 15px;" step="any" readonly/>
+
+                <br>
+
+                <!-- for discounted Value End -->
+
+                <select name="mode_of_payment" id="mode_of_payment"
+                        style="width: 268px; height:30px;  margin-bottom: 15px;" onchange="callJavaScriptOnFirstMenu(this);" required>
+                    <option value="-1">-- Mode of Payment--</option>
+                    <option value="Cash">Cash</option>
+                    <option value="Card">Card</option>
+                    <option value="Account">Account</option>
+                    <option value="Online">Online</option>
+                    <option value="credit_cash">Credit Cash</option>
+                    <option value="credit_time">Credit Time</option>
+                      
+                </select>
+
+                <br/>
+                <span style="vertical-align: middle; width: auto; padding-right:0">AED</span>
+                <input type="number" name="cash" placeholder="Cash" id="cash"
+                       style="width: 225px; height:30px;  margin-bottom: 15px;" value="" onkeyup="myFirstInputFunction(this);" step="any" required/>
+
+                <br>
+
+                <select name="mode_of_payment_1" id="mode_of_payment_1"
+                        style="width: 268px; height:30px;  margin-bottom: 15px;" onchange="callJavaScriptOnSecondMenu(this);" step="any" required>
+                    <option value="-1">-- Mode of Payment--</option>
+                    <option value="Cash">Cash</option>
+                    <option value="Card">Card</option>
+                    <option value="Account">Account</option>
+                    <option value="Online">Online</option>                      
+                </select>
+
+                <br>
+
+                <span style="vertical-align: middle; width: auto; padding-right:0">AED</span>
+                <input type="number" name="remaining_cash" id="remaining_cash" placeholder="Cash"
+                       style="width: 225px; height:30px;  margin-bottom: 15px;" value="" onkeydown="mySecondInputFunction(this);" step="any" readonly/>
+
+                
+
+
+                <?php
+            
             ?>
-
-            <br>
-
-            <button class="btn btn-success btn-block btn-large"><i
+            <button class="btn btn-success btn-block btn-large" style="width:267px;" id="saveButton" disabled><i
                     class="icon icon-save icon-large"></i> Save
             </button>
-        </div>
+        </center>
     </div>
 </form>
+
+<script type="text/javascript">
+
+    function callJavaScriptOnFirstMenu(selectedValue) {
+        var credit_time = document.getElementById('credit_time').value;
+        var credit_cash = document.getElementById('credit_cash').value;
+        var inputValue = $(selectedValue).val();
+
+        console.log(credit_cash);
+
+        if (inputValue == 'Cash') {
+
+        }
+        else if  (inputValue == 'Card') {
+
+        }
+        
+        else if  (inputValue == 'Account') {
+
+        }
+
+        else if  (inputValue == 'Online') {
+
+        }
+
+        else if  (inputValue == 'credit_cash') {
+            document.getElementById("cash").value = credit_cash;
+            myFirstInputFunction(document.getElementById("cash"));
+        }
+
+        else if  (inputValue == 'credit_time') {
+
+        }
+
+        else {
+
+        }
+
+    }
+
+</script>
+
+<script type="text/javascript">
+
+    function callJavaScriptOnSecondMenu(selectedValue) {
+        var credit_time = document.getElementById('credit_time').value;
+        var credit_cash = document.getElementById('credit_cash').value;
+        var inputValue = $(selectedValue).val();
+
+        var remainingValue = document.getElementById("remaining_cash").value;
+        
+        if (inputValue == 'Cash' || inputValue == 'Card' 
+            || inputValue == 'Account' || inputValue == 'Online' 
+            || inputValue == 'credit_cash' || inputValue == 'credit_time') {
+
+            if (remainingValue > 0) {
+                var btn = document.getElementById("saveButton");
+                btn.disabled = false;
+            }
+        }
+        else {
+            if (remainingValue > 0) {
+                var btn = document.getElementById("saveButton");
+                btn.disabled = true;
+            }
+        }
+
+    }
+
+</script>
+
+<script type="text/javascript">
+    function myFirstInputFunction(value) {
+        console.log(value.value);
+
+        var paidValue = value.value;
+        var discountedValue = document.getElementById("discountedValue").value;
+        var remainingValue = discountedValue - paidValue;
+        document.getElementById("remaining_cash").value = remainingValue;
+
+        if (remainingValue == 0) {
+            var btn = document.getElementById("saveButton");
+            btn.disabled = false;
+        }
+        else {
+            var btn = document.getElementById("saveButton");
+            btn.disabled = true;
+        }
+    }
+
+</script>
+
+<script type="text/javascript">
+    function mySecondInputFunction(value) {
+        console.log(value.value);
+       // remaining_cash
+    }
+
+</script>
+
+
+<!-- start here -->
+
+<script type="text/javascript">
+    
+    function myDiscountedInputFunction(selectedValue) {
+        var inputValue = $(selectedValue).val();
+        var totalCash = document.getElementById("total_cash").value;
+        var percentageValue = totalCash * (inputValue / 100);
+        var afterPerValue = totalCash - percentageValue;
+
+        document.getElementById("discountedValue").value = afterPerValue;
+    }
+
+</script>
+
+<!-- End here -->
+
 </body>
 </html>

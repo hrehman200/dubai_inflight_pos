@@ -167,13 +167,17 @@ $finalcode = 'RS-' . createRandomPassword();
                 <table class="table table-bordered" id="resultTable" data-responsive="table" style="text-align: left;">
                     <thead>
                     <tr>
+                        <th width="16%"> Invoice Number</th>
                         <th width="13%"> Transaction ID</th>
                         <th width="13%"> Transaction Date</th>
+                        <th width="13%"> Mode of Payment 1</th>
+                        <th width="13%"> Amount 1</th>
+                        <th width="13%"> Mode of Payment 2</th>
+                        <th width="13%"> Amount 2</th>
                         <th width="20%"> Customer Name</th>
                         <th width="20%"> Sale Type</th>
-                        <th width="16%"> Invoice Number</th>
                         <th width="18%"> Amount</th>
-                        <th width="13%"> Profit</th>
+                        <!--<th width="13%"> Profit</th>-->
                     </tr>
                     </thead>
                     <tbody>
@@ -195,20 +199,33 @@ $finalcode = 'RS-' . createRandomPassword();
                         $current_cost = $row['amount'];
                         // for flight_service we added a discount
                         if($row['sale_type'] == 'Service') {
-                            $discount = floor($current_cost*$row['discount']/100);
+                            $discount = floor($current_cost*$row['discount']/100.00);
                             $current_cost -= $discount;
+                            $invoiceHref = 'flight_preview.php?invoice='.$row['invoice_number'].'&sale_type='.$row['sale_type'];
                         }
+                        else {
+                            $invoiceHref = 'preview.php?invoice='.$row['invoice_number'].'&sale_type='.$row['sale_type'].'&payfirst=&paysecond=&d1='.$d1.'&d2='.$d2;
+                         }
                         $total_sale += $current_cost;
                         $total_profit += $row['profit'];
+
+                        //$invoiceHref = 'flight_preview.php?invoice='.$row['invoice_number'].'&sale_type='.$row['sale_type'];
+
                         ?>
                         <tr class="record">
+                            <td> <a href='<?php echo $invoiceHref?>'> <?php echo $row['invoice_number']; ?></td>
                             <td>STI-00<?php echo $row['transaction_id']; ?></td>
                             <td><?php echo $row['date']; ?></td>
+                            <td><?php echo $row['mode_of_payment']; ?></td>
+                            <td><?php echo $row['mop_amount']; ?></td>
+
+                            <td><?php echo $row['mode_of_payment_1']; ?></td>
+                            <td><?php echo $row['mop1_amount']; ?></td>
+
                             <td><?php echo ($row['customer_name']) ? $row['customer_name'] : $row['name']; ?></td>
                             <td><?= $row['sale_type'] ?></td>
-                            <td><?php echo $row['invoice_number']; ?></td>
                             <td><?=number_format($current_cost)?></td>
-                            <td><?=number_format($row['profilt'])?></td>
+                            <!--<td><?=number_format($row['profilt'])?></td>-->
                         </tr>
                         <?php
                     }
@@ -217,9 +234,9 @@ $finalcode = 'RS-' . createRandomPassword();
                     </tbody>
                     <thead>
                     <tr>
-                        <th colspan="5" style="border-top:1px solid #999999"> Total:</th>
-                        <th colspan="1" style="border-top:1px solid #999999"><?=number_format($total_sale)?></th>
-                        <th colspan="1" style="border-top:1px solid #999999"><?=number_format($total_profit)?></th>
+                        <th colspan="6" style="border-top:1px solid #999999"> Total:</th>
+                       <th colspan="1" style="border-top:1px solid #999999"><?=number_format($total_sale)?></th>
+                        <!--<th colspan="1" style="border-top:1px solid #999999"><?=number_format($total_profit)?></th>-->
                     </tr>
                     </thead>
                 </table>

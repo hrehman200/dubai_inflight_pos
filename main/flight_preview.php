@@ -2,6 +2,9 @@
 include('../connect.php');
 
 $invoice=$_GET['invoice'];
+$firstPaymentOption = $_GET['payfirst'];
+$secondPaymentOption = $_GET['paysecond'];
+
 ?>
 
 <!DOCTYPE html>
@@ -43,9 +46,14 @@ $invoice=$_GET['invoice'];
         }
     </script>
     <?php
+    $modeOfPayment = "";
+
     $result = $db->prepare("SELECT * FROM sales WHERE invoice_number= :userid");
     $result->bindParam(':userid', $invoice);
     $result->execute();
+
+//print($result);
+
     $discount = 0;
     for($i=0; $row = $result->fetch(); $i++){
         $cname=$row['name'];
@@ -61,7 +69,15 @@ $invoice=$_GET['invoice'];
         if($pt=='cash'){
             $cash_return= $cash - $price;
         }
+
+       $modeOfPayment = $row['mode_of_payment'];
+       $modeOfPayment1 = $row['mode_of_payment_1'];
+
+       $firstPaymentOption = $row['mop_amount'];
+$secondPaymentOption = $row['mop1_amount'];
+
     }
+
     ?>
     <?php
     function createRandomPassword() {
@@ -169,7 +185,7 @@ $invoice=$_GET['invoice'];
                         <div style="width: 900px; float: left;">
                             <center><div style="font:bold 25px 'Aleo';">Sales Receipt</div>
                                 Inflight Dubai	<br>
-                                Vertical Indoor Windtunnel	<br>	<br>
+                                Indoor SkyDiving	<br>	<br>
                             </center>
                             <div>
                                 <?php
@@ -215,17 +231,12 @@ $invoice=$_GET['invoice'];
                             <?php
                             $invoice_id=$_GET['invoice'];
 
-                            $result = $db->prepare("SELECT fp.id AS flight_purchase_id, fp.deduct_from_balance, fo.code, fpkg.package_name, fo.offer_name, fo.price, fo.duration, s.mode_of_payment, s.due_date
-                                      FROM flight_purchases fp
+                            $result = $db->prepare("SELECT fp.id AS flight_purchase_id, fp.deduct_from_balance, fo.code, fpkg.package_name, fo.offer_name, fo.price, fo.duration FROM flight_purchases fp
                                       LEFT JOIN flight_offers fo ON fp.flight_offer_id = fo.id
                                       LEFT JOIN flight_packages fpkg ON fo.package_id = fpkg.id
-                                      INNER JOIN sales s ON fp.invoice_id = s.invoice_number
                                       WHERE fp.invoice_id= :invoiceId");
                             $result->bindParam(':invoiceId', $invoice_id);
                             $result->execute();
-
-                            $mode_of_payment = '';
-                            $due_date = '';
 
                             $total_cost = 0;
                             $total_duration = 0;
@@ -234,8 +245,6 @@ $invoice=$_GET['invoice'];
                                     $total_cost += $row['price'];
                                     $total_duration += $row['duration'];
                                 }
-                                $mode_of_payment = $row['mode_of_payment'];
-                                $due_date = $row['due_date'];
                                 ?>
                                 <tr class="record">
                                     <td><?php echo $row['code']; ?></td>
@@ -286,43 +295,55 @@ $invoice=$_GET['invoice'];
                                 <td colspan="2"></td>
                             </tr>
                             <tr>
-                                <td colspan="3" style="text-align: right;">Cash Collected:</td>
+                                <td colspan="3" style="text-align: right;"><?php 
+                                    echo $modeOfPayment;
+                                ?></td>
                                 <td><?php
+                                    echo $firstPaymentOption;
+                                ?></td>
+                                <td colspan="2"></td>
+                            </tr>
+                            <tr>
+                            <td colspan="3" style="text-align: right;"><?php
+                                echo $modeOfPayment1;
+                                ?></td>
+                                <td><?php
+                                echo $secondPaymentOption;
+                                ?></td>
+                                <td colspan="2"> </td>
+                            </tr>
 
-                                    if($mode_of_payment == 'account') {
-                                        echo '0';
+                         <!--    <tr>
+                                <td colspan="3" style="text-align: right;">Mode of Payment:</td>
+                                <td><?php
+                                    echo $modeOfPayment;
+                                ?></td>
+                                <td colspan="2"><?php echo $firstPaymentOption; ?> </td>
+                            </tr>
+                            <tr>
+                                <td colspan="3" style="text-align: right;">Mode of Payment:</td>
+                                <td><?php
+                                        echo $modeOfPayment1;
+                                ?></td>
+                                <td colspan="2"><?php  echo $secondPaymentOption; ?> </td>
+                            </tr> -->
 
-                                    } else {
-
-                                        $sales_query = $db->prepare("SELECT amount, due_date from sales WHERE invoice_number= :invoiceId");
-                                        $sales_query->bindParam(':invoiceId', $invoice_id);
-                                        $sales_query->execute();
-                                        $sales_row = $sales_query->fetch();
-                                        echo number_format((int)$sales_row['balance']);
-                                    }
+<!--                             <tr>
+                                <td colspan="3" style="text-align: right;">Mode of Payment:</td>
+                                <td><?php
+                                    $sales_query = $db->prepare("SELECT amount, due_date from sales WHERE invoice_number= :invoiceId");
+                                    $sales_query->bindParam(':invoiceId', $invoice_id);
+                                    $sales_query->execute();
+                                    $sales_row = $sales_query->fetch();
+                                  //  echo number_format($sales_row['due_date']);
                                     ?></td>
                                 <td colspan="2"></td>
                             </tr>
-
-                            <?php
-                            if($mode_of_payment == 'account') {
-                                ?>
-                                <tr>
-                                    <td colspan="3" style="text-align: right;">Due Date:</td>
-                                    <td><?=$due_date?></td>
-                                    <td colspan="2"></td>
-                                </tr>
-                                <?php
-                            } else {
-                                ?>
-                                <tr>
-                                    <td colspan="3" style="text-align: right;">Change:</td>
-                                    <td><?php echo number_format($sales_row['amount'] - $sales_row['balance']); ?></td>
-                                    <td colspan="2"></td>
-                                </tr>
-                                <?php
-                            }
-                            ?>
+ -->                            <tr>
+                                <td colspan="3" style="text-align: right;">Change:</td>
+                                <td><?php echo number_format($sales_row['amount'] - $sales_row['due_date']); ?></td>
+                                <td colspan="2"></td>
+                            </tr>
 
                             </tbody>
                         </table>

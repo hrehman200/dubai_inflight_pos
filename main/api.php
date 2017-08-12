@@ -181,22 +181,19 @@ function getDetailsForNewBookingModal() {
         ':customerId'    => $post['customerId'],
         ':flightOfferId' => $post['flightOfferId']
     ));
-    $row = $query->fetch();
-    $balance = $row['balance'];
 
-    // get customer credit
-    $query = $db->prepare("SELECT credit_time FROM customer
-                           WHERE customer_id = :customerId");
-    $query->execute(array(
-        ':customerId'    => $post['customerId']
-    ));
     $row = $query->fetch();
-    $customer_credit = $row['credit_time'];
+
+
+    // get balance only from paid invoices
+    $result = $db->prepare("SELECT * FROM customer WHERE customer_id = :customer_id");
+    $result->execute(array('customer_id'=>$post['customerId']));
+    $row12 = $result->fetch();
 
     $data = array(
         'unbooked_duration' => (int)$unbooked_duration,
-        'balance'           => (int)$balance,
-        'credit'            => (int)$customer_credit
+        'balance'           => (int)$row['balance'],
+        'credit_time'       => (int)$row12['credit_time'],
     );
 
     echo json_encode(array(
@@ -211,11 +208,31 @@ function getCustomerBookings() {
 
     $post = $_POST;
 
-    $query = $db->prepare("SELECT fo.offer_name, DATE_FORMAT(fp.created, '%D %M %Y') AS created, fo.duration, fc.flight_purchase_id, fc.minutes
-        FROM flight_credits fc
-        INNER JOIN flight_purchases fp ON fc.flight_purchase_id = fp.id
-        INNER JOIN flight_offers fo ON fp.flight_offer_id = fo.id
-        WHERE fp.customer_id = :customerId AND fc.minutes > 0 AND fp.status = 1");
+    // original Query
+
+    // $query = $db->prepare("SELECT fo.offer_name, DATE_FORMAT(fp.created, '%D %M %Y') AS created, fo.duration, fc.flight_purchase_id, fc.minutes
+    //     FROM flight_credits fc
+    //     INNER JOIN flight_purchases fp ON fc.flight_purchase_id = fp.id
+    //     INNER JOIN flight_offers fo ON fp.flight_offer_id = fo.id
+    //     WHERE fp.customer_id = :customerId AND fc.minutes > 0 AND fp.status = 1");
+
+    // new query
+   $query = $db->prepare(" SELECT fo.offer_name, DATE_FORMAT(fp.created, '%D %M %Y') 
+                           AS created, fo.duration, fc.flight_purchase_id, fc.minutes, customer.credit_time, fo.id
+                           FROM flight_credits fc 
+                           INNER JOIN flight_purchases fp ON fc.flight_purchase_id = fp.id 
+                           INNER JOIN flight_offers fo ON fp.flight_offer_id = fo.id 
+                           INNER JOIN customer ON customer.customer_id = fp.customer_id 
+                           WHERE fp.customer_id =:customerId AND fc.minutes > 0 AND fp.status = 1");
+
+   // $query = $db->prepare("SELECT fp.id AS flight_purchase_id, fp.deduct_from_balance, fo.code, fpkg.package_name, fo.offer_name, fo.price, fo.duration, c.customer_name, DATE_FORMAT(fp.created,'%b %d, %Y') AS created
+   //                            FROM flight_purchases fp
+   //                            LEFT JOIN flight_offers fo ON fp.flight_offer_id = fo.id
+   //                            LEFT JOIN flight_packages fpkg ON fo.package_id = fpkg.id
+   //                            LEFT JOIN flight_bookings fb ON fb.flight_purchase_id = fp.id
+   //                            INNER JOIN customer c ON fp.customer_id = c.customer_id
+   //                            INNER JOIN flight_credits ON flight_credits.flight_purchase_id = fb.flight_purchase_id
+   //                            WHERE fp.customer_id =:customerId AND flight_credits.minutes > 0 AND fp.status = 1");
 
     $query->execute(array(
         ':customerId' => $post['customerId']
@@ -227,17 +244,19 @@ function getCustomerBookings() {
             <td>Purchaed  Date</td>
             <td>Minutes</td>
             <td>Remaining</td>
+            <td>Credit Time</td>
         </tr>';
 
     if ($query->rowCount() > 0) {
         while ($row = $query->fetch()) {
             $table .= sprintf('
             <tr>
-                <td>%s</td>
+               <td><a href="#" onclick="deductFromBalance(\''.$row['duration'].'\', \''.$row['minutes'].'\', \''.$row['id'].'\');">%s</a></td>
                 <td>%s</td>
                 <td>%d</td>
                 <td>%d</td>
-            </tr>', $row['offer_name'], $row['created'], $row['duration'], $row['minutes']);
+                <td>%d</td>
+            </tr>', $row['offer_name'], $row['created'], $row['duration'], $row['minutes'], $row['credit_time']);
         }
     } else {
         $table .= '<tr><td colspan="4">No previous bookings with pending balance found</td></tr>';

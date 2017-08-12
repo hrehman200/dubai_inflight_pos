@@ -169,8 +169,9 @@ $position = $_SESSION['SESS_LAST_NAME'];
                 <input type="hidden" name="customerId" id="customerId" value="<?=$_GET['customer_id']?>" />
                 <input type="hidden" name="flightPurchaseId" id="flightPurchaseId" value="" />
                 <input type="hidden" name="useBalance" id="useBalance" value="0" />
-                <input type="hidden" name="useCredit" id="useCredit" value="0" />
 
+                <input type="hidden" name="creditDuration" id="creditDuration" value="" />
+                <input type="hidden" name="useCredit" id="useCredit" value="0" />
 
                 <?php
                 $result = $db->prepare("SELECT * FROM flight_packages WHERE id = :package_id");
@@ -196,7 +197,7 @@ $position = $_SESSION['SESS_LAST_NAME'];
                 <input type="hidden" name="date" value="<?php echo date("m/d/y"); ?>"/>
 
                 <br/>
-                <input type="text" class="form-contorl span3" placeholder="Search Customers" id="customer" name="customer" autocomplete="off" />
+                <input type="text" class="form-contorl span6" placeholder="Search Customers" id="customer" name="customer" autocomplete="off" />
 
                 <button class="btn btn-info" style="margin-bottom: 9px;" id="btnFlightHistory">
                     Flight History
@@ -205,24 +206,6 @@ $position = $_SESSION['SESS_LAST_NAME'];
                 <button id="btnAddCustomer" data-href="user_login.php" class="btn btn-secondary" style="margin-bottom:9px;">
                     Add Customer
                 </button>
-
-                <br/>
-                <input type="checkbox" id="chkIsPartner" name="chkIsPartner" value="1" <?=($_GET['partnerId']>0)?'checked="checked':''?> />
-                <label style="display: inline;" for="partnerId">Partner</label>
-                <select class="span3" name="partnerId" id="partnerId" style="display: none;">
-                    <option value="0">- Select Partner -</option>
-                    <?php
-                    $result = $db->prepare("SELECT * FROM partners ORDER BY partner_name ASC");
-                    $result->execute();
-                    for ($i = 0; $row = $result->fetch(); $i++) {
-                        ?>
-                        <option value="<?php echo $row['partner_id']; ?>" <?php echo $_GET['partnerId']==$row['partner_id'] ? 'selected' : ''?> >
-                            <?php echo $row['partner_name']; ?>
-                        </option>
-                        <?php
-                    }
-                    ?>
-                </select>
 
                 <div class="row">
                     <div class="span3" style="margin-left:25px;">
@@ -234,15 +217,15 @@ $position = $_SESSION['SESS_LAST_NAME'];
                         <label style="display: inline;" for="chkOnlySlotsWithDuration">Show slots that have <b><span id="spMinutes"></span> minutes</b> available</label>
                         <br/>
 
-                        <input type="checkbox" id="chkOnlyOfficeTimeSlots" name="chkOnlyOfficeTimeSlots" value="1" checked />
-                        <label style="display: inline;" for="chkOnlyOfficeTimeSlots">Show office time slots only</label>
+                      <input type="checkbox" id="chkOnlyOfficeTimeSlots" name="chkOnlyOfficeTimeSlots" value="1" unchecked style='display : none;'/>
+                        <label style="display: none;" for="chkOnlyOfficeTimeSlots">Show office time slots only</label>
                         <br/><br/>
 
                         <div id="timeslots">
                         </div>
                     </div>
 
-                    <h4>Customer's previous bookings with pending balance</h4>
+                    <h4>Customer's booking preview/balance</h4>
                     <div class="span3" id="divCustomerDetails">
                     </div>
                 </div>
@@ -328,7 +311,7 @@ $position = $_SESSION['SESS_LAST_NAME'];
             </table>
             <!--<button class="btn btn-mini btn-warning"><i class="icon icon-remove"></i> Cancel</button>-->
             <br>
-            <a rel="facebox" id="btnProceed"
+            <a rel="facebox"
                href="checkout.php?pt=cash&
                invoice=<?php echo $_GET['invoice'] ?>&
                total=<?php echo $total_cost ?>&
@@ -366,47 +349,12 @@ $position = $_SESSION['SESS_LAST_NAME'];
 
 <script type="text/javascript">
 
-    var _updateURLParameter = function(url, param, paramVal){
-        var newAdditionalURL = "";
-        var tempArray = url.split("?");
-        var baseURL = tempArray[0];
-        var additionalURL = tempArray[1];
-        var temp = "";
-        if (additionalURL) {
-            tempArray = additionalURL.split("&");
-            for (var i=0; i<tempArray.length; i++){
-                if(tempArray[i].split('=')[0] != param){
-                    newAdditionalURL += temp + tempArray[i];
-                    temp = "&";
-                }
-            }
-        }
-
-        var rows_txt = temp + "" + param + "=" + paramVal;
-        return baseURL + "?" + newAdditionalURL + rows_txt;
-    };
-
     $('#flightOffer').on('change', function(e){
         var minutes = $(this).find('option:selected').data('duration');
         if(minutes > 30) {
             minutes = 30;
         }
         $('#spMinutes').html(minutes);
-    }).trigger('change');
-
-    $('#chkIsPartner').on('change', function(e) {
-        if($(this).is(':checked')) {
-            $('#partnerId').show();
-        } else {
-            $('#partnerId').hide();
-        }
-    }).trigger('change');
-
-    $('#partnerId').on('change', function(e){
-        var partnerId = $(this).val();
-        var href = $('#btnProceed').attr('href');
-        href = _updateURLParameter(href, 'partnerId', partnerId);
-        $('#btnProceed').attr('href', href);
     }).trigger('change');
 
     $('#chkOnlySlotsWithDuration, #chkOnlyOfficeTimeSlots').on('change', function(e) {
@@ -498,7 +446,7 @@ $position = $_SESSION['SESS_LAST_NAME'];
 
     $("#datePicker").datepicker({
         format: 'yyyy-mm-dd',
-        startDate: new Date()
+        // startDate: new Date()
     }).on('changeDate', function(e) {
         var pickedDate = $("#datePicker").data('datepicker').getFormattedDate('yyyy-mm-dd');
         $('#flightDate').val(pickedDate);
@@ -623,17 +571,18 @@ $position = $_SESSION['SESS_LAST_NAME'];
                 success: function (response) {
                     if (response.success == 1) {
                         var data = response.data;
-                        _showSelectMinutesDialog(duration, data.unbooked_duration, data.balance, data.credit);
+                        _showSelectMinutesDialog(duration, data.unbooked_duration, data.balance, data.credit_time);
                     }
                 }
             });
         }
     };
 
-    var _showSelectMinutesDialog = function(duration, unbookedDuration, balance, credit) {
+    var _showSelectMinutesDialog = function(duration, unbookedDuration, balance, credit_time) {
 
         unbookedDuration = unbookedDuration < 0 ? 0 : unbookedDuration;
         balance = balance < 0 ? 0 : balance;
+        credit_time = credit_time < 0 ? 0 : credit_time;
 
         var dialog = bootbox.dialog({
             title: 'Enter minutes to fly',
@@ -674,37 +623,41 @@ $position = $_SESSION['SESS_LAST_NAME'];
                         }
                     }
                 },
+                // btn3: {
+                //     label: 'Deduct from balance ('+balance+')',
+                //     className: 'btn',
+                //     callback: function (result) {
+                //         var minutes = $('#txtMinutes').val();
+                //         if(minutes !== null) {
+                //             if (minutes <= balance) {
+                //                 $('#useBalance').val(1);
+                //                 $('#useCredit').val(0);
+                //                 $('#flightPurchaseId').val('');
+                //                 $('#flightDuration').val(minutes);
+                //                 $('#formFlightTime').submit();
+                //             } else {
+                //                 alert('Balance does not have' + minutes + ' minutes.');
+                //                 return false;
+                //             }
+                //         }
+                //     }
+                // },
                 btn3: {
-                    label: 'Deduct from balance ('+balance+')',
+                    label: 'Deduct from Credit Time ('+credit_time+')',
                     className: 'btn',
                     callback: function (result) {
                         var minutes = $('#txtMinutes').val();
                         if(minutes !== null) {
-                            if (minutes <= balance) {
-                                $('#useBalance').val(1);
-                                $('#flightPurchaseId').val('');
-                                $('#flightDuration').val(minutes);
-                                $('#formFlightTime').submit();
+                            if (minutes <= credit_time) {
+                                    $('#useBalance').val(0);
+                                    $('#useCredit').val(1);
+                                    $('#flightPurchaseId').val('');
+                                    $('#flightDuration').val(minutes);
+                                    $('#creditDuration').val(credit_time);
+                                    $('#formFlightTime').submit();
+
                             } else {
-                                alert('Balance does not have' + minutes + ' minutes.');
-                                return false;
-                            }
-                        }
-                    }
-                },
-                btn4: {
-                    label: 'Deduct from credit ('+credit+')',
-                    className: 'btn',
-                    callback: function (result) {
-                        var minutes = $('#txtMinutes').val();
-                        if(minutes !== null) {
-                            if (minutes <= credit) {
-                                $('#useCredit').val(1);
-                                $('#flightPurchaseId').val('');
-                                $('#flightDuration').val(minutes);
-                                $('#formFlightTime').submit();
-                            } else {
-                                alert('Credit does not have' + minutes + ' minutes.');
+                                alert('Credit Balance does not have' + minutes + ' minutes.');
                                 return false;
                             }
                         }
@@ -712,9 +665,79 @@ $position = $_SESSION['SESS_LAST_NAME'];
                 }
             }
         });
-    };
+    }
 
+</script>
 
+<script type="text/javascript">
+    function deductFromBalance(duration, balance, flightofferID) {
+        var dialog = bootbox.dialog({
+            title: 'Enter minutes to fly',
+            message: '<div> \
+                <input type="text" id="txtMinutes" /> \
+                \
+                <input type="datetime-local" id="bookingTime" value="" /> \
+            </div>',
+            buttons: {
+                btn1: {
+                    label: 'Deduct from balance ('+balance+')',
+                    className: 'btn-success',
+                    callback: function (result) {
+                        var minutes = $('#txtMinutes').val();
+                        var selectedDateTime = $('#bookingTime').val();
+                        var d = new Date(selectedDateTime);
+                       // var selectedTime = toDateTime(d);
+
+                      //  alert('Balance does not have' + toDateTime(d) );
+
+                        if(minutes !== null) {
+                            if (minutes <= balance) {
+                                $('#flightDate').val(toGetDate(d));
+                                $('#flightTime').val(toGetTime(d));
+                                $('#useBalance').val(1);
+                                $('#flightPurchaseId').val('');
+                                $('#flightDuration').val(minutes);
+                                $('#flightOffer').val(flightofferID);
+                                $('#formFlightTime').submit();
+                            } else {
+                                alert('Balance does not have' + minutes + ' minutes.');
+                                return false;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+function toGetDate(date) {
+    var str = '';
+    var year, month, day, hour, min;
+    year = date.getUTCFullYear();
+    month = date.getUTCMonth() + 1;
+    month = month < 10 ? '0' + month : month;
+    day = date.getUTCDate();
+    day = day < 10 ? '0' + day : day;
+    hour = date.getUTCHours();
+    hour = hour < 10 ? '0' + hour : hour;
+    min = date.getUTCMinutes();
+    min = min < 10 ? '0' + min : min;
+    
+    str += year + '-' + month + '-' + day;
+    return str;
+}
+
+function toGetTime(date) {
+    var str = '';
+    var hour, min;
+    hour = date.getHours();
+    hour = hour < 10 ? '0' + hour : hour;
+    min = date.getMinutes();
+    min = min < 10 ? '0' + min : min;
+    
+    str += ' ' + hour + ':' + min;
+    return str;
+}
 
 </script>
 

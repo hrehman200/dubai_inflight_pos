@@ -37,7 +37,15 @@ function Clickheretoprint()
 }
 </script>
 <?php
+
 $invoice=$_GET['invoice'];
+$sale_type=$_GET['sale_type'];
+
+//&payfirst=$cash&paysecond=$remaining_cash
+
+$firstPaymentOption = $_GET['payfirst'];
+$secondPaymentOption = $_GET['paysecond'];
+
 include('../connect.php');
 $result = $db->prepare("SELECT * FROM sales WHERE invoice_number= :userid");
 $result->bindParam(':userid', $invoice);
@@ -55,6 +63,16 @@ if($pt=='cash'){
 $cash=$row['due_date'];
 $amount=$cash-$am;
 }
+
+$modeOfPayment = $row['mode_of_payment'];
+$modeOfPayment1 = $row['mode_of_payment_1'];
+
+$firstPaymentOption = $row['mop_amount'];
+$secondPaymentOption = $row['mop1_amount'];
+
+
+//echo  $modeOfPayment;
+//exit();
 }
 ?>
 <?php
@@ -117,34 +135,46 @@ window.onload=startclock;
 
 <?php include('navfixed.php');?>
 	
-	<div class="container-fluid">
-      <div class="row-fluid">
-	<div class="span2">
-             <div class="well sidebar-nav">
-                 <ul class="nav nav-list">
-              <li><a href="index.php"><i class="icon-dashboard icon-2x"></i> Dashboard </a></li> 
-			<li class="active"><a href="sales.php?id=cash&invoice"><i class="icon-shopping-cart icon-2x"></i> Sales</a>  </li>             
-			<li><a href="products.php"><i class="icon-list-alt icon-2x"></i> Products</a>                                     </li>
-			<li><a href="customer.php"><i class="icon-group icon-2x"></i> Customers</a>                                    </li>
-			<li><a href="supplier.php"><i class="icon-group icon-2x"></i> Suppliers</a>                                    </li>
-			<li><a href="salesreport.php?d1=0&d2=0"><i class="icon-bar-chart icon-2x"></i> Sales Report</a>                </li>
-			<li><a href="sales_inventory.php"><i class="icon-table icon-2x"></i> Product Inventory</a>                </li>
-				<br><br><br><br><br><br>		
-			<li>
-			 <div class="hero-unit-clock">
-		
-			<form name="clock">
-			<font color="white">Time: <br></font>&nbsp;<input style="width:150px;" type="submit" class="trans" name="face" value="">
-			</form>
-			  </div>
-			</li>
-				
-				</ul>           
-          </div><!--/.well -->
+<div class="container-fluid">
+    <div class="row-fluid">
+        <div class="span2">
+            <div class="well sidebar-nav">
+                <ul class="nav nav-list">
+
+                    <?php
+                    include "side-menu.php";
+                    ?>
+                    <br><br><br>
+                    <li>
+                        <div class="hero-unit-clock">
+
+                            <form name="clock">
+                                <font color="white">Time: <br></font>&nbsp;<input style="width:150px;" type="text"
+                                                                                  class="trans" name="face" value=""
+                                                                                  disabled>
+                            </form>
+                        </div>
+                    </li>
+
+                </ul>
+            </div><!--/.well -->
         </div><!--/span-->
 		
 	<div class="span10">
-	<a href="sales.php?id=cash&invoice=<?php echo $finalcode ?>"><button class="btn btn-default"><i class="icon-arrow-left"></i> Back to Sales</button></a>
+
+	<?php
+
+	if ($_GET['sale_type'] != '') {
+		# code...
+		echo '<a href="salesreport.php?d1='.$_GET['d1'].'&d2='.$_GET['d2'].'"><button class="btn btn-default"><i class="icon-arrow-left"></i> Back to Sales</button></a>';
+	}
+	else {
+		echo '<a href="sales.php?id=cash&invoice='.$finalcode.'"><button class="btn btn-default"><i class="icon-arrow-left"></i> Back to Merchandise</button></a>';
+	}
+
+	?>
+
+	
 
 <div class="content" id="content">
 <div style="margin: 0 auto; padding: 20px; width: 900px; font-weight: normal;">
@@ -152,7 +182,7 @@ window.onload=startclock;
 	<div style="width: 900px; float: left;">
 	<center><div style="font:bold 25px 'Aleo';">Sales Receipt</div>
 	Inflight Dubai	<br>
-	Vertical Indoor Windtunnel	<br>	<br>
+	Indoor SkyDiving	<br>	<br>
 	</center>
 	<div>
 	<?php
@@ -236,6 +266,10 @@ window.onload=startclock;
 					<?php
 					$sdsd=$_GET['invoice'];
 					$resultas = $db->prepare("SELECT sum(amount) FROM sales_order WHERE invoice= :a");
+
+					/* $resultas = $db->prepare("SELECT sum(sales_order.amount),sales.discount  FROM sales_order
+ 												Inner join sales On sales_order.invoice = sales.invoice_number 
+  												WHERE invoice= :a"); */
 					$resultas->bindParam(':a', $sdsd);
 					$resultas->execute();
 					for($i=0; $rowas = $resultas->fetch(); $i++){
@@ -245,33 +279,50 @@ window.onload=startclock;
 					?>
 					</strong></td>
 				</tr>
-				<?php if($pt=='cash'){
-				?>
+
 				<tr>
-					<td colspan="5"style=" text-align:right;"><strong style="font-size: 12px; color: #222222;">Cash Tendered:&nbsp;</strong></td>
-					<td colspan="2"><strong style="font-size: 12px; color: #222222;">
+					<td colspan="5" style=" text-align:right;"><strong style="font-size: 12px;">Discount: &nbsp;</strong></td>
+					<td colspan="2"><strong style="font-size: 12px;">
 					<?php
-					echo formatMoney($cash, true);
+					$sdsd=$_GET['invoice'];
+					// $resultas = $db->prepare("SELECT sum(amount) FROM sales_order WHERE invoice= :a");
+
+					$resultas = $db->prepare("SELECT discount  FROM sales 
+  												WHERE invoice_number= :a");
+					$resultas->bindParam(':a', $sdsd);
+					$resultas->execute();
+					for($i=0; $rowas = $resultas->fetch(); $i++){
+					$fgfg=$rowas['discount'];
+					echo $fgfg."%";
+					}
 					?>
 					</strong></td>
 				</tr>
-				<?php
-				}
-				?>
+
 				<tr>
-					<td colspan="5" style=" text-align:right;"><strong style="font-size: 12px; color: #222222;">
-					<font style="font-size:20px;">
+					<td colspan="5" style=" text-align:right;"><strong style="font-size: 12px;">Discount Amount: &nbsp;</strong></td>
+					<td colspan="2"><strong style="font-size: 12px;">
 					<?php
-					if($pt=='cash'){
-					echo 'Change:';
+					$sdsd=$_GET['invoice'];
+					// $resultas = $db->prepare("SELECT sum(amount) FROM sales_order WHERE invoice= :a");
+
+					$resultas = $db->prepare("SELECT after_dis FROM sales 
+  												WHERE invoice_number= :a");
+					$resultas->bindParam(':a', $sdsd);
+					$resultas->execute();
+					for($i=0; $rowas = $resultas->fetch(); $i++){
+					$fgfg=$rowas['after_dis'];
+					echo formatMoney($fgfg, true);
 					}
-					if($pt=='credit'){
-					echo 'Due Date:';
-					}
-					?>&nbsp;
+					?>
 					</strong></td>
-					<td colspan="2"><strong style="font-size: 15px; color: #222222;">
+				</tr>
+
+				<tr>
+					<td colspan="5"style=" text-align:right;"><strong style="font-size: 12px; color: #222222;"><?php echo $modeOfPayment;?>:&nbsp;</strong></td>
+					<td colspan="2"><strong style="font-size: 12px; color: #222222;">
 					<?php
+
 					function formatMoney($number, $fractional=false) {
 						if ($fractional) {
 							$number = sprintf('%.2f', $number);
@@ -286,12 +337,16 @@ window.onload=startclock;
 						}
 						return $number;
 					}
-					if($pt=='credit'){
-					echo $cash;
-					}
-					if($pt=='cash'){
-					echo formatMoney($amount, true);
-					}
+					echo $firstPaymentOption;
+					?>
+					</strong></td>
+				</tr>
+
+				<tr>
+					<td colspan="5"style=" text-align:right;"><strong style="font-size: 12px; color: #222222;"><?php echo $modeOfPayment1; ?>:&nbsp;</strong></td>
+					<td colspan="2"><strong style="font-size: 12px; color: #222222;">
+					<?php
+					echo $secondPaymentOption;
 					?>
 					</strong></td>
 				</tr>

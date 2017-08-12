@@ -139,7 +139,7 @@ $finalcode = 'RS-' . createRandomPassword();
             </ul>
 
             <div style="margin-top: -19px; margin-bottom: 21px;">
-                <a href="index.php">
+                <a href="flight_picker.php?pkg_id=1&id=&invoice=RS-2526330">
                     <button class="btn btn-default btn-large" style="float: none;"><i
                             class="icon icon-circle-arrow-left icon-large"></i> Back
                     </button>
@@ -198,7 +198,7 @@ $finalcode = 'RS-' . createRandomPassword();
                               LEFT JOIN flight_offers fo ON fp.flight_offer_id = fo.id
                               LEFT JOIN flight_packages fpkg ON fo.package_id = fpkg.id
                               LEFT JOIN flight_bookings fb ON fb.flight_purchase_id = fp.id
-                              INNER JOIN customer c ON fp.customer_id = c.customer_id";
+                              INNER JOIN customer c ON fp.customer_id = c.customer_id ";
 
                         $where = array();
                         if ($_GET['customerName'] != '') {
@@ -220,6 +220,12 @@ $finalcode = 'RS-' . createRandomPassword();
                         if (count($where) > 0) {
                             $sql .= ' WHERE ' . implode(" AND ", $where);
                         }
+
+                        $sql .= ' GROUP BY fp.id';
+
+                        //print_r($sql);
+                        //exit();
+
                         $result = $db->query($sql);
 
                         $total_cost     = 0;

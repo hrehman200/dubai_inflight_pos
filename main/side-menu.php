@@ -26,7 +26,8 @@ if ($position == 'cashier') {
 			<li><a href="accounts.php"><i class="icon-group icon-2x"></i> Accounts</a></li>
 			<li><a href="supplier.php"><i class="icon-group icon-2x"></i> Operators</a></li>
 			<li><a href="salesreport.php?d1=0&d2=0"><i class="icon-bar-chart icon-2x"></i> Sales Report</a></li>
-			<li><a href="bookingcalander.php"><i class="icon-bar-chart icon-2x"></i> Booking Calander</a></li>
+			<li><a href="flight_packages.php"><i class="icon-bar-chart icon-2x"></i> Booking Calander</a></li>
+			<!--<li><a href="bookingcalander.php"><i class="icon-bar-chart icon-2x"></i> Booking Calander</a></li>-->
 			';
 } else if ($position == 'account') {
     echo '<li class="active"><a href="index.php"><i class="icon-dashboard icon-2x"></i> Dashboard </a></li>
@@ -44,16 +45,16 @@ if ($position == 'cashier') {
     echo '<li class="active"><a href="index.php"><i class="icon-dashboard icon-2x"></i> Dashboard </a></li>
 				<li><a href="purchaseslist.php"><i class="icon-bar-chart icon-2x"></i> Procurement</a></li>
 				<li><a href="supplier.php"><i class="icon-group icon-2x"></i> Suppliers</a></li>
-				<li><a href="partners.php"><i class="icon-group icon-2x"></i> Partners</a></li>';
+				<!--<li><a href="partners.php"><i class="icon-group icon-2x"></i> Partners</a></li>-->';
 
 } else if ($position == 'Management') {
     echo '
    <li class="active"><a href="index.php"><i class="icon-dashboard icon-2x"></i> Dashboard </a></li> 
 			<li><a href="Businessplan.php"><i class="icon-group icon-2x"></i> Business Plan</a></li>    
-			<li><a href="customer.php"><i class="icon-group icon-2x"></i> Customers</a></li>
+			<!--<li><a href="customer.php"><i class="icon-group icon-2x"></i> Customers</a></li>-->
 			<li><a href="supplier.php"><i class="icon-group icon-2x"></i> Suppliers</a></li>
 			<li><a href="partners.php"><i class="icon-group icon-2x"></i> Partners</a></li>
-			<li><a href="bookingcalander.php"><i class="icon-bar-chart icon-2x"></i> Booking Calander</a></li>';
+			<!--<li><a href="bookingcalander.php"><i class="icon-bar-chart icon-2x"></i> Booking Calander</a></li>-->';
 
 
 }
