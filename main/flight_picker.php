@@ -181,7 +181,7 @@ $position = $_SESSION['SESS_LAST_NAME'];
                 <h4><?php echo $row['package_name']; ?></h4>
 
                 <select class="span6" name="flightOffer" id="flightOffer">
-                    <option>Select a Flight Offer</option>
+                    <option value="0">Select a Flight Offer</option>
                     <?php
                     $result = $db->prepare("SELECT * FROM flight_offers WHERE package_id = :package_id");
                     $result->execute(array('package_id'=>$_GET['pkg_id']));
@@ -393,13 +393,14 @@ $position = $_SESSION['SESS_LAST_NAME'];
         }
     }).val("<?=$_GET['customer_name']?>");
 
-    var _getCustomerBookings = function(customerId) {
+    var _getCustomerBookings = function(customerId, date) {
         $.ajax({
             url:'api.php',
             method: 'POST',
             data: {
                 'call': 'getCustomerBookings',
-                'customerId': customerId
+                'customerId': customerId,
+                'date':date
             },
             dataType: 'json',
             success: function(response) {
@@ -420,11 +421,10 @@ $position = $_SESSION['SESS_LAST_NAME'];
     }
     ?>
 
-    var _getTimeslots = function(flightDate, flightOfferId, duration) {
+    var _getTimeslots = function(flightDate, flightOfferId, duration, divToFillId) {
 
         if(duration == undefined) {
-            //alert('Select a flight offer first');
-            return;
+            duration = 30;
         }
 
         $.ajax({
@@ -441,7 +441,7 @@ $position = $_SESSION['SESS_LAST_NAME'];
             dataType: 'json',
             success: function(response) {
                 if(response.success == 1) {
-                    $('#timeslots').html(response.data);
+                    $(divToFillId).html(response.data);
                     $('[data-toggle="tooltip"]').tooltip();
                 }
             }
@@ -454,7 +454,11 @@ $position = $_SESSION['SESS_LAST_NAME'];
     }).on('changeDate', function(e) {
         var pickedDate = $("#datePicker").data('datepicker').getFormattedDate('yyyy-mm-dd');
         $('#flightDate').val(pickedDate);
-        _getTimeslots(pickedDate, $('#flightOffer').val(), $('#flightOffer option:selected').data('duration'));
+        _getTimeslots(pickedDate, $('#flightOffer').val(), $('#flightOffer option:selected').data('duration'), '#timeslots');
+
+        if($('#flightOffer').val() == 0) {
+            _getCustomerBookings(0, pickedDate);
+        }
 
     }).datepicker('update', '<?php echo $_GET['date']?>')
         .trigger('changeDate');
@@ -717,15 +721,19 @@ $position = $_SESSION['SESS_LAST_NAME'];
     function reschedule(flightBookingId) {
         var dialog = bootbox.dialog({
             title: 'Reschedule Flight Time',
+            show: false,
             message: '<div> \
-                <input type="datetime-local" id="bookingTime" value="" /> \
+                <input type="date" id="bookingDate" value="" /> \
+                <label id="bookingTime" style="display: inline;;">00:00</label> \
+                <div id="datePickerInDialog"></div> \
+                <div id="timeslotsInDialog"></div> \
             </div>',
             buttons: {
                 btn1: {
                     label: 'Reschedule',
                     className: 'btn-success',
                     callback: function (result) {
-                        var selectedDateTime = $('#bookingTime').val();
+                        var selectedDateTime = $("#bookingDate").val()+" "+$("#bookingTime").text();
                         var d = new Date(selectedDateTime);
                         var now = new Date();
                         if(d < now) {
@@ -742,8 +750,9 @@ $position = $_SESSION['SESS_LAST_NAME'];
                                 },
                                 dataType: 'json',
                                 success: function (response) {
+                                    console.log(response);
                                     if (response.success == 1) {
-                                        window.location.href = window.location.href;
+                                        location.reload();
                                     }
                                 }
                             });
@@ -752,6 +761,19 @@ $position = $_SESSION['SESS_LAST_NAME'];
                 }
             }
         });
+
+        dialog.on("shown.bs.modal", function() {
+            $("#bookingDate").on('change', function(e) {
+                _getTimeslots($("#bookingDate").val(), $('#flightOffer').val(), $('#flightOffer option:selected').data('duration'), '#timeslotsInDialog');
+            });
+
+            $('#timeslotsInDialog').on('click', '.label', function(e) {
+                var flightTime = $(e.target).text();
+                $('#bookingTime').text(flightTime);
+            });
+        });
+
+        dialog.modal('show');
     }
 
     function showTransferDialog(e) {
@@ -759,7 +781,7 @@ $position = $_SESSION['SESS_LAST_NAME'];
         var toCustomerId = 0;
 
         var dialog = bootbox.dialog({
-            title: 'Reschedule Flight Time',
+            title: 'Transfer Credit',
             show: false,
             message: '<div> \
                 <select id="customerInDialog"></select> \
@@ -789,7 +811,7 @@ $position = $_SESSION['SESS_LAST_NAME'];
                             dataType: 'json',
                             success: function (response) {
                                 if (response.success == 1) {
-                                    window.location.href = window.location.href;
+                                    location.reload();
                                 } else {
                                     alert(response.msg);
                                 }

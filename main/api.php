@@ -237,7 +237,24 @@ function getCustomerBookings() {
     //     WHERE fp.customer_id = :customerId AND fc.minutes > 0 AND fp.status = 1");
 
     // new query
-   $query = $db->prepare(" SELECT fo.offer_name, DATE_FORMAT(fp.created, '%D %M %Y') 
+    if($post['date'] != '') {
+        $query = $db->prepare(" SELECT fo.offer_name, DATE_FORMAT(fp.created, '%D %M %Y')
+                           AS created, fo.duration, fc.flight_purchase_id, fc.minutes,
+                           customer.customer_id, customer.credit_time, fo.id,
+                           fb.id AS flight_booking_id, fb.flight_time
+                           FROM flight_credits fc
+                           INNER JOIN flight_purchases fp ON fc.flight_purchase_id = fp.id
+                           INNER JOIN flight_offers fo ON fp.flight_offer_id = fo.id
+                           INNER JOIN customer ON customer.customer_id = fp.customer_id
+                           INNER JOIN flight_bookings fb ON fb.flight_purchase_id = fp.id
+                           WHERE fp.status = 1 AND date(fb.flight_time) = :flightDate");
+
+        $query->execute(array(
+            ':flightDate' => $post['date']
+        ));
+
+    } else {
+        $query = $db->prepare(" SELECT fo.offer_name, DATE_FORMAT(fp.created, '%D %M %Y')
                            AS created, fo.duration, fc.flight_purchase_id, fc.minutes,
                            customer.customer_id, customer.credit_time, fo.id,
                            fb.id AS flight_booking_id, fb.flight_time
@@ -248,6 +265,11 @@ function getCustomerBookings() {
                            INNER JOIN flight_bookings fb ON fb.flight_purchase_id = fp.id
                            WHERE fp.customer_id =:customerId AND fc.minutes > 0 AND fp.status = 1");
 
+        $query->execute(array(
+            ':customerId' => $post['customerId']
+        ));
+    }
+
    // $query = $db->prepare("SELECT fp.id AS flight_purchase_id, fp.deduct_from_balance, fo.code, fpkg.package_name, fo.offer_name, fo.price, fo.duration, c.customer_name, DATE_FORMAT(fp.created,'%b %d, %Y') AS created
    //                            FROM flight_purchases fp
    //                            LEFT JOIN flight_offers fo ON fp.flight_offer_id = fo.id
@@ -257,9 +279,7 @@ function getCustomerBookings() {
    //                            INNER JOIN flight_credits ON flight_credits.flight_purchase_id = fb.flight_purchase_id
    //                            WHERE fp.customer_id =:customerId AND flight_credits.minutes > 0 AND fp.status = 1");
 
-    $query->execute(array(
-        ':customerId' => $post['customerId']
-    ));
+
 
     $table = '<table class="table table-striped table-bordered">
         <tr>
