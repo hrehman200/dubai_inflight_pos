@@ -45,6 +45,8 @@
     <script src="js/bootbox.min.js" type="text/javascript"></script>
     <script src="js/bootstrap-typeahead.min.js" type="text/javascript"></script>
 
+    <script src="js/polyfiller.js" type="text/javascript"></script>
+
     <link href="../style.css" media="screen" rel="stylesheet" type="text/css"/>
     <!--sa poip up-->
 
@@ -723,8 +725,8 @@ $position = $_SESSION['SESS_LAST_NAME'];
             title: 'Reschedule Flight Time',
             show: false,
             message: '<div> \
-                <input type="date" id="bookingDate" value="" /> \
-                <label id="bookingTime" style="display: inline;;">00:00</label> \
+                <input type="date" data-date-inline-picker="true" id="bookingDate" value="" /> \
+                Time: <label id="bookingTime" style="display: inline;;">00:00</label> <br/><br/> \
                 <div id="datePickerInDialog"></div> \
                 <div id="timeslotsInDialog"></div> \
             </div>',
@@ -771,6 +773,18 @@ $position = $_SESSION['SESS_LAST_NAME'];
                 var flightTime = $(e.target).text();
                 $('#bookingTime').text(flightTime);
             });
+
+            webshim.setOptions('forms-ext', {
+                replaceUI: 'auto',
+                types: 'date',
+                date: {
+                    startView: 2,
+                    inlinePicker: true,
+                    classes: 'hide-inputbtns'
+                }
+            });
+            webshim.polyfill('forms forms-ext');
+
         });
 
         dialog.modal('show');
