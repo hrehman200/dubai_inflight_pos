@@ -207,7 +207,6 @@ if ($position == 'cashier') {
 
                 <?php
                 $id = $_GET['invoice'];
-                include('../connect.php');
                 $result = $db->prepare("SELECT * FROM sales_order WHERE invoice= :userid");
                 $result->bindParam(':userid', $id);
                 $result->execute();

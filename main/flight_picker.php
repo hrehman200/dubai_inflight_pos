@@ -213,6 +213,8 @@ $position = $_SESSION['SESS_LAST_NAME'];
                     Transfer Credit
                 </button>
 
+                <label style="display: inline;"><b>Credit: </b><span id="spCreditTime"></span></label>
+
                 <div class="row">
                     <div class="span3" style="margin-left:25px;">
                         <div id="datePicker"></div>
@@ -413,6 +415,7 @@ $position = $_SESSION['SESS_LAST_NAME'];
             success: function(response) {
                 if(response.success == 1) {
                     $('#divCustomerDetails').html(response.data);
+                    $('#spCreditTime').html(response.credit_time);
                 }
             }
         });
@@ -588,14 +591,14 @@ $position = $_SESSION['SESS_LAST_NAME'];
                 success: function (response) {
                     if (response.success == 1) {
                         var data = response.data;
-                        _showSelectMinutesDialog(duration, data.unbooked_duration, data.balance, data.credit_time);
+                        _showSelectMinutesDialog(duration, data.unbooked_duration, data.balance, data.credit_time, flightTime);
                     }
                 }
             });
         }
     };
 
-    var _showSelectMinutesDialog = function(duration, unbookedDuration, balance, credit_time) {
+    var _showSelectMinutesDialog = function(duration, unbookedDuration, balance, credit_time, flightTime) {
 
         unbookedDuration = unbookedDuration < 0 ? 0 : unbookedDuration;
         balance = balance < 0 ? 0 : balance;
@@ -639,6 +642,13 @@ $position = $_SESSION['SESS_LAST_NAME'];
                             }
                         }
                     }
+                },
+                btn3: {
+                    label: 'Deduct from Pre-Opening Deals ('+credit_time+')',
+                    className: 'btn',
+                    callback: function (result) {
+                        submitDeductFromCreditTime($('#customerId').val(), credit_time, $('#flightOffer').val(), duration, flightTime, true);
+                    }
                 }
             }
         });
@@ -650,33 +660,10 @@ $position = $_SESSION['SESS_LAST_NAME'];
             message: getDateTimeSlotPickerHtml()+'<br/><input type="text" id="txtMinutes" placeholder="Enter minutes to fly" />',
             buttons: {
                 btn3: {
-                    label: 'Deduct from Credit Time (' + credit_time + ')',
+                    label: 'Deduct from Pre-Opening Deals(' + credit_time + ')',
                     className: 'btn',
                     callback: function (result) {
-                        var minutes = $('#txtMinutes').val();
-                        if (minutes !== null) {
-
-                            if(minutes > flight_minutes) {
-                                alert('Flight offer does not have '+minutes+' minutes. Choose another offer.');
-                                return false;
-                            }
-
-                            if (minutes <= credit_time) {
-                                $('#customerId').val(customer_id);
-                                $('#useBalance').val(0);
-                                $('#useCredit').val(1);
-                                $('#flightPurchaseId').val('');
-                                $('#flightDate').val($('#bookingDate').val());
-                                $('#flightTime').val($('#bookingTime').text());
-                                $('#flightDuration').val(minutes);
-                                $('#flightOffer').val(flight_offer_id);
-                                $('#formFlightTime').submit();
-
-                            } else {
-                                alert('Credit time does not have' + minutes + ' minutes.');
-                                return false;
-                            }
-                        }
+                        submitDeductFromCreditTime(customer_id, credit_time, flight_offer_id, flight_minutes, null, false);
                     }
                 }
             }
@@ -686,34 +673,73 @@ $position = $_SESSION['SESS_LAST_NAME'];
         dialog.modal('show');
     }
 
-    function deductFromBalance(duration, balance, flightofferID) {
+    function submitDeductFromCreditTime(customer_id, credit_time, flight_offer_id, flight_minutes, flight_time, is_new_purchasee_form) {
+        var minutes = $('#txtMinutes').val();
+        if (minutes !== null && minutes != '' && minutes != 0) {
+
+            if(minutes > flight_minutes) {
+                alert('Flight offer does not have '+minutes+' minutes. Choose another offer.');
+                return false;
+            }
+
+            if(flight_offer_id == '' || flight_offer_id == 'undefined' || flight_offer_id == 'null' || flight_offer_id == 0) {
+                alert('Please select Flight Offer');
+                return false;
+            }
+
+            if (minutes <= credit_time) {
+                $('#customerId').val(customer_id);
+                $('#useBalance').val(0);
+                $('#useCredit').val(1);
+                $('#flightPurchaseId').val('');
+                if(is_new_purchasee_form) {
+                    var pickedDate = $("#datePicker").data('datepicker').getFormattedDate('yyyy-mm-dd');
+                    $('#flightDate').val(pickedDate);
+                    $('#flightTime').val(flight_time);
+                } else {
+                    $('#flightDate').val($('#bookingDate').val());
+                    $('#flightTime').val($('#bookingTime').text());
+                }
+                $('#flightDuration').val(minutes);
+                $('#flightOffer').val(flight_offer_id);
+
+                if($('#flightDate').val() == '') {
+                    alert('Please select a date');
+                    return false;
+                }
+
+                $('#formFlightTime').submit();
+
+            } else {
+                alert('Pre-Opening does not have' + minutes + ' minutes.');
+                return false;
+            }
+        } else {
+            alert('Please enter some minutes');
+            return false;
+        }
+    }
+
+    function deductFromBalance(duration, balance, flightOfferId) {
         var dialog = bootbox.dialog({
             title: 'Enter minutes to fly',
-            message: '<div> \
-                <input type="text" id="txtMinutes" /> \
-                \
-                <input type="datetime-local" id="bookingTime" value="" /> \
-            </div>',
+            show:false,
+            message: getDateTimeSlotPickerHtml()+'<br/><input type="text" id="txtMinutes" placeholder="Enter minutes to fly" />',
             buttons: {
                 btn1: {
                     label: 'Deduct from balance ('+balance+')',
                     className: 'btn-success',
                     callback: function (result) {
                         var minutes = $('#txtMinutes').val();
-                        var selectedDateTime = $('#bookingTime').val();
-                        var d = new Date(selectedDateTime);
-                       // var selectedTime = toDateTime(d);
-
-                      //  alert('Balance does not have' + toDateTime(d) );
 
                         if(minutes !== null) {
                             if (minutes <= balance) {
-                                $('#flightDate').val(toGetDate(d));
-                                $('#flightTime').val(toGetTime(d));
+                                $('#flightDate').val($('#bookingDate').val());
+                                $('#flightTime').val($('#bookingTime').text());
                                 $('#useBalance').val(1);
                                 $('#flightPurchaseId').val('');
                                 $('#flightDuration').val(minutes);
-                                $('#flightOffer').val(flightofferID);
+                                $('#flightOffer').val(flightOfferId);
                                 $('#formFlightTime').submit();
                             } else {
                                 alert('Balance does not have' + minutes + ' minutes.');
@@ -724,6 +750,9 @@ $position = $_SESSION['SESS_LAST_NAME'];
                 }
             }
         });
+
+        dialog.on("shown.bs.modal", onDateTimeSlotPickerDialogShown);
+        dialog.modal('show');
     }
 
     function getDateTimeSlotPickerHtml() {
@@ -910,35 +939,6 @@ $position = $_SESSION['SESS_LAST_NAME'];
         dialog.on("shown.bs.modal", onTransferDialogShown);
         dialog.modal('show');
     }
-
-function toGetDate(date) {
-    var str = '';
-    var year, month, day, hour, min;
-    year = date.getUTCFullYear();
-    month = date.getUTCMonth() + 1;
-    month = month < 10 ? '0' + month : month;
-    day = date.getUTCDate();
-    day = day < 10 ? '0' + day : day;
-    hour = date.getUTCHours();
-    hour = hour < 10 ? '0' + hour : hour;
-    min = date.getUTCMinutes();
-    min = min < 10 ? '0' + min : min;
-    
-    str += year + '-' + month + '-' + day;
-    return str;
-}
-
-function toGetTime(date) {
-    var str = '';
-    var hour, min;
-    hour = date.getHours();
-    hour = hour < 10 ? '0' + hour : hour;
-    min = date.getMinutes();
-    min = min < 10 ? '0' + min : min;
-    
-    str += ' ' + hour + ':' + min;
-    return str;
-}
 
 </script>
 

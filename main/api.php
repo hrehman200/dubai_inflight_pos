@@ -289,7 +289,7 @@ function getCustomerBookings() {
             <td>Flight Time</td>
             <td>Minutes</td>
             <td>Remaining</td>
-            <td>Credit Time</td>
+            <td>Pre-Opening</td>
             <td>Action</td>
         </tr>';
 
@@ -316,11 +316,22 @@ function getCustomerBookings() {
     }
     $table .= '</table>';
 
-    echo json_encode(array(
+    $data = array(
         'success' => 1,
         'msg'     => '',
         'data'    => $table
-    ));
+    );
+
+    if($post['customerId'] > 0) {
+        $query = $db->prepare(" SELECT credit_time FROM customer WHERE customer_id =:customerId");
+        $query->execute(array(
+            ':customerId' => $post['customerId']
+        ));
+        $row = $query->fetch();
+        $data['credit_time'] = $row['credit_time'];
+    }
+
+    echo json_encode($data);
 }
 
 function verifyPassword() {
