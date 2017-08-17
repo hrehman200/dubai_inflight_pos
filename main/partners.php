@@ -171,7 +171,6 @@ $finalcode = 'RS-' . createRandomPassword();
                 <tbody>
 
                 <?php
-                include('../connect.php');
                 $result = $db->prepare("SELECT * FROM partners ORDER BY partner_id DESC");
                 $result->execute();
                 for ($i = 0; $row = $result->fetch(); $i++) {

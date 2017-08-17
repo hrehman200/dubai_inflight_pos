@@ -183,8 +183,7 @@ window.onload=startclock;
 				$rowcount = $result->rowcount();
 			?>
 			
-			<?php 
-			include('../connect.php');
+			<?php
 				$result = $db->prepare("SELECT * FROM products where qty < 10 ORDER BY product_id DESC");
 				$result->execute();
 				$rowcount123 = $result->rowcount();
@@ -236,7 +235,6 @@ window.onload=startclock;
 					}
 					return $number;
 				}
-				include('../connect.php');
 				$result = $db->prepare("SELECT *, price * qty as total FROM products ORDER BY product_id DESC");
 				$result->execute();
 				for($i=0; $row = $result->fetch(); $i++){

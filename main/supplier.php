@@ -182,7 +182,6 @@ $finalcode = 'RS-' . createRandomPassword();
                 <tbody>
 
                 <?php
-                include('../connect.php');
                 $result = $db->prepare("SELECT * FROM supliers ORDER BY suplier_id DESC");
                 $result->execute();
                 for ($i = 0; $row = $result->fetch(); $i++) {

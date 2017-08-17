@@ -111,7 +111,6 @@ require_once('auth.php');
                     <div>
                         <?php
                         $id = $_GET['iv'];
-                        include('../connect.php');
                         $resultaz = $db->prepare("SELECT * FROM purchases WHERE invoice_number= :xzxz");
                         $resultaz->bindParam(':xzxz', $id);
                         $resultaz->execute();

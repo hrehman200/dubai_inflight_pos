@@ -176,7 +176,6 @@ window.onload=startclock;
 	<tbody>
 		
 			<?php
-				include('../connect.php');
 				$result = $db->prepare("SELECT * FROM forecast_table INNER JOIN cogs ON forecast_table.month = cogs.month INNER join hrm on forecast_table.month = hrm.month INNER JOIN operation_cost on forecast_table.month = operation_cost.month INNER JOIN sales on forecast_table.month = sales.month") ;
 				$result->execute();
 				for($i=0; $row = $result->fetch(); $i++){
