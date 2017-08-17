@@ -393,7 +393,12 @@ $position = $_SESSION['SESS_LAST_NAME'];
                 return response.data;
             }
         }
-    }).val("<?=$_GET['customer_name']?>");
+    }).val("<?=$_GET['customer_name']?>")
+        .on('change', function(e) {
+            if($(this).val()=='') {
+                $('#customerId').val('');
+            }
+        });
 
     var _getCustomerBookings = function(customerId, date) {
         $.ajax({
@@ -458,8 +463,10 @@ $position = $_SESSION['SESS_LAST_NAME'];
         $('#flightDate').val(pickedDate);
         _getTimeslots(pickedDate, $('#flightOffer').val(), $('#flightOffer option:selected').data('duration'), '#timeslots');
 
-        if($('#flightOffer').val() == 0) {
+        if($('#flightOffer').val() == 0 && $('#customerId').val() == '') {
             _getCustomerBookings(0, pickedDate);
+        } else {
+            _getCustomerBookings($('#customerId').val(), '');
         }
 
     }).datepicker('update', '<?php echo $_GET['date']?>')
@@ -632,42 +639,41 @@ $position = $_SESSION['SESS_LAST_NAME'];
                             }
                         }
                     }
-                },
-                // btn3: {
-                //     label: 'Deduct from balance ('+balance+')',
-                //     className: 'btn',
-                //     callback: function (result) {
-                //         var minutes = $('#txtMinutes').val();
-                //         if(minutes !== null) {
-                //             if (minutes <= balance) {
-                //                 $('#useBalance').val(1);
-                //                 $('#useCredit').val(0);
-                //                 $('#flightPurchaseId').val('');
-                //                 $('#flightDuration').val(minutes);
-                //                 $('#formFlightTime').submit();
-                //             } else {
-                //                 alert('Balance does not have' + minutes + ' minutes.');
-                //                 return false;
-                //             }
-                //         }
-                //     }
-                // },
+                }
+            }
+        });
+    };
+
+    function deductFromCreditTime(customer_id, credit_time, flight_offer_id, flight_minutes) {
+        var dialog = bootbox.dialog({
+            title: 'Deduct from Credit',
+            message: getDateTimeSlotPickerHtml()+'<br/><input type="text" id="txtMinutes" placeholder="Enter minutes to fly" />',
+            buttons: {
                 btn3: {
-                    label: 'Deduct from Credit Time ('+credit_time+')',
+                    label: 'Deduct from Credit Time (' + credit_time + ')',
                     className: 'btn',
                     callback: function (result) {
                         var minutes = $('#txtMinutes').val();
-                        if(minutes !== null) {
+                        if (minutes !== null) {
+
+                            if(minutes > flight_minutes) {
+                                alert('Flight offer does not have '+minutes+' minutes. Choose another offer.');
+                                return false;
+                            }
+
                             if (minutes <= credit_time) {
-                                    $('#useBalance').val(0);
-                                    $('#useCredit').val(1);
-                                    $('#flightPurchaseId').val('');
-                                    $('#flightDuration').val(minutes);
-                                    $('#creditDuration').val(credit_time);
-                                    $('#formFlightTime').submit();
+                                $('#customerId').val(customer_id);
+                                $('#useBalance').val(0);
+                                $('#useCredit').val(1);
+                                $('#flightPurchaseId').val('');
+                                $('#flightDate').val($('#bookingDate').val());
+                                $('#flightTime').val($('#bookingTime').text());
+                                $('#flightDuration').val(minutes);
+                                $('#flightOffer').val(flight_offer_id);
+                                $('#formFlightTime').submit();
 
                             } else {
-                                alert('Credit Balance does not have' + minutes + ' minutes.');
+                                alert('Credit time does not have' + minutes + ' minutes.');
                                 return false;
                             }
                         }
@@ -675,11 +681,11 @@ $position = $_SESSION['SESS_LAST_NAME'];
                 }
             }
         });
+
+        dialog.on("shown.bs.modal", onDateTimeSlotPickerDialogShown);
+        dialog.modal('show');
     }
 
-</script>
-
-<script type="text/javascript">
     function deductFromBalance(duration, balance, flightofferID) {
         var dialog = bootbox.dialog({
             title: 'Enter minutes to fly',
@@ -720,16 +726,42 @@ $position = $_SESSION['SESS_LAST_NAME'];
         });
     }
 
-    function reschedule(flightBookingId) {
-        var dialog = bootbox.dialog({
-            title: 'Reschedule Flight Time',
-            show: false,
-            message: '<div> \
+    function getDateTimeSlotPickerHtml() {
+        return '<div> \
                 <input type="date" data-date-inline-picker="true" id="bookingDate" value="" /> \
                 Time: <label id="bookingTime" style="display: inline;;">00:00</label> <br/><br/> \
                 <div id="datePickerInDialog"></div> \
                 <div id="timeslotsInDialog"></div> \
-            </div>',
+            </div>';
+    }
+
+    function onDateTimeSlotPickerDialogShown() {
+        $("#bookingDate").on('change', function(e) {
+            _getTimeslots($("#bookingDate").val(), $('#flightOffer').val(), $('#flightOffer option:selected').data('duration'), '#timeslotsInDialog');
+        });
+
+        $('#timeslotsInDialog').on('click', '.label', function(e) {
+            var flightTime = $(e.target).text();
+            $('#bookingTime').text(flightTime);
+        });
+
+        webshim.setOptions('forms-ext', {
+            replaceUI: 'auto',
+            types: 'date',
+            date: {
+                startView: 2,
+                inlinePicker: true,
+                classes: 'hide-inputbtns'
+            }
+        });
+        webshim.polyfill('forms forms-ext');
+    }
+
+    function reschedule(flightBookingId) {
+        var dialog = bootbox.dialog({
+            title: 'Reschedule Flight Time',
+            show: false,
+            message: getDateTimeSlotPickerHtml(),
             buttons: {
                 btn1: {
                     label: 'Reschedule',
@@ -764,43 +796,24 @@ $position = $_SESSION['SESS_LAST_NAME'];
             }
         });
 
-        dialog.on("shown.bs.modal", function() {
-            $("#bookingDate").on('change', function(e) {
-                _getTimeslots($("#bookingDate").val(), $('#flightOffer').val(), $('#flightOffer option:selected').data('duration'), '#timeslotsInDialog');
-            });
-
-            $('#timeslotsInDialog').on('click', '.label', function(e) {
-                var flightTime = $(e.target).text();
-                $('#bookingTime').text(flightTime);
-            });
-
-            webshim.setOptions('forms-ext', {
-                replaceUI: 'auto',
-                types: 'date',
-                date: {
-                    startView: 2,
-                    inlinePicker: true,
-                    classes: 'hide-inputbtns'
-                }
-            });
-            webshim.polyfill('forms forms-ext');
-
-        });
-
+        dialog.on("shown.bs.modal", onDateTimeSlotPickerDialogShown);
         dialog.modal('show');
     }
 
-    function showTransferDialog(e) {
+    function getTransferDialogHtml() {
+        return '<div> \
+                <select id="customerInDialog"></select> \
+                <input type="text" class="form-control" placeholder="Enter minutes to transfer" id="credit_to_transfer" /> \
+            </div>';
+    }
+
+    function showCreditTransferDialog(e) {
         e.preventDefault();
-        var toCustomerId = 0;
 
         var dialog = bootbox.dialog({
             title: 'Transfer Credit',
             show: false,
-            message: '<div> \
-                <select id="customerInDialog"></select> \
-                <input type="text" class="form-control" placeholder="Enter credit to transfer" id="credit_to_transfer" /> \
-            </div>',
+            message: getTransferDialogHtml(),
             buttons: {
                 btn1: {
                     label: 'Transfer Credit',
@@ -811,7 +824,6 @@ $position = $_SESSION['SESS_LAST_NAME'];
                             alert('Select customer to transfer credit from');
                             return;
                         }
-
 
                         $.ajax({
                             url: 'api.php',
@@ -836,26 +848,68 @@ $position = $_SESSION['SESS_LAST_NAME'];
             }
         });
 
-        dialog.on("shown.bs.modal", function() {
-            $.ajax({
-                url: 'api.php',
-                method: 'POST',
-                data: {
-                    'call': 'getCustomerOptions'
-                },
-                dataType: 'json',
-                success: function (response) {
-                    if (response.success == 1) {
-                        $('#customerInDialog').html(response.data);
-                    }
-                }
-            });
-        });
-
+        dialog.on("shown.bs.modal", onTransferDialogShown);
         dialog.modal('show');
     }
 
-    $('#btnTransferCredit').click(showTransferDialog);
+    function onTransferDialogShown() {
+        $.ajax({
+            url: 'api.php',
+            method: 'POST',
+            data: {
+                'call': 'getCustomerOptions'
+            },
+            dataType: 'json',
+            success: function (response) {
+                if (response.success == 1) {
+                    $('#customerInDialog').html(response.data);
+                }
+            }
+        });
+    }
+
+    $('#btnTransferCredit').click(showCreditTransferDialog);
+
+    function showBalanceTransferDialog(customerId, offerId, offerMinutes, fromFlightPurchaseId) {
+
+        var dialog = bootbox.dialog({
+            title: 'Transfer Balance',
+            show: false,
+            message: getTransferDialogHtml(),
+            buttons: {
+                btn1: {
+                    label: 'Transfer Balance',
+                    className: 'btn-success',
+                    callback: function (result) {
+
+                        $.ajax({
+                            url: 'api.php',
+                            method: 'POST',
+                            data: {
+                                'call': 'transferBalance',
+                                'from_customer_id': customerId,
+                                'to_customer_id': $('#customerInDialog').val(),
+                                'balance_to_transfer': $('#credit_to_transfer').val(),
+                                'flightOfferId': offerId,
+                                'fromFlightPurchaseId': fromFlightPurchaseId
+                            },
+                            dataType: 'json',
+                            success: function (response) {
+                                if (response.success == 1) {
+                                    location.reload();
+                                } else {
+                                    alert(response.msg);
+                                }
+                            }
+                        });
+                    }
+                }
+            }
+        });
+
+        dialog.on("shown.bs.modal", onTransferDialogShown);
+        dialog.modal('show');
+    }
 
 function toGetDate(date) {
     var str = '';

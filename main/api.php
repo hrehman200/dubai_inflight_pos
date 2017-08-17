@@ -239,11 +239,11 @@ function getCustomerBookings() {
     // new query
     if($post['date'] != '') {
         $query = $db->prepare(" SELECT fo.offer_name, DATE_FORMAT(fp.created, '%D %M %Y')
-                           AS created, fo.duration, fc.flight_purchase_id, fc.minutes,
-                           customer.customer_id, customer.credit_time, fo.id,
+                           AS created, fo.duration, fp.id AS flight_purchase_id, fc.minutes,
+                           customer.customer_id, customer.customer_name, customer.credit_time, fo.id,
                            fb.id AS flight_booking_id, fb.flight_time
-                           FROM flight_credits fc
-                           INNER JOIN flight_purchases fp ON fc.flight_purchase_id = fp.id
+                           FROM flight_purchases fp
+                           LEFT JOIN flight_credits fc ON fc.flight_purchase_id = fp.id
                            INNER JOIN flight_offers fo ON fp.flight_offer_id = fo.id
                            INNER JOIN customer ON customer.customer_id = fp.customer_id
                            INNER JOIN flight_bookings fb ON fb.flight_purchase_id = fp.id
@@ -255,15 +255,15 @@ function getCustomerBookings() {
 
     } else {
         $query = $db->prepare(" SELECT fo.offer_name, DATE_FORMAT(fp.created, '%D %M %Y')
-                           AS created, fo.duration, fc.flight_purchase_id, fc.minutes,
-                           customer.customer_id, customer.credit_time, fo.id,
+                           AS created, fo.duration, fp.id AS flight_purchase_id, fc.minutes,
+                           customer.customer_id, customer.customer_name, customer.credit_time, fo.id,
                            fb.id AS flight_booking_id, fb.flight_time
-                           FROM flight_credits fc 
-                           INNER JOIN flight_purchases fp ON fc.flight_purchase_id = fp.id 
+                           FROM flight_purchases fp
+                           LEFT JOIN flight_credits fc ON fc.flight_purchase_id = fp.id
                            INNER JOIN flight_offers fo ON fp.flight_offer_id = fo.id 
                            INNER JOIN customer ON customer.customer_id = fp.customer_id
-                           INNER JOIN flight_bookings fb ON fb.flight_purchase_id = fp.id
-                           WHERE fp.customer_id =:customerId AND fc.minutes > 0 AND fp.status = 1");
+                           LEFT JOIN flight_bookings fb ON fb.flight_purchase_id = fp.id
+                           WHERE fp.customer_id =:customerId AND fp.status = 1");
 
         $query->execute(array(
             ':customerId' => $post['customerId']
@@ -283,6 +283,7 @@ function getCustomerBookings() {
 
     $table = '<table class="table table-striped table-bordered">
         <tr>
+            <td>Customer</td>
             <td>Offer</td>
             <td>Purchaed  Date</td>
             <td>Flight Time</td>
@@ -299,17 +300,19 @@ function getCustomerBookings() {
                 <td>%s</td>
                 <td>%s</td>
                 <td>%s</td>
+                <td>%s</td>
                 <td>%d</td>
-                <td>%d</td>
-                <td>%d</td>
+                <td>%d '.($row['minutes']>0?'<a href="#" onclick="deductFromBalance(\''.$row['duration'].'\', \''.$row['minutes'].'\', \''.$row['id'].'\');" class="btn">Deduct from balance</a>':'').
+                       ($row['minutes']>0?'<a href="#" onclick="showBalanceTransferDialog('.$row['customer_id'].','.$row['id'].','.$row['minutes'].','.$row['flight_purchase_id'].');" class="btn">Transfer Balance</a>':'')
+                .'</td>
+                <td>%d '.($row['credit_time']>0?'<a href="#" onclick="deductFromCreditTime('.$row['customer_id'].','.$row['credit_time'].','.$row['id'].','.$row['duration'].');" class="btn">Deduct from credit</a>':'').'</td>
                 <td>
-                    <a href="#" onclick="deductFromBalance(\''.$row['duration'].'\', \''.$row['minutes'].'\', \''.$row['id'].'\');" class="btn btn-sm">Deduct from balance</a>
-                    <a href="#" onclick="reschedule('.$row['flight_booking_id'].')" class="btn btn-sm">Reschedule</a>
+                    <a href="#" onclick="reschedule('.$row['flight_booking_id'].')" class="btn">Reschedule</a>
                 </td>
-            </tr>', $row['offer_name'], $row['created'], $row['flight_time'], $row['duration'], $row['minutes'], $row['credit_time']);
+            </tr>', $row['customer_name'], $row['offer_name'], $row['created'], $row['flight_time'], $row['duration'], $row['minutes'], $row['credit_time']);
         }
     } else {
-        $table .= '<tr><td colspan="4">No previous bookings with pending balance found</td></tr>';
+        $table .= '<tr><td colspan="8">No previous bookings found</td></tr>';
     }
     $table .= '</table>';
 
@@ -436,6 +439,18 @@ function transferCredit() {
         'creditToTransfer' => $post['credit_to_transfer'],
         'customerId' => $post['customer_id']
     ));
+
+    echo json_encode(array(
+        'success' => 1,
+        'msg'     => ''
+    ));
+}
+
+function transferBalance() {
+    global $db;
+    $post = $_POST;
+
+    transferBalanceFromCustomerAtoB($post['from_customer_id'], $post['to_customer_id'], $post['balance_to_transfer'], $post['flightOfferId'], $post['fromFlightPurchaseId']);
 
     echo json_encode(array(
         'success' => 1,

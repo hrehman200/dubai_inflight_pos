@@ -659,4 +659,8 @@ $finalcode = 'RS-' . createRandomPassword();
     };
 
     _recalculate();
+
+    $('td:contains("EBITDA")').css('background-color', 'yellow')
+        .siblings().css('background-color','yellow');
+
 </script>

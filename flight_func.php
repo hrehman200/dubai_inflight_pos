@@ -1,6 +1,150 @@
 <?php
 
 /**
+ * @param $customer_id
+ * @param $flight_purchase_id
+ * @param $minutes
+ * @param bool $add_minutes
+ */
+function updateCustomerFlightBalance($customer_id, $flight_purchase_id, $minutes, $add_minutes = false) {
+    global $db;
+
+    $query = $db->prepare('SELECT * FROM flight_credits
+        WHERE customer_id = :customer_id AND flight_purchase_id = :flight_purchase_id');
+    $query->execute(array(
+        ':customer_id'        => $customer_id,
+        ':flight_purchase_id' => $flight_purchase_id
+    ));
+    $row = $query->fetch(PDO::FETCH_ASSOC);
+
+    if ($row) {
+
+        $operator = ($add_minutes) ? '+' : '-';
+
+        $sql = 'UPDATE flight_credits SET minutes = minutes '.$operator.' :minutes
+        WHERE customer_id = :customer_id AND flight_purchase_id = :flight_purchase_id';
+
+    } else {
+        $sql = "INSERT INTO flight_credits VALUES(:customer_id, :flight_purchase_id, :minutes)";
+    }
+
+    $query = $db->prepare($sql);
+    $query->execute(array(
+        ':customer_id'        => $customer_id,
+        ':flight_purchase_id' => $flight_purchase_id,
+        ':minutes'            => $minutes
+    ));
+}
+
+/**
+ * Deducts mentioned amount from flight_credits rows (for same offer) collectively
+ * @param $customer_id
+ * @param $balance
+ */
+function deductFromBalance($customer_id, $flight_offer_id, $balance) {
+    global $db;
+
+    $query = $db->prepare('SELECT fc.flight_purchase_id, fc.minutes FROM flight_credits fc
+        INNER JOIN flight_purchases fp ON fc.flight_purchase_id = fp.id
+        WHERE fc.customer_id = :customer_id AND fp.flight_offer_id = :flightOfferId');
+    $query->execute(array(
+        ':customer_id'   => $customer_id,
+        ':flightOfferId' => $flight_offer_id
+    ));
+    $result = $query->fetchAll();
+
+    foreach ($result as $row) {
+
+        if ($row['minutes'] >= $balance) {
+            $balance_to_deduct_from_row = $balance;
+        } else {
+            $balance_to_deduct_from_row = $row['minutes'];
+        }
+
+        $query = $db->prepare('UPDATE flight_credits SET minutes = minutes - :balanceToDeductFromRow
+        WHERE customer_id = :customerId AND flight_purchase_id = :flightPurchaseId');
+        $query->execute(array(
+            ':customerId'             => $customer_id,
+            ':flightPurchaseId'       => $row['flight_purchase_id'],
+            ':balanceToDeductFromRow' => $balance_to_deduct_from_row
+        ));
+
+        $balance -= $balance_to_deduct_from_row;
+        if ($balance <= 0) {
+            break;
+        }
+    }
+}
+
+/**
+ * Deducts mentioned amount from flight_credits rows (for same offer) collectively
+ * @param $customer_id
+ * @param $balance
+ */
+function deductFromCreditTime($customer_id, $flight_offer_id, $balance, $creditDuration) {
+    global $db;
+
+    $query = $db->prepare("UPDATE customer SET credit_time  = credit_time - :balanceToDeductFromRow WHERE customer_id = :customer_id");
+    $query->execute(array(
+        ':customer_id'            => $customer_id,
+        ':balanceToDeductFromRow' => $balance
+    ));
+}
+
+/**
+ * @param $invoice_id
+ * @param $flight_offer_id
+ * @param $customer_id
+ * @param int $use_balance
+ * @param int $status
+ * @return string
+ */
+function insertFlightPurchase($invoice_id, $flight_offer_id, $customer_id, $use_balance = 0, $status = 0) {
+    global $db;
+
+    $sql = "INSERT INTO flight_purchases(invoice_id, flight_offer_id, customer_id, deduct_from_balance, status)
+        VALUES (:invoice_id, :flight_offer_id, :customer_id, :use_balance, :status)";
+    $q   = $db->prepare($sql);
+    $arr = array(
+        ':invoice_id'      => $invoice_id,
+        ':flight_offer_id' => $flight_offer_id,
+        ':customer_id'     => $customer_id,
+        ':use_balance'     => $use_balance,
+        ':status'          => $status
+    );
+    $q->execute($arr);
+
+    $flight_purchase_id = $db->lastInsertId();
+
+    return $flight_purchase_id;
+}
+
+/**
+ * @param $flight_purchase_id
+ * @param $flight_time
+ * @param $duration
+ * @param int $use_balance
+ * @return string
+ */
+function insertFlightBooking($flight_purchase_id, $flight_time, $duration) {
+    global $db;
+
+    $sql = "INSERT INTO flight_bookings(flight_purchase_id, flight_time, duration)
+        VALUES (:flight_purchase_id, :flight_time, :duration)";
+    $q   = $db->prepare($sql);
+    $arr = array(
+        ':flight_purchase_id' => $flight_purchase_id,
+        ':flight_time'        => $flight_time,
+        ':duration'           => $duration
+    );
+    $q->execute($arr);
+
+    $booking_id = $db->lastInsertId();
+
+    return $booking_id;
+}
+
+/**
  * @param $flight_purchase_id
  */
 function deleteFlightPurchase($flight_purchase_id) {
@@ -98,6 +242,41 @@ function addBalance($booking_id) {
             break;
         }
     }
+}
+
+/**
+ * @param $from_customer
+ * @param $to_customer
+ * @param $balance
+ * @param $offer_id
+ * @param $from_flight_purchase_id
+ */
+function transferBalanceFromCustomerAtoB($from_customer, $to_customer, $balance, $offer_id, $from_flight_purchase_id) {
+    global $db;
+
+    // check if to_customer already has the offer for which he is receiving balance
+    $query = $db->prepare('SELECT id FROM flight_purchases
+      WHERE flight_offer_id= :offerId AND customer_id= :customerId
+      ORDER BY created DESC
+      LIMIT 1');
+
+    $query->execute(array(
+        ':offerId' => $offer_id,
+        ':customerId' => $to_customer
+    ));
+
+    $row = $query->fetch(PDO::FETCH_ASSOC);
+
+    if($row) {
+        $flight_purchase_id = $row['id'];
+    } else {
+        $invoice = 'RS-' . rand(pow(10, 8-1), pow(10, 8)-1);
+        $flight_purchase_id = insertFlightPurchase($invoice, $offer_id, $to_customer, 1, 1);
+    }
+    updateCustomerFlightBalance($to_customer, $flight_purchase_id, $balance, true);
+
+    // deduct balance from from_customer
+    updateCustomerFlightBalance($from_customer, $from_flight_purchase_id, $balance);
 }
 
 /**
