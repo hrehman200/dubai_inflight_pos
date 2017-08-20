@@ -5,8 +5,9 @@
  * @param $flight_purchase_id
  * @param $minutes
  * @param bool $add_minutes
+ * @param bool $reset_balance If true, don't add/subtract minutes, just reset it to provided $minutes
  */
-function updateCustomerFlightBalance($customer_id, $flight_purchase_id, $minutes, $add_minutes = false) {
+function updateCustomerFlightBalance($customer_id, $flight_purchase_id, $minutes, $add_minutes = false, $reset_balance = false) {
     global $db;
 
     $query = $db->prepare('SELECT * FROM flight_credits
@@ -20,8 +21,13 @@ function updateCustomerFlightBalance($customer_id, $flight_purchase_id, $minutes
     if ($row) {
 
         $operator = ($add_minutes) ? '+' : '-';
+        if($reset_balance) {
+            $str_minutes = ':minutes';
+        } else {
+            $str_minutes = 'minutes' . $operator . ':minutes';
+        }
 
-        $sql = 'UPDATE flight_credits SET minutes = minutes '.$operator.' :minutes
+        $sql = 'UPDATE flight_credits SET minutes = '.$str_minutes.'
         WHERE customer_id = :customer_id AND flight_purchase_id = :flight_purchase_id';
 
     } else {
@@ -300,7 +306,7 @@ function adjustBalanceForDeletedFlightBookings($invoice_id) {
     ));
 
     while($row = $query->fetch()) {
-        updateCustomerFlightBalance($row['customer_id'], $row['id'], $row['duration'], true);
+        updateCustomerFlightBalance($row['customer_id'], $row['id'], $row['duration'], true, true);
     }
 }
 
