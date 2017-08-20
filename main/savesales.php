@@ -67,6 +67,8 @@ if (@$_POST['savingflight'] == 1) {
         ':invoiceId' => $a
     ));
 
+    adjustBalanceForDeletedFlightBookings($a);
+
     header("location: flight_preview.php?invoice=$a&payfirst=$cash&paysecond=$remaining_cash");
     //header("location: flight_preview.php?invoice=$a");
 

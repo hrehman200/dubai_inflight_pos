@@ -280,6 +280,31 @@ function transferBalanceFromCustomerAtoB($from_customer, $to_customer, $balance,
 }
 
 /**
+ * If user buys a flight order, but deletes flight time and wants to schedule flight time in future, we need to
+ * save his flight balance for future use.
+ *
+ * @param $invoice_id
+ */
+function adjustBalanceForDeletedFlightBookings($invoice_id) {
+    global $db;
+
+    // get those purchases which don't have bookings
+    $query = $db->prepare("SELECT fp.id, fp.customer_id, fo.duration
+      FROM flight_purchases fp
+      INNER JOIN flight_offers fo ON fp.flight_offer_id = fo.id
+      LEFT JOIN flight_bookings fb ON fb.flight_purchase_id = fp.id
+      WHERE fp.invoice_id = :invoiceId AND fb.flight_purchase_id IS NULL");
+
+    $query->execute(array(
+        ':invoiceId' => $invoice_id
+    ));
+
+    while($row = $query->fetch()) {
+        updateCustomerFlightBalance($row['customer_id'], $row['id'], $row['duration'], true);
+    }
+}
+
+/**
  * Rearrays multiple file upload
  *
  * @param $file
