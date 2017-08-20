@@ -171,6 +171,7 @@ $position = $_SESSION['SESS_LAST_NAME'];
                 <input type="hidden" name="customerId" id="customerId" value="<?=$_GET['customer_id']?>" />
                 <input type="hidden" name="flightPurchaseId" id="flightPurchaseId" value="" />
                 <input type="hidden" name="useBalance" id="useBalance" value="0" />
+                <input type="hidden" name="fromFlightPurchaseId" id="fromFlightPurchaseId" value="" />
 
                 <input type="hidden" name="creditDuration" id="creditDuration" value="" />
                 <input type="hidden" name="useCredit" id="useCredit" value="0" />
@@ -720,7 +721,7 @@ $position = $_SESSION['SESS_LAST_NAME'];
         }
     }
 
-    function deductFromBalance(duration, balance, flightOfferId) {
+    function deductFromBalance(duration, balance, flightOfferId, fromFlightPurchaseId) {
         var dialog = bootbox.dialog({
             title: 'Enter minutes to fly',
             show:false,
@@ -737,6 +738,7 @@ $position = $_SESSION['SESS_LAST_NAME'];
                                 $('#flightDate').val($('#bookingDate').val());
                                 $('#flightTime').val($('#bookingTime').text());
                                 $('#useBalance').val(1);
+                                $('#fromFlightPurchaseId').val(fromFlightPurchaseId);
                                 $('#flightPurchaseId').val('');
                                 $('#flightDuration').val(minutes);
                                 $('#flightOffer').val(flightOfferId);

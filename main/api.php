@@ -302,7 +302,7 @@ function getCustomerBookings() {
                 <td>%s</td>
                 <td>%s</td>
                 <td>%d</td>
-                <td>%d '.($row['minutes']>0?'<a href="#" onclick="deductFromBalance(\''.$row['duration'].'\', \''.$row['minutes'].'\', \''.$row['id'].'\');" class="btn">Deduct from balance</a>':'').
+                <td>%d '.($row['minutes']>0?'<a href="#" onclick="deductFromBalance(\''.$row['duration'].'\', \''.$row['minutes'].'\','.$row['id'].','.$row['flight_purchase_id'].');" class="btn">Deduct from balance</a>':'').
                        ($row['minutes']>0?'<a href="#" onclick="showBalanceTransferDialog('.$row['customer_id'].','.$row['id'].','.$row['minutes'].','.$row['flight_purchase_id'].');" class="btn">Transfer Balance</a>':'')
                 .'</td>
                 <td>%d '.($row['credit_time']>0?'<a href="#" onclick="deductFromCreditTime('.$row['customer_id'].','.$row['credit_time'].','.$row['id'].','.$row['duration'].');" class="btn">Deduct from credit</a>':'').'</td>

@@ -13,6 +13,8 @@ $customer_id        = $_POST['customerId'];
 $creditDuration = $_POST['creditDuration'];
 $useCredit      = $_POST['useCredit'];
 
+$from_flight_purchase_id = $_POST['fromFlightPurchaseId'];
+
 //print_r($creditDuration);
 // print_r($useCredit);
 //print_r($_POST['useBalance']);
@@ -24,7 +26,7 @@ if ($_POST['useBalance'] == 1 && $_POST['useCredit'] == 0) {
     // insert balance use
     $flight_purchase_id = insertFlightPurchase($invoice, $flight_offer_id, $customer_id, 1);
     insertFlightBooking($flight_purchase_id, $flight_time, $flight_duration);
-    deductFromBalance($customer_id, $flight_offer_id, $flight_duration);
+    updateCustomerFlightBalance($customer_id, $from_flight_purchase_id, $flight_duration);
 } else if ($_POST['useCredit'] == 1 && $_POST['useBalance'] == 0) {
     $flight_purchase_id = insertFlightPurchase($invoice, $flight_offer_id, $customer_id, 2);
     insertFlightBooking($flight_purchase_id, $flight_time, $flight_duration);
