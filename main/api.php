@@ -241,7 +241,7 @@ function getCustomerBookings() {
         $query = $db->prepare(" SELECT fo.offer_name, DATE_FORMAT(fp.created, '%D %M %Y')
                            AS created, fo.duration, fp.id AS flight_purchase_id, fc.minutes,
                            customer.customer_id, customer.customer_name, customer.credit_time, fo.id,
-                           fb.id AS flight_booking_id, fb.flight_time
+                           fb.id AS flight_booking_id, fb.flight_time, fb.duration AS booking_duration, fp.deduct_from_balance
                            FROM flight_purchases fp
                            LEFT JOIN flight_credits fc ON fc.flight_purchase_id = fp.id
                            INNER JOIN flight_offers fo ON fp.flight_offer_id = fo.id
@@ -257,7 +257,7 @@ function getCustomerBookings() {
         $query = $db->prepare(" SELECT fo.offer_name, DATE_FORMAT(fp.created, '%D %M %Y')
                            AS created, fo.duration, fp.id AS flight_purchase_id, fc.minutes,
                            customer.customer_id, customer.customer_name, customer.credit_time, fo.id,
-                           fb.id AS flight_booking_id, fb.flight_time
+                           fb.id AS flight_booking_id, fb.flight_time, fb.duration AS booking_duration, fp.deduct_from_balance
                            FROM flight_purchases fp
                            LEFT JOIN flight_credits fc ON fc.flight_purchase_id = fp.id
                            INNER JOIN flight_offers fo ON fp.flight_offer_id = fo.id 
@@ -309,7 +309,9 @@ function getCustomerBookings() {
                 <td>
                     <a href="#" onclick="reschedule('.$row['flight_booking_id'].')" class="btn">Reschedule</a>
                 </td>
-            </tr>', $row['customer_name'], $row['offer_name'], $row['created'], $row['flight_time'], $row['duration'], $row['minutes'], $row['credit_time']);
+            </tr>', $row['customer_name'], $row['offer_name'], $row['created'], $row['flight_time'],
+                ($row['deduct_from_balance'] > 0) ? $row['booking_duration'] : $row['duration'],
+                $row['minutes'], $row['credit_time']);
         }
     } else {
         $table .= '<tr><td colspan="8">No previous bookings found</td></tr>';
