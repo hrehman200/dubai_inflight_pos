@@ -426,7 +426,7 @@ $position = $_SESSION['SESS_LAST_NAME'];
     // hack for auto selecting customer
     if($_GET['customer_id'] > 0) {
     ?>
-        $('.typeahead.dropdown-menu').append('<li data-value="<?=$_GET['customer_id']?>" class="active"><a href="#"><?=$_GET['customer_name']?></a></li>');
+        $('.typeahead.dropdown-menu').append('<li data-value="<?=$_GET['customer_id']?>" class="active"><a href="javascript:;"><?=$_GET['customer_name']?></a></li>');
         $('.typeahead.dropdown-menu li').click();
     <?php
     }
@@ -817,7 +817,9 @@ $position = $_SESSION['SESS_LAST_NAME'];
                                 success: function (response) {
                                     console.log(response);
                                     if (response.success == 1) {
-                                        location.reload();
+                                        var url = updateQueryStringParameter(window.location.href, 'customer_id', $('#customerId').val());
+                                        url = updateQueryStringParameter(url, 'customer_name', $('#customer').val());
+                                        window.location.href = url;
                                     }
                                 }
                             });
@@ -868,7 +870,7 @@ $position = $_SESSION['SESS_LAST_NAME'];
                             dataType: 'json',
                             success: function (response) {
                                 if (response.success == 1) {
-                                    location.reload();
+                                    location.reload(true);
                                 } else {
                                     alert(response.msg);
                                 }
@@ -927,7 +929,7 @@ $position = $_SESSION['SESS_LAST_NAME'];
                             dataType: 'json',
                             success: function (response) {
                                 if (response.success == 1) {
-                                    location.reload();
+                                    location.reload(true);
                                 } else {
                                     alert(response.msg);
                                 }
@@ -941,6 +943,18 @@ $position = $_SESSION['SESS_LAST_NAME'];
         dialog.on("shown.bs.modal", onTransferDialogShown);
         dialog.modal('show');
     }
+
+    function updateQueryStringParameter(uri, key, value) {
+        var re = new RegExp("([?&])" + key + "=.*?(&|$)", "i");
+        var separator = uri.indexOf('?') !== -1 ? "&" : "?";
+        if (uri.match(re)) {
+            return uri.replace(re, '$1' + key + "=" + value + '$2');
+        }
+        else {
+            return uri + separator + key + "=" + value;
+        }
+    }
+
 
 </script>
 
