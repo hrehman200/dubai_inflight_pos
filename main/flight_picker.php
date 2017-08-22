@@ -214,7 +214,9 @@ $position = $_SESSION['SESS_LAST_NAME'];
                     Transfer Credit
                 </button>
 
-                <label style="display: inline;"><b>Credit: </b><span id="spCreditTime"></span></label>
+                <button id="btnPurchaseViaCredit" class="btn btn-tertiary" style="margin-bottom:9px;">
+                    Credit: (<span id="spCreditTime"></span>)
+                </button>
 
                 <div class="row">
                     <div class="span3" style="margin-left:25px;">
@@ -402,6 +404,16 @@ $position = $_SESSION['SESS_LAST_NAME'];
                 $('#customerId').val('');
             }
         });
+
+    $('#btnPurchaseViaCredit').on('click', function(e) {
+        e.preventDefault();
+
+        if($('#customerId').val() > 0 && $('#flightOffer').val() > 0) {
+            deductFromCreditTime($('#customerId').val(), $('#spCreditTime').text(), $('#flightOffer').val(), $('#flightOffer option:selected').data('duration'));
+        } else {
+            alert('Please select offer and customer first.');
+        }
+    });
 
     var _getCustomerBookings = function(customerId, date) {
         $.ajax({
@@ -612,7 +624,7 @@ $position = $_SESSION['SESS_LAST_NAME'];
             </div>',
             buttons: {
                 btn1: {
-                    label: 'New Purchase',
+                    label: 'Process',
                     className: 'btn-success',
                     callback: function (result) {
                         var minutes = $('#txtMinutes').val();
@@ -644,13 +656,13 @@ $position = $_SESSION['SESS_LAST_NAME'];
                         }
                     }
                 },
-                btn3: {
+                /*btn3: {
                     label: 'Deduct from Pre-Opening Deals ('+credit_time+')',
                     className: 'btn',
                     callback: function (result) {
                         submitDeductFromCreditTime($('#customerId').val(), credit_time, $('#flightOffer').val(), duration, flightTime, true);
                     }
-                }
+                }*/
             }
         });
     };
