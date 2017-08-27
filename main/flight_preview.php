@@ -231,7 +231,7 @@ $secondPaymentOption = $row['mop1_amount'];
                             <?php
                             $invoice_id=$_GET['invoice'];
 
-                            $result = $db->prepare("SELECT fp.id AS flight_purchase_id, fp.deduct_from_balance, fo.code, fpkg.package_name, fo.offer_name, fo.price, fo.duration FROM flight_purchases fp
+                            $result = $db->prepare("SELECT fp.id AS flight_purchase_id, fp.deduct_from_balance, fp.class_people, fo.code, fpkg.package_name, fo.offer_name, fo.price, fo.duration FROM flight_purchases fp
                                       LEFT JOIN flight_offers fo ON fp.flight_offer_id = fo.id
                                       LEFT JOIN flight_packages fpkg ON fo.package_id = fpkg.id
                                       WHERE fp.invoice_id= :invoiceId");
@@ -242,7 +242,11 @@ $secondPaymentOption = $row['mop1_amount'];
                             $total_duration = 0;
                             while($row = $result->fetch()) {
                                 if($row['deduct_from_balance']==0) {
-                                    $total_cost += $row['price'];
+                                    if($row['class_people'] > 0) {
+                                        $total_cost += $row['price'] + (CLASS_SESSION_COST * $row['class_people']);
+                                    } else {
+                                        $total_cost += $row['price'];
+                                    }
                                     $total_duration += $row['duration'];
                                 }
                                 ?>
@@ -250,7 +254,16 @@ $secondPaymentOption = $row['mop1_amount'];
                                     <td><?php echo $row['code']; ?></td>
                                     <td><?php echo $row['package_name']; ?></td>
                                     <td><?php echo $row['deduct_from_balance']==1 ? $row['offer_name'].' (Deduct from balance)' : $row['offer_name']; ?></td>
-                                    <td><?php echo $row['deduct_from_balance']==1 ? '-' : number_format($row['price']); ?></td>
+                                    <td>
+                                        <?php
+                                        if ($row['deduct_from_balance']==1) {
+                                            echo '-';
+                                        } else if ($row['class_people'] > 0) {
+                                            echo number_format($row['price'] + (CLASS_SESSION_COST * $row['class_people']));
+                                        } else {
+                                            echo number_format($row['price']);
+                                        }
+                                        ?></td>
                                     <td><?php echo $row['deduct_from_balance']==1 ? '-' : $row['duration']; ?></td>
                                 </tr>
 

@@ -7,7 +7,7 @@ function getTimeslotsForFlightDate() {
 
     global $db;
 
-    $duration_required            = $_POST['duration'];
+    $duration_required            = (int)$_POST['duration'];
     $show_slots_with_minutes_only = $_POST['show_slots_with_minutes_only'];
     $office_time_slots            = $_POST['office_time_slots'];
 
@@ -31,10 +31,12 @@ function getTimeslotsForFlightDate() {
 
     while ($tNow <= $tEnd) {
 
+        $slot_time = $_POST['flight_date'] . ' ' . date("H:i:00", $tNow);
+
         $query = $db->prepare("SELECT SUM(duration) AS bookedDuration FROM flight_bookings
               WHERE flight_time = :flight_time");
         $query->execute([
-            'flight_time' => $_POST['flight_date'] . ' ' . date("H:i:00", $tNow),
+            'flight_time' => $slot_time,
         ]);
 
         $row = $query->fetch();
@@ -59,35 +61,62 @@ function getTimeslotsForFlightDate() {
             $str .= '<br/><br/>';
         }
 
-        if ($percent_unbooked >= 100) {
+        /*if ($percent_unbooked >= 100) {
             $background = "#51a351";
         } else if ($percent_booked >= 100) {
             $background = "#ee5f5b";
         } else {
             $background = "linear-gradient(to left, #51a351 {$percent_unbooked}%, #ee5f5b {$percent_booked}%)";
-        }
-
-        if ($tNow <= strtotime("09:30") || $tNow >= strtotime("19:00")) {
-            # code...
-            $background = "linear-gradient(to left, #bfbfbf {$percent_unbooked}%, #ee5f5b {$percent_booked}%)";
-        } 
-
-        $tooltip_title = sprintf('Booked Time: %d <br> Time Remaining: %d', $row['bookedDuration'], 30 - $row['bookedDuration']);
+        }*/
 
         // nobody books 60 min slot and also we have only 30 min slots
         if ($duration_required > 30) {
             $duration_required = 30;
         }
-        if ($show_slots_with_minutes_only == 1 && $unbooked_duration < $duration_required) {
+
+        if ($tNow <= strtotime("09:30") || $tNow >= strtotime("19:00")) {
+            //$background = "linear-gradient(to left, #bfbfbf {$percent_unbooked}%, #ee5f5b {$percent_booked}%)";
+
+            $query = $db->prepare('SELECT * FROM flight_slots WHERE slot_time = :slotTime AND unlocked = 1');
+            $query->execute(array(
+                ':slotTime'=>$slot_time
+            ));
+            if($query->rowCount() > 0) {
+                $unlocked = 1;
+                if($duration_required <= $unbooked_duration) {
+                    $background = "#51a351";
+                } else {
+                    $background = "#ee5f5b";
+                }
+            } else {
+                $unlocked = 0;
+                $background = "#bfbfbf";
+            }
+        } else {
+            // only show 1 color, no gradient
+            if($duration_required <= $unbooked_duration) {
+                $background = "#51a351";
+            } else {
+                $background = "#ee5f5b";
+            }
+        }
+
+        $tooltip_title = sprintf('Booked Time: %d <br> Time Remaining: %d', $row['bookedDuration'], 30 - $row['bookedDuration']);
+
+        if ($show_slots_with_minutes_only == 1 && $duration_required > $unbooked_duration) {
             $tNow = strtotime("+{$slot_increment} minutes", $tNow);
             continue;
         }
 
-        $str .= sprintf('<span class="label lb-lg" data-toggle="tooltip" title="%s" style="
+        $str .= sprintf('<span class="label lb-lg"
+            data-unlocked="%d"
+            data-toggle="tooltip"
+            title="%s"
+            style="
             background: %s;
             margin:5px;
             padding:10px;
-            color:white;">%s</span>', $tooltip_title, $background, date("H:i", $tNow));
+            color:white;">%s</span>', $unlocked, $tooltip_title, $background, date("H:i", $tNow));
 
         $tNow = strtotime("+{$slot_increment} minutes", $tNow);
 
@@ -228,22 +257,10 @@ function getCustomerBookings() {
 
     $post = $_POST;
 
-    // original Query
-
-    // $query = $db->prepare("SELECT fo.offer_name, DATE_FORMAT(fp.created, '%D %M %Y') AS created, fo.duration, fc.flight_purchase_id, fc.minutes
-    //     FROM flight_credits fc
-    //     INNER JOIN flight_purchases fp ON fc.flight_purchase_id = fp.id
-    //     INNER JOIN flight_offers fo ON fp.flight_offer_id = fo.id
-    //     WHERE fp.customer_id = :customerId AND fc.minutes > 0 AND fp.status = 1");
-
     // new query
     if($post['date'] != '') {
-        $query = $db->prepare(" SELECT fo.offer_name, DATE_FORMAT(fp.created, '%D %M %Y')
-                           AS created, fo.duration, fp.id AS flight_purchase_id, fc.minutes,
-                           customer.customer_id, customer.customer_name, customer.credit_time, fo.id,
-                           fb.id AS flight_booking_id, fb.flight_time, fb.duration AS booking_duration, fp.deduct_from_balance
+        $query = $db->prepare(" SELECT fo.offer_name, customer.customer_name, fb.flight_time, fb.duration AS booking_duration
                            FROM flight_purchases fp
-                           LEFT JOIN flight_credits fc ON fc.flight_purchase_id = fp.id
                            INNER JOIN flight_offers fo ON fp.flight_offer_id = fo.id
                            INNER JOIN customer ON customer.customer_id = fp.customer_id
                            INNER JOIN flight_bookings fb ON fb.flight_purchase_id = fp.id
@@ -253,8 +270,35 @@ function getCustomerBookings() {
             ':flightDate' => $post['date']
         ));
 
-    } else {
-        $query = $db->prepare(" SELECT fo.offer_name, DATE_FORMAT(fp.created, '%D %M %Y')
+        $table = '<table class="table table-striped table-bordered">
+        <tr>
+            <th>Customer</th>
+            <th>Offer</th>
+            <th>Flight Time</th>
+            <th>Minutes</th>
+        </tr>';
+
+        if ($query->rowCount() > 0) {
+            while ($row = $query->fetch()) {
+
+                $table .= sprintf('
+                    <tr>
+                        <td>%s</td>
+                        <td>%s</td>
+                        <td>%s</td>
+                        <td>%s</td>
+                    </tr>', $row['customer_name'], $row['offer_name'], $row['flight_time'], $row['booking_duration']);
+            }
+
+        } else {
+            $table .= '<tr><td colspan="4">No bookings found</td></tr>';
+        }
+        $table .= '</table>';
+    }
+
+    if($post['customerId'] != '') {
+
+        $query2 = $db->prepare(" SELECT fo.offer_name, DATE_FORMAT(fp.created, '%D %M %Y')
                            AS created, fo.duration, fp.id AS flight_purchase_id, fc.minutes,
                            customer.customer_id, customer.customer_name, customer.credit_time, fo.id,
                            fb.id AS flight_booking_id, fb.flight_time, fb.duration AS booking_duration, fp.deduct_from_balance
@@ -265,64 +309,63 @@ function getCustomerBookings() {
                            LEFT JOIN flight_bookings fb ON fb.flight_purchase_id = fp.id
                            WHERE fp.customer_id =:customerId AND fp.status = 1");
 
-        $query->execute(array(
+        $query2->execute(array(
             ':customerId' => $post['customerId']
         ));
-    }
 
-   // $query = $db->prepare("SELECT fp.id AS flight_purchase_id, fp.deduct_from_balance, fo.code, fpkg.package_name, fo.offer_name, fo.price, fo.duration, c.customer_name, DATE_FORMAT(fp.created,'%b %d, %Y') AS created
-   //                            FROM flight_purchases fp
-   //                            LEFT JOIN flight_offers fo ON fp.flight_offer_id = fo.id
-   //                            LEFT JOIN flight_packages fpkg ON fo.package_id = fpkg.id
-   //                            LEFT JOIN flight_bookings fb ON fb.flight_purchase_id = fp.id
-   //                            INNER JOIN customer c ON fp.customer_id = c.customer_id
-   //                            INNER JOIN flight_credits ON flight_credits.flight_purchase_id = fb.flight_purchase_id
-   //                            WHERE fp.customer_id =:customerId AND flight_credits.minutes > 0 AND fp.status = 1");
-
-
-
-    $table = '<table class="table table-striped table-bordered">
+        $table2 = '<table class="table table-striped table-bordered">
         <tr>
-            <td>Customer</td>
-            <td>Offer</td>
-            <td>Purchaed  Date</td>
-            <td>Flight Time</td>
-            <td>Minutes</td>
-            <td>Remaining</td>
-            <td>Pre-Opening</td>
-            <td>Action</td>
+            <th>Customer</th>
+            <th>Offer</th>
+            <th>Purchaed  Date</th>
+            <th>Flight Time</th>
+            <th>Minutes</th>
+            <th>Remaining</th>
+            <th>Pre-Opening</th>
+            <th>Action</th>
         </tr>';
-
-    if ($query->rowCount() > 0) {
-        while ($row = $query->fetch()) {
-            $table .= sprintf('
-            <tr>
-                <td>%s</td>
-                <td>%s</td>
-                <td>%s</td>
-                <td>%s</td>
-                <td>%d</td>
-                <td>%d '.($row['minutes']>0?'<a href="javascript:;" onclick="deductFromBalance(\''.$row['duration'].'\', \''.$row['minutes'].'\','.$row['id'].','.$row['flight_purchase_id'].');" class="btn">Deduct from balance</a>':'').
-                       ($row['minutes']>0?'<a href="javascript:;" onclick="showBalanceTransferDialog('.$row['customer_id'].','.$row['id'].','.$row['minutes'].','.$row['flight_purchase_id'].');" class="btn">Transfer Balance</a>':'')
-                .'</td>
-                <td>%d '.($row['credit_time']>0?'<a href="javascript:;" onclick="deductFromCreditTime('.$row['customer_id'].','.$row['credit_time'].','.$row['id'].','.$row['duration'].');" class="btn">Deduct from credit</a>':'').'</td>
-                <td>
-                    <a href="javascript:;" onclick="reschedule('.$row['flight_booking_id'].')" class="btn">Reschedule</a>
-                </td>
-            </tr>', $row['customer_name'], $row['offer_name'], $row['created'], $row['flight_time'],
-                ($row['deduct_from_balance'] > 0) ? $row['booking_duration'] : $row['duration'],
-                $row['minutes'], $row['credit_time']);
-        }
-    } else {
-        $table .= '<tr><td colspan="8">No previous bookings found</td></tr>';
     }
-    $table .= '</table>';
+
+    if($post['customerId'] != '') {
+
+        if ($query2->rowCount() > 0) {
+            while ($row = $query2->fetch()) {
+
+                $table2 .= sprintf('
+                    <tr>
+                        <td>%s</td>
+                        <td>%s</td>
+                        <td>%s</td>
+                        <td>%s</td>
+                        <td>%d</td>
+                        <td>%d <br/>' . ($row['minutes'] > 0 ? '<a href="javascript:;" onclick="deductFromBalance(\'' . $row['duration'] . '\', \'' . $row['minutes'] . '\',' . $row['id'] . ',' . $row['flight_purchase_id'] . ');" class="btn btn-small">Deduct</a>' : '') .
+                    ($row['minutes'] > 0 ? '<a href="javascript:;" onclick="showBalanceTransferDialog(' . $row['customer_id'] . ',' . $row['id'] . ',' . $row['minutes'] . ',' . $row['flight_purchase_id'] . ');" class="btn btn-small">Transfer</a>' : '')
+                    . '</td>
+                        <td>%d <br/>' . ($row['credit_time'] > 0 ? '<a href="javascript:;" onclick="deductFromCreditTime(' . $row['customer_id'] . ',' . $row['credit_time'] . ',' . $row['id'] . ',' . $row['duration'] . ');" class="btn btn-small">Deduct</a>' : '') .
+                    ($row['credit_time'] > 0 ? '<a href="javascript:;" class="btn btn-small btnTransferCredit">Transfer</a>' : '')
+                    . '</td>
+                        <td>
+                            <a href="javascript:;" onclick="reschedule(' . $row['flight_booking_id'] . ')" class="btn btn-small">Reschedule</a>
+                        </td>
+                    </tr>', $row['customer_name'], $row['offer_name'], $row['created'], $row['flight_time'],
+                    ($row['deduct_from_balance'] > 0) ? $row['booking_duration'] : $row['duration'],
+                    $row['minutes'], $row['credit_time']);
+            }
+        }
+    }else {
+        $table2 .= '<tr><td colspan="8">No previous bookings found</td></tr>';
+    }
+    $table2 .= '</table>';
 
     $data = array(
         'success' => 1,
         'msg'     => '',
-        'data'    => $table
+        'data'    => array('table'=>$table, 'table2'=>$table2)
     );
+
+    if($post['date'] != '') {
+        $data['bookings'] = $query->rowCount();
+    }
 
     if($post['customerId'] > 0) {
         $query = $db->prepare(" SELECT credit_time FROM customer WHERE customer_id =:customerId");
@@ -337,8 +380,15 @@ function getCustomerBookings() {
 }
 
 function verifyPassword() {
+    global $db;
+
     if (sha1($_POST['password']) == '17874598808386e981a2bc4723c9bd38c5de4982') {
-        $_SESSION['beyond_office_allowed'] = 1;
+
+        $sql   = "INSERT INTO flight_slots VALUES (:slotTime, 1)";
+        $query = $db->prepare($sql);
+        $query->execute(array(
+            'slotTime' => $_POST['slotTime']
+        ));
         echo json_encode(array('success' => 1));
     } else {
         echo json_encode(array('success' => 0));

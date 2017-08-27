@@ -3,11 +3,12 @@
 error_reporting(E_ERROR | E_CORE_ERROR | E_COMPILE_ERROR);
 session_start();
 
+define('CLASS_SESSION_COST', 100);
 
 /* Database config */
 $db_host     = 'localhost';
 $db_user     = 'root';
-$db_pass     = 'haris_786';
+$db_pass     = '';
 $db_database = 'sales';
 
 /* End config */
@@ -16,7 +17,7 @@ $db = new PDO('mysql:host=' . $db_host . ';dbname=' . $db_database, $db_user, $d
 $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
 
-require_once('flight_func.php');
+require('flight_func.php');
 
 $called_from = basename($_SERVER['PHP_SELF']);
 

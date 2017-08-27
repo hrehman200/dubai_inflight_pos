@@ -35,6 +35,20 @@
         .sidebar-nav {
             padding: 9px 0;
         }
+
+        #divCustomerDetails {
+            font-size: 15px;
+            overflow-y: scroll;
+            max-height: 500px;
+            width:28%;
+        }
+
+        .modalBookings {
+            width: 70% !important;
+            margin-left: -34%;
+            margin-right: -34%;
+            font-size: 14px;
+        }
     </style>
     <link href="css/bootstrap-responsive.css" rel="stylesheet">
 
@@ -200,37 +214,35 @@ $position = $_SESSION['SESS_LAST_NAME'];
                 <input type="hidden" name="date" value="<?php echo date("m/d/y"); ?>"/>
 
                 <br/>
-                <input type="text" class="form-contorl span6" placeholder="Search Customers" id="customer" name="customer" autocomplete="off" />
 
-                <button class="btn btn-info" style="margin-bottom: 9px;" id="btnFlightHistory">
+                <button class="btn btn-info span2" style="margin-right: 25px; margin-left:0;" id="btnFlightHistory">
                     Flight History
                 </button>
+
+                <input type="text" class="form-contorl span4" placeholder="Search Customers" id="customer" name="customer" autocomplete="off" />
 
                 <button id="btnAddCustomer" data-href="user_login.php" class="btn btn-secondary" style="margin-bottom:9px;">
                     Add Customer
                 </button>
 
-                <button id="btnTransferCredit" class="btn btn-tertiary" style="margin-bottom:9px;">
-                    Transfer Credit
-                </button>
-
-                <button id="btnPurchaseViaCredit" class="btn btn-tertiary" style="margin-bottom:9px;">
-                    Credit: (<span id="spCreditTime"></span>)
-                </button>
-
                 <div class="row">
                     <div class="span3" style="margin-left:25px;">
                         <div id="datePicker"></div>
+                        <button class="btn" id="btnBookings">Bookings (<span id="spBookings">0</span>)</button>
                     </div>
 
                     <div class="span5" >
                         <input type="checkbox" id="chkOnlySlotsWithDuration" name="chkOnlySlotsWithDuration" value="1" />
-                        <label style="display: inline;" for="chkOnlySlotsWithDuration">Show slots that have <b><span id="spMinutes"></span> minutes</b> available</label>
+                        <label style="display: inline;" for="chkOnlySlotsWithDuration">Show slots that have <b><input type="text" class="input-mini" id="txtOfferMinutes" /> minutes</b> available</label>
                         <br/>
 
-                      <input type="checkbox" id="chkOnlyOfficeTimeSlots" name="chkOnlyOfficeTimeSlots" value="1" unchecked style='display : none;'/>
+                        <input type="checkbox" id="chkClassSession" name="chkClassSession" value="1" />
+                        <label style="display: inline;" for="chkClassSession">Class Session <span id="spClassPeople" style="padding-left:25px;"><input type="text" class="input-mini" id="txtClassPeople" name="txtClassPeople" value="0" /> people</span> </label>
+                        <br/>
+
+                        <input type="checkbox" id="chkOnlyOfficeTimeSlots" name="chkOnlyOfficeTimeSlots" value="1" unchecked style='display : none;'/>
                         <label style="display: none;" for="chkOnlyOfficeTimeSlots">Show office time slots only</label>
-                        <br/><br/>
+                        <br/>
 
                         <div id="timeslots">
                         </div>
@@ -261,7 +273,7 @@ $position = $_SESSION['SESS_LAST_NAME'];
                 $url = 'http://' . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'];
                 $str_query = parse_url($url, PHP_URL_QUERY);
 
-                $result = $db->prepare("SELECT fp.id AS flight_purchase_id, fp.deduct_from_balance, fo.code, fpkg.package_name, fo.offer_name, fo.price, fo.duration FROM flight_purchases fp
+                $result = $db->prepare("SELECT fp.id AS flight_purchase_id, fp.deduct_from_balance, fp.class_people, fo.code, fpkg.package_name, fo.offer_name, fo.price, fo.duration FROM flight_purchases fp
                   LEFT JOIN flight_offers fo ON fp.flight_offer_id = fo.id
                   LEFT JOIN flight_packages fpkg ON fo.package_id = fpkg.id
                   WHERE fp.invoice_id= :invoiceId");
@@ -272,7 +284,11 @@ $position = $_SESSION['SESS_LAST_NAME'];
                 $total_duration = 0;
                 while($row = $result->fetch()) {
                     if($row['deduct_from_balance']==0) {
-                        $total_cost += $row['price'];
+                        if($row['class_people'] > 0) {
+                            $total_cost += $row['price'] + (CLASS_SESSION_COST * $row['class_people']);
+                        } else {
+                            $total_cost += $row['price'];
+                        }
                         $total_duration += $row['duration'];
                     }
                     ?>
@@ -280,7 +296,16 @@ $position = $_SESSION['SESS_LAST_NAME'];
                         <td><?php echo $row['code']; ?></td>
                         <td><?php echo $row['package_name']; ?></td>
                         <td><?php echo $row['deduct_from_balance']==1 ? $row['offer_name'].' (Deduct from balance)' : $row['offer_name']; ?></td>
-                        <td><?php echo $row['deduct_from_balance']==1 ? '-' : $row['price']; ?></td>
+                        <td>
+                            <?php
+                            if ($row['deduct_from_balance']==1) {
+                                echo '-';
+                            } else if ($row['class_people'] > 0) {
+                                echo $row['price'] + (CLASS_SESSION_COST * $row['class_people']);
+                            } else {
+                                echo $row['price'];
+                            }
+                            ?></td>
                         <td><?php echo $row['deduct_from_balance']==1 ? '-' : $row['duration']; ?></td>
                         <td width="90"><a
                                 href="delete_flight_order.php?flight_purchase_id=<?php echo $row['flight_purchase_id'] . "&" . $str_query; ?>">
@@ -360,17 +385,42 @@ $position = $_SESSION['SESS_LAST_NAME'];
 
 <script type="text/javascript">
 
-    $('#flightOffer').on('change', function(e){
-        var minutes = $(this).find('option:selected').data('duration');
+    var _setMinutes = function() {
+        var minutes = $('#flightOffer').find('option:selected').data('duration');
         if(minutes > 30) {
             minutes = 30;
         }
-        $('#spMinutes').html(minutes);
+        $('#txtOfferMinutes').val(minutes);
+    };
+
+    $('#flightOffer').on('change', function(e){
+        _setMinutes();
+        if($(this).val() == 0) {
+            $('#timeslots').html('');
+        }
     }).trigger('change');
 
     $('#chkOnlySlotsWithDuration, #chkOnlyOfficeTimeSlots').on('change', function(e) {
         $('#datePicker').trigger('changeDate');
     });
+
+    $('#txtOfferMinutes').on('keyup', function(e) {
+        var pickedDate = $("#datePicker").data('datepicker').getFormattedDate('yyyy-mm-dd');
+        _getTimeslots(pickedDate, $('#flightOffer').val(), $('#txtOfferMinutes').val(), '#timeslots');
+
+    }).on('blur', function(e) {
+        if($(this).val() == '') {
+            _setMinutes();
+        }
+    });
+
+    $('#chkClassSession').on('change', function(e) {
+        if($(this).is(':checked')) {
+            $('#spClassPeople').show();
+        }else{
+            $('#spClassPeople').hide();
+        }
+    }).trigger('change');
 
     $("#customer").typeahead({
         onSelect: function(item) {
@@ -402,18 +452,10 @@ $position = $_SESSION['SESS_LAST_NAME'];
         .on('change', function(e) {
             if($(this).val()=='') {
                 $('#customerId').val('');
+                $('#divCustomerDetails').html('');
+                $('#timeslots').html('');
             }
         });
-
-    $('#btnPurchaseViaCredit').on('click', function(e) {
-        e.preventDefault();
-
-        if($('#customerId').val() > 0 && $('#flightOffer').val() > 0) {
-            deductFromCreditTime($('#customerId').val(), $('#spCreditTime').text(), $('#flightOffer').val(), $('#flightOffer option:selected').data('duration'));
-        } else {
-            alert('Please select offer and customer first.');
-        }
-    });
 
     var _getCustomerBookings = function(customerId, date) {
         $.ajax({
@@ -427,7 +469,8 @@ $position = $_SESSION['SESS_LAST_NAME'];
             dataType: 'json',
             success: function(response) {
                 if(response.success == 1) {
-                    $('#divCustomerDetails').html(response.data);
+                    $('#spBookings').html(response.bookings);
+                    $('#divCustomerDetails').html(response.data.table2);
                     $('#spCreditTime').html(response.credit_time);
                 }
             }
@@ -445,6 +488,11 @@ $position = $_SESSION['SESS_LAST_NAME'];
     ?>
 
     var _getTimeslots = function(flightDate, flightOfferId, duration, divToFillId) {
+
+        if( (flightOfferId == 0 || $('#customerId').val() == '') && divToFillId == '#timeslots' ) {
+            $(divToFillId).html('');
+            return;
+        }
 
         if(duration == undefined) {
             duration = 30;
@@ -477,16 +525,37 @@ $position = $_SESSION['SESS_LAST_NAME'];
     }).on('changeDate', function(e) {
         var pickedDate = $("#datePicker").data('datepicker').getFormattedDate('yyyy-mm-dd');
         $('#flightDate').val(pickedDate);
-        _getTimeslots(pickedDate, $('#flightOffer').val(), $('#flightOffer option:selected').data('duration'), '#timeslots');
-
-        if($('#flightOffer').val() == 0 && $('#customerId').val() == '') {
-            _getCustomerBookings(0, pickedDate);
-        } else {
-            _getCustomerBookings($('#customerId').val(), '');
-        }
+        _getTimeslots(pickedDate, $('#flightOffer').val(), $('#txtOfferMinutes').val(), '#timeslots');
+        _getCustomerBookings($('#customerId').val(), pickedDate);
 
     }).datepicker('update', '<?php echo $_GET['date']?>')
         .trigger('changeDate');
+
+    $('#btnBookings').on('click', function(e) {
+        e.preventDefault();
+
+        var pickedDate = $("#datePicker").data('datepicker').getFormattedDate('yyyy-mm-dd');
+
+        $.ajax({
+            url:'api.php',
+            method: 'POST',
+            data: {
+                'call': 'getCustomerBookings',
+                'customerId': 0,
+                'date': pickedDate
+            },
+            dataType: 'json',
+            success: function(response) {
+                if(response.success == 1) {
+                    var dialog = bootbox.dialog({
+                        title: 'Bookings',
+                        message: response.data.table,
+                        className: 'modalBookings'
+                    });
+                }
+            }
+        });
+    });
 
     $('#btnFlightHistory').on('click', function(e) {
         e.preventDefault();
@@ -537,11 +606,10 @@ $position = $_SESSION['SESS_LAST_NAME'];
         var officeStart = new Date(selectedDate+" 09:30");
         var officeClose = new Date(selectedDate+" 19:00");
 
-        var beyondOfficeAllowed = '<?=$_SESSION['beyond_office_allowed']?>';
+        var unlocked = $(this).data('unlocked');
 
-        if(beyondOfficeAllowed != '1' &&
-            (selectedTime.getTime() < officeStart.getTime() || selectedTime.getTime() > officeClose.getTime())
-        ) {
+        if(unlocked == 0 &&
+            (selectedTime.getTime() < officeStart.getTime() || selectedTime.getTime() > officeClose.getTime())) {
             bootbox.dialog({
                 title: 'Enter password to book slot',
                 message: '<div> \
@@ -557,11 +625,13 @@ $position = $_SESSION['SESS_LAST_NAME'];
                                 method: 'POST',
                                 data: {
                                     'call': 'verifyPassword',
-                                    'password': $('#txtPassword').val()
+                                    'password': $('#txtPassword').val(),
+                                    'slotTime': selectedDate+" "+flightTime
                                 },
                                 dataType: 'json',
                                 success: function (response) {
                                     if (response.success == 1) {
+                                        $(e.target).data('unlocked', 1);
                                         _bookSlot(flightTime);
                                     } else {
                                         alert('Wrong password');
@@ -627,7 +697,7 @@ $position = $_SESSION['SESS_LAST_NAME'];
                     label: 'Process',
                     className: 'btn-success',
                     callback: function (result) {
-                        var minutes = $('#txtMinutes').val();
+                        var minutes = parseInt($('#txtMinutes').val());
                         if(minutes !== null) {
                             if (minutes <= duration) {
                                 $('#flightPurchaseId').val('');
@@ -644,7 +714,7 @@ $position = $_SESSION['SESS_LAST_NAME'];
                     label: 'Use Existing Purchase ('+unbookedDuration+')',
                     className: 'btn-info',
                     callback: function (result) {
-                        var minutes = $('#txtMinutes').val();
+                        var minutes = parseInt($('#txtMinutes').val());
                         if(minutes !== null) {
                             if (minutes <= unbookedDuration) {
                                 $('#flightDuration').val(minutes);
@@ -743,7 +813,8 @@ $position = $_SESSION['SESS_LAST_NAME'];
                     label: 'Deduct from balance ('+balance+')',
                     className: 'btn-success',
                     callback: function (result) {
-                        var minutes = $('#txtMinutes').val();
+                        var minutes = parseInt($('#txtMinutes').val());
+                        balance = parseInt(balance);
 
                         if(minutes !== null) {
                             if (minutes <= balance) {
@@ -756,7 +827,7 @@ $position = $_SESSION['SESS_LAST_NAME'];
                                 $('#flightOffer').val(flightOfferId);
                                 $('#formFlightTime').submit();
                             } else {
-                                alert('Balance does not have' + minutes + ' minutes.');
+                                alert('Balance does not have ' + minutes + ' minutes.');
                                 return false;
                             }
                         }
@@ -780,7 +851,7 @@ $position = $_SESSION['SESS_LAST_NAME'];
 
     function onDateTimeSlotPickerDialogShown() {
         $("#bookingDate").on('change', function(e) {
-            _getTimeslots($("#bookingDate").val(), $('#flightOffer').val(), $('#flightOffer option:selected').data('duration'), '#timeslotsInDialog');
+            _getTimeslots($("#bookingDate").val(), $('#flightOffer').val(), $('#txtOfferMinutes').val(), '#timeslotsInDialog');
         });
 
         $('#timeslotsInDialog').on('click', '.label', function(e) {
@@ -913,7 +984,7 @@ $position = $_SESSION['SESS_LAST_NAME'];
         });
     }
 
-    $('#btnTransferCredit').click(showCreditTransferDialog);
+    $('body').on('click', '.btnTransferCredit', showCreditTransferDialog);
 
     function showBalanceTransferDialog(customerId, offerId, offerMinutes, fromFlightPurchaseId) {
 

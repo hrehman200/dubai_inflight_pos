@@ -103,20 +103,22 @@ function deductFromCreditTime($customer_id, $flight_offer_id, $balance, $creditD
  * @param $customer_id
  * @param int $use_balance
  * @param int $status
+ * @param int $class_people
  * @return string
  */
-function insertFlightPurchase($invoice_id, $flight_offer_id, $customer_id, $use_balance = 0, $status = 0) {
+function insertFlightPurchase($invoice_id, $flight_offer_id, $customer_id, $use_balance = 0, $status = 0, $class_people = 0) {
     global $db;
 
-    $sql = "INSERT INTO flight_purchases(invoice_id, flight_offer_id, customer_id, deduct_from_balance, status)
-        VALUES (:invoice_id, :flight_offer_id, :customer_id, :use_balance, :status)";
+    $sql = "INSERT INTO flight_purchases(invoice_id, flight_offer_id, customer_id, deduct_from_balance, status, class_people)
+        VALUES (:invoice_id, :flight_offer_id, :customer_id, :use_balance, :status, :class_people)";
     $q   = $db->prepare($sql);
     $arr = array(
         ':invoice_id'      => $invoice_id,
         ':flight_offer_id' => $flight_offer_id,
         ':customer_id'     => $customer_id,
         ':use_balance'     => $use_balance,
-        ':status'          => $status
+        ':status'          => $status,
+        ':class_people'    => $class_people
     );
     $q->execute($arr);
 
