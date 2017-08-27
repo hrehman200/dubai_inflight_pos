@@ -38,9 +38,9 @@
 
         #divCustomerDetails {
             font-size: 15px;
-            overflow-y: scroll;
+            /*overflow-y: scroll;
             max-height: 500px;
-            width:28%;
+            width:28%;*/
         }
 
         .modalBookings {
@@ -232,7 +232,7 @@ $position = $_SESSION['SESS_LAST_NAME'];
                     </div>
 
                     <div class="span5" >
-                        <input type="checkbox" id="chkOnlySlotsWithDuration" name="chkOnlySlotsWithDuration" value="1" />
+                        <input type="checkbox" id="chkOnlySlotsWithDuration" name="chkOnlySlotsWithDuration" value="1" checked="checked" />
                         <label style="display: inline;" for="chkOnlySlotsWithDuration">Show slots that have <b><input type="text" class="input-mini" id="txtOfferMinutes" /> minutes</b> available</label>
                         <br/>
 
@@ -254,111 +254,114 @@ $position = $_SESSION['SESS_LAST_NAME'];
                 </div>
 
             </form>
-            <table class="table table-bordered" id="resultTable" data-responsive="table">
-                <thead>
-                <tr>
-                    <th> Offer Code</th>
-                    <th> Package</th>
-                    <th> Flight Offer</th>
-                    <th> Price</th>
-                    <th> Minutes</th>
-                    <th> Action</th>
-                </tr>
-                </thead>
-                <tbody>
 
-                <?php
-                $id = $_GET['invoice'];
-
-                $url = 'http://' . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'];
-                $str_query = parse_url($url, PHP_URL_QUERY);
-
-                $result = $db->prepare("SELECT fp.id AS flight_purchase_id, fp.deduct_from_balance, fp.class_people, fo.code, fpkg.package_name, fo.offer_name, fo.price, fo.duration FROM flight_purchases fp
-                  LEFT JOIN flight_offers fo ON fp.flight_offer_id = fo.id
-                  LEFT JOIN flight_packages fpkg ON fo.package_id = fpkg.id
-                  WHERE fp.invoice_id= :invoiceId");
-                $result->bindParam(':invoiceId', $id);
-                $result->execute();
-
-                $total_cost = 0;
-                $total_duration = 0;
-                while($row = $result->fetch()) {
-                    if($row['deduct_from_balance']==0) {
-                        if($row['class_people'] > 0) {
-                            $total_cost += $row['price'] + (CLASS_SESSION_COST * $row['class_people']);
-                        } else {
-                            $total_cost += $row['price'];
-                        }
-                        $total_duration += $row['duration'];
-                    }
-                    ?>
-                    <tr class="record">
-                        <td><?php echo $row['code']; ?></td>
-                        <td><?php echo $row['package_name']; ?></td>
-                        <td><?php echo $row['deduct_from_balance']==1 ? $row['offer_name'].' (Deduct from balance)' : $row['offer_name']; ?></td>
-                        <td>
-                            <?php
-                            if ($row['deduct_from_balance']==1) {
-                                echo '-';
-                            } else if ($row['class_people'] > 0) {
-                                echo $row['price'] + (CLASS_SESSION_COST * $row['class_people']);
-                            } else {
-                                echo $row['price'];
-                            }
-                            ?></td>
-                        <td><?php echo $row['deduct_from_balance']==1 ? '-' : $row['duration']; ?></td>
-                        <td width="90"><a
-                                href="delete_flight_order.php?flight_purchase_id=<?php echo $row['flight_purchase_id'] . "&" . $str_query; ?>">
-                                <button class="btn btn-mini btn-warning"><i class="icon icon-remove"></i> Cancel</button>
-                            </a></td>
-                        <script type="text/javascript">
-                            $('#flightPurchaseId').val(<?=$row['flight_purchase_id']?>);
-                        </script>
+            <div style="position: sticky; bottom:10px; background-color: #eeeeee; padding:10px;" class="span11">
+                <table class="table table-bordered" id="resultTable" data-responsive="table">
+                    <thead>
+                    <tr>
+                        <th> Offer Code</th>
+                        <th> Package</th>
+                        <th> Flight Offer</th>
+                        <th> Price</th>
+                        <th> Minutes</th>
+                        <th> Action</th>
                     </tr>
+                    </thead>
+                    <tbody>
 
                     <?php
-                    $query2 = $db->prepare('SELECT * FROM flight_bookings WHERE flight_purchase_id = :flight_purchase_id');
-                    $query2->bindParam(':flight_purchase_id', $row['flight_purchase_id']);
-                    $query2->execute();
-                    while($row2 = $query2->fetch()) {
+                    $id = $_GET['invoice'];
+
+                    $url = 'http://' . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'];
+                    $str_query = parse_url($url, PHP_URL_QUERY);
+
+                    $result = $db->prepare("SELECT fp.id AS flight_purchase_id, fp.deduct_from_balance, fp.class_people, fo.code, fpkg.package_name, fo.offer_name, fo.price, fo.duration FROM flight_purchases fp
+                      LEFT JOIN flight_offers fo ON fp.flight_offer_id = fo.id
+                      LEFT JOIN flight_packages fpkg ON fo.package_id = fpkg.id
+                      WHERE fp.invoice_id= :invoiceId");
+                    $result->bindParam(':invoiceId', $id);
+                    $result->execute();
+
+                    $total_cost = 0;
+                    $total_duration = 0;
+                    while($row = $result->fetch()) {
+                        if($row['deduct_from_balance']==0) {
+                            if($row['class_people'] > 0) {
+                                $total_cost += $row['price'] + (CLASS_SESSION_COST * $row['class_people']);
+                            } else {
+                                $total_cost += $row['price'];
+                            }
+                            $total_duration += $row['duration'];
+                        }
                         ?>
-                        <tr>
-                            <td colspan="2"></td>
-                            <td style="text-align: center;"><?=substr($row2['flight_time'],0,-3)?></td>
-                            <td></td>
-                            <td><?=$row2['duration']?></td>
-                            <td><a href="delete_flight_order.php?booking_id=<?php echo $row2['id'] . "&" . $str_query; ?>">
+                        <tr class="record">
+                            <td><?php echo $row['code']; ?></td>
+                            <td><?php echo $row['package_name']; ?></td>
+                            <td><?php echo $row['deduct_from_balance']==1 ? $row['offer_name'].' (Deduct from balance)' : $row['offer_name']; ?></td>
+                            <td>
+                                <?php
+                                if ($row['deduct_from_balance']==1) {
+                                    echo '-';
+                                } else if ($row['class_people'] > 0) {
+                                    echo $row['price'] + (CLASS_SESSION_COST * $row['class_people']);
+                                } else {
+                                    echo $row['price'];
+                                }
+                                ?></td>
+                            <td><?php echo $row['deduct_from_balance']==1 ? '-' : $row['duration']; ?></td>
+                            <td width="90"><a
+                                    href="delete_flight_order.php?flight_purchase_id=<?php echo $row['flight_purchase_id'] . "&" . $str_query; ?>">
                                     <button class="btn btn-mini btn-warning"><i class="icon icon-remove"></i> Cancel</button>
                                 </a></td>
+                            <script type="text/javascript">
+                                $('#flightPurchaseId').val(<?=$row['flight_purchase_id']?>);
+                            </script>
                         </tr>
+
+                        <?php
+                        $query2 = $db->prepare('SELECT * FROM flight_bookings WHERE flight_purchase_id = :flight_purchase_id');
+                        $query2->bindParam(':flight_purchase_id', $row['flight_purchase_id']);
+                        $query2->execute();
+                        while($row2 = $query2->fetch()) {
+                            ?>
+                            <tr>
+                                <td colspan="2"></td>
+                                <td style="text-align: center;"><?=substr($row2['flight_time'],0,-3)?></td>
+                                <td></td>
+                                <td><?=$row2['duration']?></td>
+                                <td><a href="delete_flight_order.php?booking_id=<?php echo $row2['id'] . "&" . $str_query; ?>">
+                                        <button class="btn btn-mini btn-warning"><i class="icon icon-remove"></i> Cancel</button>
+                                    </a></td>
+                            </tr>
+                            <?php
+                        }
+                        ?>
+
                         <?php
                     }
                     ?>
+                    <tr>
+                        <td colspan="3" style="text-align: right;">Totals:</td>
+                        <td><?=$total_cost?></td>
+                        <td colspan="2"><?=$total_duration?></td>
+                    </tr>
+                    </tbody>
+                </table>
+                <br>
+                <a rel="facebox"
+                   href="checkout.php?pt=cash&
+                   invoice=<?php echo $_GET['invoice'] ?>&
+                   total=<?php echo $total_cost ?>&
+                   totalprof=<?php echo $asd ?>&
+                   cashier=<?php echo $_SESSION['SESS_FIRST_NAME'] ?>&
+                   savingflight=1&
+                   customerId=<?=$_GET['customer_id']?>">
+                    <button class="btn btn-success btn-large btn-block"><i class="icon icon-save icon-large"></i> PROCEED
+                    </button>
+                </a>
+                <div class="clearfix"></div>
+            </div>
 
-                    <?php
-                }
-                ?>
-                <tr>
-                    <td colspan="3" style="text-align: right;">Totals:</td>
-                    <td><?=$total_cost?></td>
-                    <td colspan="2"><?=$total_duration?></td>
-                </tr>
-                </tbody>
-            </table>
-            <!--<button class="btn btn-mini btn-warning"><i class="icon icon-remove"></i> Cancel</button>-->
-            <br>
-            <a rel="facebox"
-               href="checkout.php?pt=cash&
-               invoice=<?php echo $_GET['invoice'] ?>&
-               total=<?php echo $total_cost ?>&
-               totalprof=<?php echo $asd ?>&
-               cashier=<?php echo $_SESSION['SESS_FIRST_NAME'] ?>&
-               savingflight=1&
-               customerId=<?=$_GET['customer_id']?>">
-                <button class="btn btn-success btn-large btn-block"><i class="icon icon-save icon-large"></i> PROCEED
-                </button>
-            </a>
-            <div class="clearfix"></div>
         </div>
     </div>
 </div>
