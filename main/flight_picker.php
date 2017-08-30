@@ -232,8 +232,8 @@ $position = $_SESSION['SESS_LAST_NAME'];
                     </div>
 
                     <div class="span5" >
-                        <input type="checkbox" id="chkOnlySlotsWithDuration" name="chkOnlySlotsWithDuration" value="1" checked="checked" />
-                        <label style="display: inline;" for="chkOnlySlotsWithDuration">Show slots that have <b><input type="text" class="input-mini" id="txtOfferMinutes" /> minutes</b> available</label>
+                        <input type="checkbox" id="chkOnlySlotsWithDuration" name="chkOnlySlotsWithDuration" value="1" />
+                        <label style="display: inline;" for="chkOnlySlotsWithDuration"><input type="text" class="input-mini" id="txtOfferMinutes" /> minutes</label>
                         <br/>
 
                         <input type="checkbox" id="chkClassSession" name="chkClassSession" value="1" />
@@ -291,8 +291,8 @@ $position = $_SESSION['SESS_LAST_NAME'];
                             } else {
                                 $total_cost += $row['price'];
                             }
-                            $total_duration += $row['duration'];
                         }
+                        $total_duration += $row['duration'];
                         ?>
                         <tr class="record">
                             <td><?php echo $row['code']; ?></td>
@@ -760,7 +760,7 @@ $position = $_SESSION['SESS_LAST_NAME'];
     }
 
     function submitDeductFromCreditTime(customer_id, credit_time, flight_offer_id, flight_minutes, flight_time, is_new_purchasee_form) {
-        var minutes = $('#txtMinutes').val();
+        var minutes = parseInt($('#txtMinutes').val());
         if (minutes !== null && minutes != '' && minutes != 0) {
 
             if(minutes > flight_minutes) {
@@ -887,7 +887,7 @@ $position = $_SESSION['SESS_LAST_NAME'];
                         var selectedDateTime = $("#bookingDate").val()+" "+$("#bookingTime").text();
                         var d = new Date(selectedDateTime);
                         var now = new Date();
-                        if(d < now) {
+                        if(false/*d < now*/) {
                             alert('You cannot schedule in the past time');
                             return false;
                         } else {
@@ -901,7 +901,6 @@ $position = $_SESSION['SESS_LAST_NAME'];
                                 },
                                 dataType: 'json',
                                 success: function (response) {
-                                    console.log(response);
                                     if (response.success == 1) {
                                         var url = updateQueryStringParameter(window.location.href, 'customer_id', $('#customerId').val());
                                         url = updateQueryStringParameter(url, 'customer_name', $('#customer').val());
@@ -921,6 +920,7 @@ $position = $_SESSION['SESS_LAST_NAME'];
 
     function getTransferDialogHtml() {
         return '<div> \
+                To:\
                 <select id="customerInDialog"></select> \
                 <input type="text" class="form-control" placeholder="Enter minutes to transfer" id="credit_to_transfer" /> \
             </div>';
@@ -976,7 +976,8 @@ $position = $_SESSION['SESS_LAST_NAME'];
             url: 'api.php',
             method: 'POST',
             data: {
-                'call': 'getCustomerOptions'
+                call: 'getCustomerOptions',
+                customerId: $('#customerId').val()
             },
             dataType: 'json',
             success: function (response) {

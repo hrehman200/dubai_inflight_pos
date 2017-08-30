@@ -83,7 +83,6 @@ function deductFromBalance($customer_id, $flight_offer_id, $balance) {
 }
 
 /**
- * Deducts mentioned amount from flight_credits rows (for same offer) collectively
  * @param $customer_id
  * @param $balance
  */
@@ -131,19 +130,21 @@ function insertFlightPurchase($invoice_id, $flight_offer_id, $customer_id, $use_
  * @param $flight_purchase_id
  * @param $flight_time
  * @param $duration
- * @param int $use_balance
+ * @param int $from_flight_purchase_id
  * @return string
  */
-function insertFlightBooking($flight_purchase_id, $flight_time, $duration) {
+function insertFlightBooking($flight_purchase_id, $flight_time, $duration, $from_flight_purchase_id = 0) {
     global $db;
 
-    $sql = "INSERT INTO flight_bookings(flight_purchase_id, flight_time, duration)
-        VALUES (:flight_purchase_id, :flight_time, :duration)";
+    $sql = "INSERT INTO
+            flight_bookings(flight_purchase_id, from_flight_purchase_id, flight_time, duration)
+            VALUES (:flight_purchase_id, :from_flight_purchase_id, :flight_time, :duration)";
     $q   = $db->prepare($sql);
     $arr = array(
-        ':flight_purchase_id' => $flight_purchase_id,
-        ':flight_time'        => $flight_time,
-        ':duration'           => $duration
+        ':flight_purchase_id'      => $flight_purchase_id,
+        ':flight_time'             => $flight_time,
+        ':duration'                => $duration,
+        ':from_flight_purchase_id' => $from_flight_purchase_id
     );
     $q->execute($arr);
 
@@ -202,7 +203,7 @@ function deleteFlightBooking($booking_id, $flight_purchase_id = null) {
 function addBalance($booking_id) {
     global $db;
 
-    $query = $db->prepare('SELECT fp.customer_id, fp.flight_offer_id, fp.deduct_from_balance, fb.flight_purchase_id, fb.duration, fo.duration AS offer_minutes
+    $query = $db->prepare('SELECT fp.customer_id, fp.flight_offer_id, fp.deduct_from_balance, fb.flight_purchase_id, fb.from_flight_purchase_id, fb.duration, fo.duration AS offer_minutes
       FROM flight_bookings fb
       INNER JOIN flight_purchases fp ON fb.flight_purchase_id = fp.id
       INNER JOIN flight_offers fo ON fp.flight_offer_id = fo.id
@@ -215,14 +216,12 @@ function addBalance($booking_id) {
         return;
     }
 
-    $customer_id        = $row['customer_id'];
-    $flight_purchase_id = $row['flight_purchase_id'];
-    $flight_offer_id    = $row['flight_offer_id'];
-    $balance            = $row['duration'];
-    $offer_minutes      = $row['offer_minutes'];
+    $customer_id             = $row['customer_id'];
+    $from_flight_purchase_id = $row['from_flight_purchase_id'];
+    $balance                 = $row['duration'];
 
     if ($row['deduct_from_balance'] == 1) {
-        updateCustomerFlightBalance($customer_id, $flight_purchase_id, $balance, true);
+        updateCustomerFlightBalance($customer_id, $from_flight_purchase_id, $balance, true);
 
     } else if ($row['deduct_from_balance'] == 2) {
         updateCustomerCredits($customer_id, $balance, true);
@@ -239,7 +238,7 @@ function updateCustomerCredits($customer_id, $credits, $add = false) {
     global $db;
 
     $operator = ($add) ? '+' : '-';
-    $sql = sprintf("UPDATE customer SET credit_time = credit_time %s :credits WHERE customer_id = :customerId", $operator);
+    $sql      = sprintf("UPDATE customer SET credit_time = credit_time %s :credits WHERE customer_id = :customerId", $operator);
 
     $query = $db->prepare($sql);
     $query->execute(array(

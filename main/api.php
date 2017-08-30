@@ -184,6 +184,9 @@ function getCustomerOptions() {
 
     $str = '';
     foreach($result as $row) {
+        if($row['customer_id'] == $_POST['customerId']) {
+            continue;
+        }
         $str .= sprintf('<option value="%s">%s</option>', $row['customer_id'], $row['customer_name']);
     }
 
@@ -338,7 +341,7 @@ function getCustomerBookings() {
                         <td>%s</td>
                         <td>%s</td>
                         <td>%d</td>
-                        <td>%d <br/>' . ($row['minutes'] > 0 ? '<a href="javascript:;" onclick="deductFromBalance(\'' . $row['duration'] . '\', \'' . $row['minutes'] . '\',' . $row['id'] . ',' . $row['flight_purchase_id'] . ');" class="btn btn-small">Deduct</a>' : '') .
+                        <td>%d <br/>' . ($row['minutes'] > 0 ? '<a href="javascript:;" onclick="deductFromBalance(' . $row['duration'] . ',' . $row['minutes'] . ',' . $row['id'] . ',' . $row['flight_purchase_id'] . ');" class="btn btn-small">Deduct</a>' : '') .
                     ($row['minutes'] > 0 ? '<a href="javascript:;" onclick="showBalanceTransferDialog(' . $row['customer_id'] . ',' . $row['id'] . ',' . $row['minutes'] . ',' . $row['flight_purchase_id'] . ');" class="btn btn-small">Transfer</a>' : '')
                     . '</td>
                         <td>%d <br/>' . ($row['credit_time'] > 0 ? '<a href="javascript:;" onclick="deductFromCreditTime(' . $row['customer_id'] . ',' . $row['credit_time'] . ',' . $row['id'] . ',' . $row['duration'] . ');" class="btn btn-small">Deduct</a>' : '') .

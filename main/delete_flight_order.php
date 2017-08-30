@@ -6,6 +6,7 @@ $str_query = parse_url($url, PHP_URL_QUERY);
 
 $flight_purchase_id = $_GET['flight_purchase_id'];
 $booking_id         = $_GET['booking_id'];
+$from_flight_purchase_id = $_GET['fromFlightPurchaseId'];
 
 if ($flight_purchase_id > 0) {
     deleteFlightPurchase($flight_purchase_id);

@@ -27,7 +27,7 @@ $class_people            = $_POST['txtClassPeople'];
 if ($_POST['useBalance'] == 1 && $_POST['useCredit'] == 0) {
     // insert balance use
     $flight_purchase_id = insertFlightPurchase($invoice, $flight_offer_id, $customer_id, 1, 0, $class_people);
-    insertFlightBooking($flight_purchase_id, $flight_time, $flight_duration);
+    insertFlightBooking($flight_purchase_id, $flight_time, $flight_duration, $from_flight_purchase_id);
     updateCustomerFlightBalance($customer_id, $from_flight_purchase_id, $flight_duration);
 } else if ($_POST['useCredit'] == 1 && $_POST['useBalance'] == 0) {
     $flight_purchase_id = insertFlightPurchase($invoice, $flight_offer_id, $customer_id, 2, 0, $class_people);
