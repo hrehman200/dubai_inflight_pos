@@ -147,7 +147,7 @@ $finalcode = 'RS-' . createRandomPassword();
                 <button style="float:right;" class="btn btn-success btn-mini"><a href="javascript:Clickheretoprint()">
                         Print</button>
                 </a> <br><br>
-                <button style="float:right;" class="btn btn-success btn-mini" onclick="convertToCSV()" id="exportCSV"/>
+                <button style="float:right;" class="btn btn-success btn-mini" onclick="convertToCSV()" id="exportCSV">
                 <i class="icon-plus-sign icon-large"></i> Export </button>
                 <br><br>
 
@@ -193,7 +193,8 @@ $finalcode = 'RS-' . createRandomPassword();
                     <?php
                     if(isset($_GET)) {
 
-                        $sql = "SELECT fp.id AS flight_purchase_id, fp.deduct_from_balance, fo.code, fpkg.package_name, fo.offer_name, fo.price, fo.duration, c.customer_name, DATE_FORMAT(fp.created,'%b %d, %Y') AS created
+                        $sql = "SELECT fp.id AS flight_purchase_id, fp.deduct_from_balance, fo.code, fpkg.package_name, fo.offer_name, fo.price, fo.duration, c.customer_name, DATE_FORMAT(fp.created,'%b %d, %Y') AS created,
+                              fb.duration AS booking_duration
                               FROM flight_purchases fp
                               LEFT JOIN flight_offers fo ON fp.flight_offer_id = fo.id
                               LEFT JOIN flight_packages fpkg ON fo.package_id = fpkg.id
@@ -241,7 +242,7 @@ $finalcode = 'RS-' . createRandomPassword();
                                 <td><?php echo $row['package_name']; ?></td>
                                 <td><?php echo $row['deduct_from_balance']==1 ? $row['offer_name'].' (Deduct from balance)' : $row['offer_name'] ; ?></td>
                                 <td><?php echo $row['deduct_from_balance']==1 ? '-' : number_format($row['price']); ?></td>
-                                <td><?php echo $row['deduct_from_balance']==1 ? '-' :$row['duration']; ?></td>
+                                <td><?php echo $row['deduct_from_balance']==1 ? $row['booking_duration'] :$row['duration']; ?></td>
                                 <td><?= $row['created'] ?></td>
                             </tr>
 

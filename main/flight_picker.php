@@ -225,6 +225,10 @@ $position = $_SESSION['SESS_LAST_NAME'];
                     Add Customer
                 </button>
 
+                <button id="btnPurchaseViaCredit" class="btn btn-tertiary" style="margin-bottom:9px;">
+                    Credit: (<span id="spCreditTime"></span>)
+                </button>
+
                 <div class="row">
                     <div class="span3" style="margin-left:25px;">
                         <div id="datePicker"></div>
@@ -401,6 +405,13 @@ $position = $_SESSION['SESS_LAST_NAME'];
         if($(this).val() == 0) {
             $('#timeslots').html('');
         }
+
+        if($('#flightOffer option:selected').text().indexOf('FTF') != -1) {
+            $('#txtOfferMinutes').prop('disabled', true);
+        } else {
+            $('#txtOfferMinutes').prop('disabled', false);
+        }
+
     }).trigger('change');
 
     $('#chkOnlySlotsWithDuration, #chkOnlyOfficeTimeSlots').on('change', function(e) {
@@ -650,6 +661,16 @@ $position = $_SESSION['SESS_LAST_NAME'];
         }
     });
 
+    $('#btnPurchaseViaCredit').on('click', function(e) {
+        e.preventDefault();
+
+        if($('#customerId').val() > 0 && $('#flightOffer').val() > 0) {
+            deductFromCreditTime($('#customerId').val(), $('#spCreditTime').text(), $('#flightOffer').val(), $('#flightOffer option:selected').data('duration'));
+        } else {
+            alert('Please select offer and customer first.');
+        }
+    });
+
     var _bookSlot = function(flightTime) {
 
         $('#flightTime').val(flightTime);
@@ -742,7 +763,7 @@ $position = $_SESSION['SESS_LAST_NAME'];
 
     function deductFromCreditTime(customer_id, credit_time, flight_offer_id, flight_minutes) {
         var dialog = bootbox.dialog({
-            title: 'Deduct from Credit',
+            title: 'Deduct from Pre Opening Deals',
             message: getDateTimeSlotPickerHtml()+'<br/><input type="text" id="txtMinutes" placeholder="Enter minutes to fly" />',
             buttons: {
                 btn3: {

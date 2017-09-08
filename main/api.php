@@ -310,7 +310,7 @@ function getCustomerBookings() {
                            INNER JOIN flight_offers fo ON fp.flight_offer_id = fo.id 
                            INNER JOIN customer ON customer.customer_id = fp.customer_id
                            LEFT JOIN flight_bookings fb ON fb.flight_purchase_id = fp.id
-                           WHERE fp.customer_id =:customerId AND fp.status = 1");
+                           WHERE fp.customer_id =:customerId AND fp.status = 1 AND fb.id IS NOT NULL");
 
         $query2->execute(array(
             ':customerId' => $post['customerId']
