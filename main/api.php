@@ -109,6 +109,7 @@ function getTimeslotsForFlightDate() {
         }
 
         $str .= sprintf('<span class="label lb-lg"
+            data-remaining-minutes="%d"
             data-unlocked="%d"
             data-toggle="tooltip"
             title="%s"
@@ -116,7 +117,7 @@ function getTimeslotsForFlightDate() {
             background: %s;
             margin:5px;
             padding:10px;
-            color:white;">%s</span>', $unlocked, $tooltip_title, $background, date("H:i", $tNow));
+            color:white;">%s</span>', 30 - $row['bookedDuration'], $unlocked, $tooltip_title, $background, date("H:i", $tNow));
 
         $tNow = strtotime("+{$slot_increment} minutes", $tNow);
 
@@ -307,10 +308,10 @@ function getCustomerBookings() {
                            fb.id AS flight_booking_id, fb.flight_time, fb.duration AS booking_duration, fp.deduct_from_balance
                            FROM flight_purchases fp
                            LEFT JOIN flight_credits fc ON fc.flight_purchase_id = fp.id
-                           INNER JOIN flight_offers fo ON fp.flight_offer_id = fo.id 
+                           INNER JOIN flight_offers fo ON fp.flight_offer_id = fo.id
                            INNER JOIN customer ON customer.customer_id = fp.customer_id
                            LEFT JOIN flight_bookings fb ON fb.flight_purchase_id = fp.id
-                           WHERE fp.customer_id =:customerId AND fp.status = 1 AND fb.id IS NOT NULL");
+                           WHERE fp.customer_id =:customerId AND fp.status = 1 AND (fb.id IS NOT NULL OR fc.minutes > 0)");
 
         $query2->execute(array(
             ':customerId' => $post['customerId']

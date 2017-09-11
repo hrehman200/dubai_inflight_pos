@@ -240,9 +240,9 @@ $finalcode = 'RS-' . createRandomPassword();
                             <tr>
                                 <td><?php echo $row['customer_name']; ?></td>
                                 <td><?php echo $row['package_name']; ?></td>
-                                <td><?php echo $row['deduct_from_balance']==1 ? $row['offer_name'].' (Deduct from balance)' : $row['offer_name'] ; ?></td>
-                                <td><?php echo $row['deduct_from_balance']==1 ? '-' : number_format($row['price']); ?></td>
-                                <td><?php echo $row['deduct_from_balance']==1 ? $row['booking_duration'] :$row['duration']; ?></td>
+                                <td><?php echo $row['deduct_from_balance']>0 ? $row['offer_name'].' (Deduct from balance)' : $row['offer_name'] ; ?></td>
+                                <td><?php echo $row['deduct_from_balance']>0 ? '-' : number_format($row['price']); ?></td>
+                                <td><?php echo $row['deduct_from_balance']>0 ? $row['booking_duration'] :$row['duration']; ?></td>
                                 <td><?= $row['created'] ?></td>
                             </tr>
 

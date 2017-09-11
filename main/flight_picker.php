@@ -236,7 +236,7 @@ $position = $_SESSION['SESS_LAST_NAME'];
                     </div>
 
                     <div class="span5" >
-                        <input type="checkbox" id="chkOnlySlotsWithDuration" name="chkOnlySlotsWithDuration" value="1" />
+                        <input type="checkbox" id="chkOnlySlotsWithDuration" name="chkOnlySlotsWithDuration" value="1" checked />
                         <label style="display: inline;" for="chkOnlySlotsWithDuration"><input type="text" class="input-mini" id="txtOfferMinutes" /> minutes</label>
                         <br/>
 
@@ -621,6 +621,12 @@ $position = $_SESSION['SESS_LAST_NAME'];
         var officeClose = new Date(selectedDate+" 19:00");
 
         var unlocked = $(this).data('unlocked');
+        var remainingMinutes = $(this).data('remaining-minutes');
+
+        if(remainingMinutes <= 0) {
+            alert('No minutes in this slot');
+            return;
+        }
 
         if(unlocked == 0 &&
             (selectedTime.getTime() < officeStart.getTime() || selectedTime.getTime() > officeClose.getTime())) {
