@@ -71,7 +71,7 @@ include('navfixed.php');
                 <li class="active">Collection Report</li>
             </ul>
 
-            <div id="maintable">
+            <div>
                 <div style="margin-top: -19px; margin-bottom: 21px;">
                     <a href="index.php">
                         <button class="btn btn-default btn-large" style="float: none;"><i
@@ -86,12 +86,15 @@ include('navfixed.php');
                             class="icon icon-search icon-large"></i> Search
                     </button>
                     <button style="width: 123px; height:35px; margin-top:-2px; float:right;"
+                            class="btn btn-info btn-large" onclick="convertToCSV()"><i
+                                class="icon icon-columns icon-large"></i> Export</button>
+                    <button style="width: 123px; height:35px; margin-top:-2px; float:right;"
                             class="btn btn-success btn-large"><a href="javascript:Clickheretoprint()"><i
                                 class="icon icon-print icon-large"></i> Print</a></button>
                 </form>
 
                 <?php
-                if(!isset($_GET['d1'])) {
+                if (!isset($_GET['d1']) || $_GET['d1'] == 0) {
                     $first_day_this_month = date('m-01-Y');
                     $last_day_this_month  = date('m-t-Y');
 
@@ -104,7 +107,7 @@ include('navfixed.php');
                     <div style="font-weight:bold; text-align:center;font-size:14px;margin-bottom: 15px;">
                         Collection Report from&nbsp;<?php echo $_GET['d1'] ?>&nbsp;to&nbsp;<?php echo $_GET['d2'] ?>
                     </div>
-                    <table class="table table-striped" style="background-color: white;">
+                    <table class="table table-striped" style="background-color: white;" id="tblCollection">
                         <tr>
                             <th>Transaction Date</th>
                             <th>Operator Name</th>
@@ -141,82 +144,126 @@ include('navfixed.php');
 
                         <?php
                         $sql = "SELECT
-                                  GROUP_CONCAT(so.name) AS product_name,
-                                  GROUP_CONCAT(so.product_code) AS product_codes,
-                                  SUM(so.qty) AS quantity,
-                                  s.date AS transaction_date,
-                                  s.cashier,
-                                  s.invoice_number,
-                                  s.sale_type,
-                                  s.mode_of_payment,
-                                  s.mop_amount,
-                                  s.mode_of_payment_1,
-                                  s.mop1_amount,
-                                  s.amount,
-                                  s.discount,
-                                  s.after_dis,
-                                  c.customer_name,
-                                  so.product,
-                                  so.product_code,
-                                  so.price,
-                                  so.gen_name,
-                                  so.name,
-                                  so.qty,
-                                  so.price,
-                                  0 AS units_remaining,
-                                  0 AS amount_liability
-                                FROM
-                                  sales s
-                                INNER JOIN
-                                  sales_order so ON s.invoice_number = so.invoice
-                                LEFT JOIN
-                                  customer c ON s.customer_id = c.customer_id
-                                WHERE s.date >= :startDate AND s.date <= :endDate
-                                GROUP BY
-                                  s.transaction_id";
+                          *
+                        FROM
+                          (
+                            (
+                            SELECT
+                              GROUP_CONCAT(so.name) AS product_name,
+                              GROUP_CONCAT(so.product_code) AS product_codes,
+                              SUM(so.qty) AS quantity,
+                              s.date AS transaction_date,
+                              s.cashier,
+                              s.invoice_number,
+                              s.sale_type,
+                              s.mode_of_payment,
+                              s.mop_amount,
+                              s.mode_of_payment_1,
+                              s.mop1_amount,
+                              s.amount,
+                              s.discount,
+                              s.after_dis,
+                              c.customer_name,
+                              so.product_code,
+                              so.price,
+                              so.name,
+                              so.qty,
+                              0 AS units_remaining,
+                              0 AS amount_liability
+                            FROM
+                              sales s
+                            INNER JOIN
+                              sales_order so ON s.invoice_number = so.invoice
+                            LEFT JOIN
+                              customer c ON s.customer_id = c.customer_id
+                            GROUP BY
+                              s.transaction_id
+                          )
+                        UNION
+                          (
+                          SELECT
+                            GROUP_CONCAT(fo1.offer_name) AS product_name,
+                            GROUP_CONCAT(fo1.code) AS product_codes,
+                            SUM(fb1.duration) AS quantity,
+                            s1.date AS transaction_date,
+                            s1.cashier,
+                            s1.invoice_number,
+                            s1.sale_type,
+                            s1.mode_of_payment,
+                            s1.mop_amount,
+                            s1.mode_of_payment_1,
+                            s1.mop1_amount,
+                            s1.amount,
+                            s1.discount,
+                            s1.after_dis,
+                            c1.customer_name,
+                            fo1.code AS product_code,
+                            fo1.price/fo1.duration AS price,
+                            fo1.offer_name,
+                            SUM(fo1.duration) AS qty,
+                            0 AS units_remaining,
+                            0 AS amount_liability
+                          FROM
+                            sales s1
+                          INNER JOIN
+                            flight_purchases fp1 ON s1.invoice_number = fp1.invoice_id
+                          INNER JOIN
+                            flight_offers fo1 ON fp1.flight_offer_id = fo1.id
+                          INNER JOIN
+                            flight_bookings fb1 ON fb1.flight_purchase_id = fp1.id
+                          INNER JOIN
+                            customer c1 ON s1.customer_id = c1.customer_id
+                          GROUP BY
+                            s1.transaction_id
+                        )
+                          ) result
+                        ORDER BY
+                          result.transaction_date DESC";
 
                         $result = $db->prepare($sql);
                         $result->execute(array(
                             'startDate' => $_GET['d1'],
-                            'endDate' => $_GET['d2']
+                            'endDate'   => $_GET['d2']
                         ));
 
-                        while($row = $result->fetch()) {
+                        while ($row = $result->fetch()) {
+                            $unit_consumed  = $row['quantity'];
+                            $unit_remaining = $row['qty'] - $unit_consumed;
                             ?>
                             <tr>
-                                <td><?=$row['transaction_date']?></td>
-                                <td><?=$row['cashier']?></td>
-                                <td><?=$row['invoice_number']?></td>
-                                <td><?=$row['sale_type']?></td>
-                                <td><?=$row['customer_name']?></td>
-                                <td><?=$row['mode_of_payment']. ($row['mode_of_payment_1']>0) ? ', '.$row['mode_of_payment_1'] : ''?></td>
-                                <td><?=$row['product_name']?></td>
-                                <td><?=$row['product_codes']?></td>
-                                <td><?=$row['product_name']?></td>
+                                <td><?= $row['transaction_date'] ?></td>
+                                <td><?= $row['cashier'] ?></td>
+                                <td><?= $row['invoice_number'] ?></td>
+                                <td><?= $row['sale_type'] ?></td>
+                                <td><?= $row['customer_name'] ?></td>
+                                <td><?= $row['mode_of_payment'] . ($row['mode_of_payment_1'] > 0) ? ', ' . $row['mode_of_payment_1'] : '' ?></td>
+                                <td><?= $row['product_name'] ?></td>
+                                <td><?= $row['product_codes'] ?></td>
+                                <td><?= $row['product_name'] ?></td>
                                 <td>AED</td>
-                                <td><?=$row['amount']?></td>
-                                <td><?=$row['mode_of_payment']?></td>
-                                <td><?=$row['mop_amount']?></td>
-                                <td><?=$row['mode_of_payment_1']?></td>
-                                <td><?=$row['mop1_amount']?></td>
-                                <td><?=$row['quantity']?></td>
-                                <td><?=$row['price']?></td>
-                                <td><?=$row['discount']?></td>
-                                <td>DiscountReason</td>
-                                <td><?=$row['after_dis']?></td>
+                                <td><?= $row['amount'] ?></td>
+                                <td><?= $row['mode_of_payment'] ?></td>
+                                <td><?= $row['mop_amount'] ?></td>
+                                <td><?= $row['mode_of_payment_1'] ?></td>
+                                <td><?= $row['mop1_amount'] ?></td>
+                                <td><?= $row['quantity'] ?></td>
+                                <td><?= $row['price'] ?></td>
+                                <td><?= $row['discount'] ?></td>
+                                <td>Discount Reason</td>
+                                <td><?= $row['price'] ?></td>
                                 <td>Inflight Dubai</td>
                                 <td>Margham Dubai</td>
                                 <td>N/A</td>
                                 <td>Sales</td>
                                 <td>-</td>
-                                <td><?=$row['product_name']?></td>
+                                <td><?= $row['product_name'] ?></td>
                                 <td>POS</td>
-                                <td><?=$row['amount']?></td>
-                                <td><?=$row['units_remaining']?></td>
-                                <td>Revenue On Consumed</td>
-                                <td><?=$row['amount_liability']?></td>
+                                <td><?= $row['quantity'] ?></td>
+                                <td><?= $unit_remaining ?></td>
+                                <td><?= round($row['price'] * $unit_consumed, 2) ?></td>
+                                <td><?= round($row['price'] * $unit_remaining, 2) ?></td>
                             </tr>
-                        <?php
+                            <?php
                         }
                         ?>
 
@@ -228,3 +275,66 @@ include('navfixed.php');
 <?php include('footer.php'); ?>
 
 </html>
+
+<script type="text/javascript">
+
+    function convertToCSV() {
+        exportTableToCSV($('#tblCollection'), 'collection.csv');
+    }
+
+    function exportTableToCSV($table, filename) {
+
+        var $rows       = $table.find('tr:has(td,th)'),
+
+            // Temporary delimiter characters unlikely to be typed by keyboard
+            // This is to avoid accidentally splitting the actual contents
+            tmpColDelim = String.fromCharCode(11), // vertical tab character
+            tmpRowDelim = String.fromCharCode(0), // null character
+
+            // actual delimiter characters for CSV format
+            colDelim    = '","',
+            rowDelim    = '"\r\n"',
+
+            // Grab text from table into CSV formatted string
+            csv         = '"' + $rows.map(function (i, row) {
+                    var $row  = $(row),
+                        // $cols = $row.find('td');
+                        $cols = $row.find('td,th');
+
+                    return $cols.map(function (j, col) {
+                        var $col = $(col),
+                            text = $col.text();
+
+                        return text.replace('"', '""'); // escape double quotes
+
+                    }).get().join(tmpColDelim);
+
+                }).get().join(tmpRowDelim)
+                    .split(tmpRowDelim).join(rowDelim)
+                    .split(tmpColDelim).join(colDelim) + '"',
+
+            // Data URI
+            csvData     = 'data:application/csv;charset=utf-8,' + encodeURIComponent(csv);
+
+        blob       = new Blob([csvData], {type: 'text/csv;charset=utf8;'}); //new way
+        var csvUrl = URL.createObjectURL(blob);
+
+        $(this)
+            .attr({
+                'download': filename,
+                'href': csvData,
+                'target': '_blank'
+            });
+
+        var link = document.createElement("a");
+
+        if (link.download !== undefined) { // feature detection
+            // Browsers that support HTML5 download attribute
+            link.setAttribute("href", csvData);
+            link.setAttribute("download", filename);
+            link.click();
+        } else {
+            alert('CSV export only works in Chrome, Firefox, and Opera.');
+        }
+    }
+</script>
