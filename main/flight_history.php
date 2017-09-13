@@ -80,29 +80,6 @@ session_start();
     <script src="js/bootstrap-datepicker.min.js" type="text/javascript"></script>
 
 </head>
-<?php
-function createRandomPassword() {
-    $chars = "003232303232023232023456789";
-    srand((double)microtime() * 1000000);
-    $i    = 0;
-    $pass = '';
-    while ($i <= 7) {
-
-        $num = rand() % 33;
-
-        $tmp = substr($chars, $num, 1);
-
-        $pass = $pass . $tmp;
-
-        $i++;
-
-    }
-
-    return $pass;
-}
-
-$finalcode = 'RS-' . createRandomPassword();
-?>
 <body>
 <?php include('navfixed.php'); ?>
 <div class="container-fluid">

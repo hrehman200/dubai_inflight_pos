@@ -16,28 +16,6 @@
 
 <head>
 
-
-<?php
-function createRandomPassword() {
-  $chars = "003232303232023232023456789";
-  srand((double)microtime()*1000000);
-  $i = 0;
-  $pass = '' ;
-  while ($i <= 7) {
-
-    $num = rand() % 33;
-
-    $tmp = substr($chars, $num, 1);
-
-    $pass = $pass . $tmp;
-
-    $i++;
-
-  }
-  return $pass;
-}
-$finalcode='RS-'.createRandomPassword();
-?>
   <meta charset="UTF-8">
   <link rel="shortcut icon" type="image/x-icon" href="https://production-assets.codepen.io/assets/favicon/favicon-8ea04875e70c4b0bb41da869e81236e54394d63638a1ef12fa558a4a835f1164.ico" />
   <link rel="mask-icon" type="" href="https://production-assets.codepen.io/assets/favicon/logo-pin-f2d2b6d2c61838f7e76325261b7195c27224080bc099486ddd6dccb469b8e8e6.svg" color="#111" />

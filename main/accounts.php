@@ -39,28 +39,6 @@ POS
   })
 </script>
 </head>
-<?php
-function createRandomPassword() {
-	$chars = "003232303232023232023456789";
-	srand((double)microtime()*1000000);
-	$i = 0;
-	$pass = '' ;
-	while ($i <= 7) {
-
-		$num = rand() % 33;
-
-		$tmp = substr($chars, $num, 1);
-
-		$pass = $pass . $tmp;
-
-		$i++;
-
-	}
-	return $pass;
-}
-$finalcode='RS-'.createRandomPassword();
-?>
-
 
 
  <script language="javascript" type="text/javascript">
@@ -105,19 +83,6 @@ window.onload=startclock;
                 <?php
             	include "side-menu.php";
             ?>
-          <!-- 
-           <li><a href="index.php"><i class="icon-dashboard icon-2x"></i> Dashboard </a></li> 
-			<li><a href="sales.php?id=cash&invoice=<?php echo $finalcode ?>"><i class="icon-shopping-cart icon-2x"></i> Sales</a>  </li>             
-			<li><a href="products.php"><i class="icon-list-alt icon-2x"></i> Products</a>                                     </li>
-			<li><a href="customer.php"><i class="icon-group icon-2x"></i> Customers</a>                                    </li>
-			<li><a href="supplier.php"><i class="icon-group icon-2x"></i> Partners</a> 
-			<li><a href="Businessplan.php"><i class="icon-group icon-2x"></i> Business Plan</a>                                    </li>
-			<li class="active"><a href="accounts.php"><i class="icon-group icon-2x"></i> Accounts</a>                                    </li>
-			<li><a href="supplier.php"><i class="icon-group icon-2x"></i> Operators</a>                                    </li>
-			<li><a href="salesreport.php?d1=0&d2=0"><i class="icon-bar-chart icon-2x"></i> Sales Report</a>                </li>
-			<li><a href="bookingcalander.php?d1=0&d2=0"><i class="icon-bar-chart icon-2x"></i> Booking Calander</a>                </li>
-
-			-->
 					<br><br><br>		
 			<li>
 			 <div class="hero-unit-clock">

@@ -4,6 +4,7 @@
 $current_page = basename($_SERVER['PHP_SELF']);
 $position = $_SESSION['SESS_LAST_NAME'];
 if ($position == 'cashier') {
+    $finalcode='RS-'.createRandomPassword();
     echo '
    <li class="'.($current_page=='index.php'?'active':'').'"><a href="index.php"><i class="icon-dashboard icon-2x"></i> Dashboard </a></li>
 			<li class="'.($current_page=='sales.php'?'active':'').'"><a href="sales.php?id=cash&invoice=' . $finalcode . '"><i class="icon-shopping-cart icon-2x"></i> Merchandise</a>  </li>
@@ -15,6 +16,7 @@ if ($position == 'cashier') {
 		';
 
 } else if ($position == 'admin') {
+    $finalcode='RS-'.createRandomPassword();
     echo '
    <li class="'.($current_page=='index.php'?'active':'').'"><a href="index.php"><i class="icon-dashboard icon-2x"></i> Dashboard </a></li>
 			<li class="'.($current_page=='sales.php'?'active':'').'"><a href="sales.php?id=cash&invoice=' . $finalcode . '"><i class="icon-shopping-cart icon-2x"></i> Sales</a>  </li>

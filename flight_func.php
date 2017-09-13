@@ -273,7 +273,7 @@ function transferBalanceFromCustomerAtoB($from_customer, $to_customer, $balance,
     if ($row) {
         $flight_purchase_id = $row['id'];
     } else {
-        $invoice            = 'RS-' . rand(pow(10, 8 - 1), pow(10, 8) - 1);
+        $invoice            = 'RS-' . createRandomPassword();
         $flight_purchase_id = insertFlightPurchase($invoice, $offer_id, $to_customer, 1, 1);
     }
     updateCustomerFlightBalance($to_customer, $flight_purchase_id, $balance, true);
@@ -305,6 +305,43 @@ function adjustBalanceForDeletedFlightBookings($invoice_id) {
     while ($row = $query->fetch()) {
         updateCustomerFlightBalance($row['customer_id'], $row['id'], $row['duration'], true, true);
     }
+}
+
+/**
+ * @return string
+ */
+function createRandomPassword() {
+    $chars = "003232303232023232023456789";
+    srand((double)microtime() * 1000000);
+    $i    = 0;
+    $pass = '';
+    while ($i <= 7) {
+        $num = rand() % 33;
+        $tmp = substr($chars, $num, 1);
+        $pass = $pass . $tmp;
+        $i++;
+    }
+
+    if(checkInvoiceNum($pass)) {
+        createRandomPassword();
+    }
+
+    return $pass;
+}
+
+/**
+ * @param $invoice_no
+ * @return bool
+ */
+function checkInvoiceNum($invoice_no) {
+    global $db;
+
+    $query = $db->prepare("SELECT transaction_id FROM sales WHERE invoice_number = :invoiceNo");
+    $query->execute(array(
+        ':invoiceNo' => $invoice_no
+    ));
+
+    return ($query->num_rows() > 0);
 }
 
 /**
