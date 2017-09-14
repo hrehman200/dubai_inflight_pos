@@ -17,7 +17,7 @@
     </title>
     <?php
     require_once('auth.php');
-    include('../connect.php');
+    include_once('../connect.php');
     ?>
 
     <link href="vendors/uniform.default.css" rel="stylesheet" media="screen">

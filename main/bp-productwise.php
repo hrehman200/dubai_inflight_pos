@@ -5,7 +5,7 @@
 <?php
   require_once('auth.php');
 
-  include('../connect.php');
+  include_once('../connect.php');
 
   $month = $_GET['month'];
 

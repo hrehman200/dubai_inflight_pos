@@ -6,6 +6,8 @@
     <?php
     require_once('auth.php');
     ?>
+    <script src="js/jquery-1.12.4.min.js" type="text/javascript"></script>
+
     <link href="css/bootstrap.css" rel="stylesheet">
 
     <link rel="stylesheet" type="text/css" href="css/DT_bootstrap.css">
@@ -29,7 +31,6 @@
     <script src="jeffartagame.js" type="text/javascript" charset="utf-8"></script>
     <script src="js/application.js" type="text/javascript" charset="utf-8"></script>
     <link href="src/facebox.css" media="screen" rel="stylesheet" type="text/css"/>
-    <script src="lib/jquery.js" type="text/javascript"></script>
     <script src="src/facebox.js" type="text/javascript"></script>
     <script type="text/javascript">
         jQuery(document).ready(function ($) {
@@ -45,8 +46,6 @@
 <script language="javascript" type="text/javascript">
     /* Visit http://www.yaldex.com/ for full source code
      and get more free JavaScript, CSS and DHTML scripts! */
-    <
-    !--Begin
     var timerID = null;
     var timerRunning = false;
     function stopclock() {
@@ -73,7 +72,6 @@
         showtime();
     }
     window.onload = startclock;
-    // End -->
 </SCRIPT>
 <body>
 <?php include('navfixed.php'); ?>
@@ -117,7 +115,7 @@
                     </button>
                 </a>
                 <?php
-                include('../connect.php');
+                include_once('../connect.php');
                 $result = $db->prepare("SELECT * FROM partners ORDER BY partner_id DESC");
                 $result->execute();
                 $rowcount = $result->rowcount();

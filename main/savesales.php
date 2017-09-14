@@ -1,5 +1,5 @@
 <?php
-include('../connect.php');
+include_once('../connect.php');
 $a               = $_POST['invoice'];
 $b               = $_POST['cashier'];
 $c               = $_POST['date'];

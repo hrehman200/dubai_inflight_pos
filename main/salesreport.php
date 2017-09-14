@@ -160,7 +160,7 @@ require_once('auth.php');
                     <tbody>
 
                     <?php
-                    include('../connect.php');
+                    include_once('../connect.php');
                     $d1     = $_GET['d1'];
                     $d2     = $_GET['d2'];
                     $result = $db->prepare("SELECT s.*, c.customer_name FROM sales s

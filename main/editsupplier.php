@@ -1,5 +1,5 @@
 <?php
-include('../connect.php');
+include_once('../connect.php');
 $id     = $_GET['id'];
 $result = $db->prepare("SELECT * FROM supliers WHERE suplier_id= :userid");
 $result->bindParam(':userid', $id);

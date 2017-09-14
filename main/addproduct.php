@@ -15,7 +15,7 @@
 <select name="supplier"  style="width:265px; height:30px; margin-left:-5px;" >
 <option></option>
 	<?php
-	include('../connect.php');
+	include_once('../connect.php');
 	$result = $db->prepare("SELECT * FROM supliers");
 		$result->bindParam(':userid', $res);
 		$result->execute();

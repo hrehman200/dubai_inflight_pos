@@ -341,7 +341,7 @@ function checkInvoiceNum($invoice_no) {
         ':invoiceNo' => $invoice_no
     ));
 
-    return ($query->num_rows() > 0);
+    return ($query->rowCount() > 0);
 }
 
 /**

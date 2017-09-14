@@ -89,7 +89,7 @@ require_once('auth.php');
                     <input type="hidden" name="invoice" value="<?php echo $_GET['iv']; ?>"/>
                     <select name="product" style="width: 600px;">
                         <?php
-                        include('../connect.php');
+                        include_once('../connect.php');
                         $result = $db->prepare("SELECT * FROM products");
                         $result->bindParam(':userid', $res);
                         $result->execute();

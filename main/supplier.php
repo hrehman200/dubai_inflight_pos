@@ -117,7 +117,7 @@
                     </button>
                 </a>
                 <?php
-                include('../connect.php');
+                include_once('../connect.php');
                 $result = $db->prepare("SELECT * FROM supliers ORDER BY suplier_id DESC");
                 $result->execute();
                 $rowcount = $result->rowcount();

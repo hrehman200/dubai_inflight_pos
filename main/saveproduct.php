@@ -1,6 +1,6 @@
 <?php
 session_start();
-include('../connect.php');
+include_once('../connect.php');
 $a = $_POST['code'];
 $b = $_POST['name'];
 $c = $_POST['exdate'];

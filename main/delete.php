@@ -1,5 +1,5 @@
 <?php
-	include('../connect.php');
+	include_once('../connect.php');
 	$id=$_GET['id'];
 	$c=$_GET['invoice'];
 	$sdsd=$_GET['dle'];

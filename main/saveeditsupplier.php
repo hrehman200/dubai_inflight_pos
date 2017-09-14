@@ -1,6 +1,6 @@
 <?php
 // configuration
-include('../connect.php');
+include_once('../connect.php');
 
 // new data
 $id           = $_POST['memi'];

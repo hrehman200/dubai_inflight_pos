@@ -10,7 +10,7 @@
 	<tbody>
 		
 			<?php
-				include('../connect.php');
+				include_once('../connect.php');
 				$id=$_GET['iv'];
 				$result = $db->prepare("SELECT * FROM purchases_item WHERE invoice= :userid");
 				$result->bindParam(':userid', $id);

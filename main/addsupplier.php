@@ -5,8 +5,8 @@
     <div id="ac">
         <span>Supplier Name : </span><input type="text" style="width:265px; height:30px;" name="name" required/><br>
         <span>Address : </span><input type="text" style="width:265px; height:30px;" name="address"/><br>
-        <span>Contact Person : </span><input type="text" style="width:265px; height:30px;" name="contact"/><br>
-        <span>Contact No. : </span><input type="text" style="width:265px; height:30px;" name="cperson"/><br>
+        <span>Contact Person : </span><input type="text" style="width:265px; height:30px;" name="cperson"/><br>
+        <span>Contact No. : </span><input type="text" style="width:265px; height:30px;" name="contact"/><br>
         <span>Email : </span><input type="text" style="width:265px; height:30px;" name="email"/><br>
         <span>Category : </span><input type="text" style="width:265px; height:30px;" name="category"/><br>
         <span>Payment Term (in days) : </span><input type="text" style="width:265px; height:30px;" name="payment_term"/><br>

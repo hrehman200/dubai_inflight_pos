@@ -1,6 +1,6 @@
 <?php
 session_start();
-include('../connect.php');
+include_once('../connect.php');
 
 $invoice            = $_POST['invoice'];
 $flight_offer_id    = $_POST['flightOffer'];

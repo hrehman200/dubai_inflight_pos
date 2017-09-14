@@ -46,7 +46,7 @@ $sale_type=$_GET['sale_type'];
 $firstPaymentOption = $_GET['payfirst'];
 $secondPaymentOption = $_GET['paysecond'];
 
-include('../connect.php');
+include_once('../connect.php');
 $result = $db->prepare("SELECT * FROM sales WHERE invoice_number= :userid");
 $result->bindParam(':userid', $invoice);
 $result->execute();

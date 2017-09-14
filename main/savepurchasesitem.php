@@ -1,6 +1,6 @@
 <?php
 session_start();
-include('../connect.php');
+include_once('../connect.php');
 $a = $_POST['invoice'];
 $b = $_POST['product'];
 $c = $_POST['qty'];

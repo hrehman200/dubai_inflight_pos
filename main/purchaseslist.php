@@ -107,7 +107,7 @@
                     <tbody>
 
                     <?php
-                    include('../connect.php');
+                    include_once('../connect.php');
                     $result = $db->prepare("SELECT * FROM purchases ORDER BY transaction_id DESC");
                     $result->execute();
                     for ($i = 0; $row = $result->fetch(); $i++) {

@@ -13,7 +13,7 @@
 <span>Supplier : </span>
 <select name="supplier" style="width:265px; height:30px;" >
 	<?php
-	include('../connect.php');
+	include_once('../connect.php');
 	$result = $db->prepare("SELECT * FROM supliers");
 		$result->bindParam(':userid', $res);
 		$result->execute();

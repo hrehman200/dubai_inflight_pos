@@ -109,7 +109,7 @@ window.onload=startclock;
 <div style="margin-top: -19px; margin-bottom: 21px;">
 <a  href="index.php"><button class="btn btn-default btn-large" style="float: left;"><i class="icon icon-circle-arrow-left icon-large"></i> Back</button></a>
 <?php 
-			include('../connect.php');
+			include_once('../connect.php');
 				$result = $db->prepare("SELECT * FROM forecast_table INNER JOIN cogs ON forecast_table.month = cogs.month");
 				$result->execute();
 				$rowcount = $result->rowcount();

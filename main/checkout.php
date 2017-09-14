@@ -117,7 +117,7 @@
         <center>
 
 <?php
-        include('../connect.php');
+        include_once('../connect.php');
     
         $result = $db->prepare("SELECT * FROM customer WHERE customer_id = :customer_id");
         $result->execute(array('customer_id'=>$_GET['customerId']));

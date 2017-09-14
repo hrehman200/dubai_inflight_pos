@@ -75,7 +75,7 @@ POS
 <a  href="index.php"><button class="btn btn-default btn-large" style="float: none;"><i class="icon icon-circle-arrow-left icon-large"></i> Back</button></a>
 </div>
 <?php
-include('../connect.php');
+include_once('../connect.php');
 $tftft=$_GET['cname'];
 $resulta = $db->prepare("SELECT * FROM sales WHERE invoice_number= :a");
 $resulta->bindParam(':a', $tftft);

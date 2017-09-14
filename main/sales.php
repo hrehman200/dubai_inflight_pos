@@ -17,7 +17,7 @@
         POS
     </title>
     <?php
-    require_once('auth.php');
+    include_once('../connect.php');
     ?>
 
     <link href="vendors/uniform.default.css" rel="stylesheet" media="screen">
@@ -149,7 +149,6 @@ if ($position == 'cashier') {
                 <select name="product" style="width:650px; " class="chzn-select" required>
                     <option></option>
                     <?php
-                    include('../connect.php');
                     $result = $db->prepare("SELECT * FROM products");
                     $result->bindParam(':userid', $res);
                     $result->execute();

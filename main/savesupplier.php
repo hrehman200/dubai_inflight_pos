@@ -1,6 +1,6 @@
 <?php
 session_start();
-include('../connect.php');
+include_once('../connect.php');
 $a            = $_POST['name'];
 $b            = $_POST['address'];
 $c            = $_POST['contact'];

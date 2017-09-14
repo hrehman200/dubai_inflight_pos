@@ -1,5 +1,5 @@
 <?php
-	include('../connect.php');
+	include_once('../connect.php');
 	$id=$_GET['id'];
 	$qty=$_GET['qty'];
 	

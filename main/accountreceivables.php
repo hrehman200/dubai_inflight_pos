@@ -106,7 +106,7 @@ Accounts Receivables Report from&nbsp;<?php echo $_GET['d1'] ?>&nbsp;to&nbsp;<?p
 	<tbody>
 		
 			<?php
-				include('../connect.php');
+				include_once('../connect.php');
 				$d1=$_GET['d1'];
 				$d2=$_GET['d2'];
 				$c='credit';

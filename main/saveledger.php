@@ -1,6 +1,6 @@
 <?php
 session_start();
-include('../connect.php');
+include_once('../connect.php');
 $a = date("m/d/Y");
 $b = $_POST['name'];
 $c = $_POST['invoice'];

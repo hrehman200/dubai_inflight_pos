@@ -1,5 +1,5 @@
 <?php
-include('../connect.php');
+include_once('../connect.php');
 
 $invoice=$_GET['invoice'];
 $firstPaymentOption = $_GET['payfirst'];
