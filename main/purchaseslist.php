@@ -76,10 +76,10 @@
                     </a>
                 </div>
                 <input type="text" name="filter" style="height:35px; margin-top: -1px;" value="" id="filter"
-                       placeholder="Search Supplier..." autocomplete="off"/>
+                       placeholder="Search Purchases..." autocomplete="off"/>
 
                 <?php
-                if($_SESSION['SESS_LAST_NAME'] != 'account') {
+                if ($_SESSION['SESS_LAST_NAME'] != 'account') {
                     ?>
                     <a rel="facebox" href="purchases.php">
                         <Button type="submit" class="btn btn-info" style="float:right; width:230px; height:35px;"/>
@@ -116,28 +116,38 @@
                             <td><?php echo $row['invoice_number']; ?></td>
                             <td><?php echo $row['date']; ?></td>
                             <td><?php echo $row['suplier']; ?></td>
-                            <td><?=$row['invoice_amount']?></td>
-                            <td><?=$row['po_no']?></td>
-                            <td><?=$row['po_amount']?></td>
+                            <td><?= $row['invoice_amount'] ?></td>
+                            <td><?= $row['po_no'] ?></td>
+                            <td><?= $row['po_amount'] ?></td>
                             <td><?php
-                                $attachments = explode(';;;', $row['attachments']);
-                                foreach ($attachments as $a) {
-                                    if($a == '') {
-                                        continue;
-                                    }
-                                    echo sprintf('<a class="btn btn-small" target="_blank" href="uploads/%s">%s</a>', $a, $a);
+                                if (strlen($row['attachments']) > 0) {
+                                    echo sprintf('<a class="btn btn-small" target="_blank" href="uploads/%s">%s</a>', $row['attachments'], $row['attachments']);
                                 }
+
+                                if (strlen($row['attachments_2']) > 0) {
+                                    echo sprintf('<a class="btn btn-small" target="_blank" href="uploads/%s">%s</a>', $row['attachments_2'], $row['attachments_2']);
+                                }
+
+                                if (strlen($row['attachments_3']) > 0) {
+                                    echo sprintf('<a class="btn btn-small" target="_blank" href="uploads/%s">%s</a>', $row['attachments_3'], $row['attachments_3']);
+                                }
+
                                 ?></td>
                             <td><?php echo $row['remarks']; ?></td>
-                            <td><?=$row['balance']?></td>
-                            <td><?=$row['due_date']?></td>
+                            <td><?= $row['balance'] ?></td>
+                            <td><?= $row['due_date'] ?></td>
                             <td><a rel="facebox"
                                    href="view_purchases_list.php?iv=<?php echo $row['invoice_number']; ?>">
-                                    <button class="btn btn-primary btn-mini"><i class="icon-search"></i> View</button>
+                                    <button class="btn btn-primary btn-mini"><i class="icon-search icon-small"></i> View</button>
+                                </a>
+                                <a rel="facebox" href="purchases.php?id=<?=@$row['transaction_id']?>">
+                                    <button class="btn btn-info btn-mini">
+                                        <i class="icon-pencil icon-small"></i> Edit
+                                    </button>
                                 </a>
                                 <a href="#" id="<?php echo $row['transaction_id']; ?>" class="delbutton"
                                    title="Click To Delete">
-                                    <button class="btn btn-danger btn-mini"><i class="icon-trash"></i> Delete</button>
+                                    <button class="btn btn-danger btn-mini"><i class="icon-trash icon-small"></i> Delete</button>
                                 </a></td>
                         </tr>
                         <?php
