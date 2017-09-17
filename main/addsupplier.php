@@ -1,5 +1,5 @@
 <link href="../style.css" media="screen" rel="stylesheet" type="text/css"/>
-<form action="savesupplier.php" method="post">
+<form action="savesupplier.php" method="post" enctype="multipart/form-data">
     <div style="text-align: center;"><h4><i class="icon-plus-sign icon-large"></i> Add Supplier</h4></div>
     <hr>
     <div id="ac">
@@ -11,6 +11,8 @@
         <span>Category : </span><input type="text" style="width:265px; height:30px;" name="category"/><br>
         <span>Payment Term (in days) : </span><input type="text" style="width:265px; height:30px;" name="payment_term"/><br>
         <span>Note : </span><textarea style="width:265px; height:80px;" name="note"/></textarea><br>
+        <span>Attachment 1:<br> </span><input type="file" name="attachment_1" style="width:265px;height:30px;"/><br>
+        <span>Attachment 2:<br> </span><input type="file" name="attachment_2" style="width:265px;height:30px;"/><br>
         <div style="float:right; margin-right:10px;">
             <button class="btn btn-success btn-block btn-large" style="width:267px;"><i
                     class="icon icon-save icon-large"></i> Save

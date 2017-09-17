@@ -153,6 +153,7 @@
                     <th> Category</th>
                     <th> Payment Term</th>
                     <th> Note</th>
+                    <th>Attachments</th>
                     <th width="120"> Action</th>
                 </tr>
                 </thead>
@@ -172,6 +173,17 @@
                         <td><?=$row['category']?></td>
                         <td><?=$row['payment_term']?></td>
                         <td><?php echo $row['note']; ?></td>
+                        <td>
+                            <?php
+                            if (strlen($row['attachment_1']) > 0) {
+                                echo sprintf('<a class="btn btn-small" target="_blank" href="uploads/%s">%s</a>', $row['attachment_1'], $row['attachment_1']);
+                            }
+
+                            if (strlen($row['attachment_2']) > 0) {
+                                echo sprintf('<a class="btn btn-small" target="_blank" href="uploads/%s">%s</a>', $row['attachment_2'], $row['attachment_2']);
+                            }
+                            ?>
+                        </td>
                         <td><a rel="facebox" href="editsupplier.php?id=<?php echo $row['suplier_id']; ?>">
                                 <button class="btn btn-warning btn-mini"><i class="icon-edit"></i> Edit</button>
                             </a>

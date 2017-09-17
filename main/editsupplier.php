@@ -7,7 +7,7 @@ $result->execute();
 for ($i = 0; $row = $result->fetch(); $i++) {
     ?>
     <link href="../style.css" media="screen" rel="stylesheet" type="text/css"/>
-    <form action="saveeditsupplier.php" method="post">
+    <form action="saveeditsupplier.php" method="post" enctype="multipart/form-data">
         <div style="text-align: center;"><h4><i class="icon-edit icon-large"></i> Edit Supplier</h4></div>
         <hr>
         <div id="ac">
@@ -28,6 +28,8 @@ for ($i = 0; $row = $result->fetch(); $i++) {
                                        value="<?php echo $row['payment_term']; ?>"/><br>
             <span>Note : </span><textarea style="width:265px; height:80px;"
                                           name="note"><?php echo $row['note']; ?></textarea><br>
+            <span>Attachment 1:<br> </span><input type="file" name="attachment_1" style="width:265px;height:30px;"/><br>
+            <span>Attachment 2:<br> </span><input type="file" name="attachment_2" style="width:265px;height:30px;"/><br>
             <div style="float:right; margin-right:10px;">
 
                 <button class="btn btn-success btn-block btn-large" style="width:267px;"><i
