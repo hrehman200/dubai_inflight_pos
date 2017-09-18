@@ -310,7 +310,7 @@ function adjustBalanceForDeletedFlightBookings($invoice_id) {
 /**
  * @return string
  */
-function createRandomPassword() {
+function createRandomPassword($prefix = 'RS-') {
     $chars = "003232303232023232023456789";
     srand((double)microtime() * 1000000);
     $i    = 0;
@@ -322,7 +322,7 @@ function createRandomPassword() {
         $i++;
     }
 
-    if(checkInvoiceNum($pass)) {
+    if(checkInvoiceNum($prefix.$pass)) {
         createRandomPassword();
     }
 

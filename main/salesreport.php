@@ -56,18 +56,18 @@ require_once('auth.php');
             timerRunning = false;
         }
         function showtime() {
-            var now = new Date();
-            var hours = now.getHours();
-            var minutes = now.getMinutes();
-            var seconds = now.getSeconds()
+            var now       = new Date();
+            var hours     = now.getHours();
+            var minutes   = now.getMinutes();
+            var seconds   = now.getSeconds()
             var timeValue = "" + ((hours > 12) ? hours - 12 : hours)
             if (timeValue == "0") timeValue = 12;
             timeValue += ((minutes < 10) ? ":0" : ":") + minutes
             timeValue += ((seconds < 10) ? ":0" : ":") + seconds
             timeValue += (hours >= 12) ? " P.M." : " A.M."
             document.clock.face.value = timeValue;
-            timerID = setTimeout("showtime()", 1000);
-            timerRunning = true;
+            timerID                   = setTimeout("showtime()", 1000);
+            timerRunning              = true;
         }
         function startclock() {
             stopclock();
@@ -129,17 +129,38 @@ require_once('auth.php');
             </div>
             <form action="salesreport.php" method="get">
                 <center><strong>From : <input type="text" style="width: 223px; padding:3px;height: 30px;" name="d1"
-                                              class="tcal" value=""/> To: <input type="text"
-                                                                                 style="width: 223px; padding:3px;height: 30px;"
-                                                                                 name="d2" class="tcal" value=""/>
+                                              class="tcal" value=""/>
+                        To: <input type="text"
+                                   style="width: 223px; padding:3px;height: 30px;"
+                                   name="d2" class="tcal" value=""/>
                         <button class="btn btn-info" style="width: 123px; height:35px; margin-top:-8px;margin-left:8px;"
                                 type="submit"><i class="icon icon-search icon-large"></i> Search
                         </button>
                     </strong></center>
             </form>
             <div class="content" id="content">
+
+                <?php
+                $d1     = $_GET['d1'];
+                $d2     = $_GET['d2'];
+
+                if(strlen($d1) > 0 && $d1 != 0) {
+                    $dt = DateTime::createFromFormat('m/d/Y', $d1);
+                } else {
+                    $dt = new DateTime('first day of this month');
+                }
+                $d1 = $dt->format('Y-m-d');
+
+                if(strlen($d2) > 0 && $d2 != 0) {
+                    $dt = DateTime::createFromFormat('m/d/Y', $d2);
+                } else {
+                    $dt = new DateTime('last day of this month');
+                }
+                $d2 = $dt->format('Y-m-d');
+                ?>
+
                 <div style="font-weight:bold; text-align:center;font-size:14px;margin-bottom: 15px;">
-                    Sales Report from&nbsp;<?php echo $_GET['d1'] ?>&nbsp;to&nbsp;<?php echo $_GET['d2'] ?>
+                    Sales Report from&nbsp;<?php echo $d1 ?>&nbsp;to&nbsp;<?php echo $d2 ?>
                 </div>
                 <table class="table table-bordered" id="resultTable" data-responsive="table" style="text-align: left;">
                     <thead>
@@ -161,28 +182,26 @@ require_once('auth.php');
 
                     <?php
                     include_once('../connect.php');
-                    $d1     = $_GET['d1'];
-                    $d2     = $_GET['d2'];
+
                     $result = $db->prepare("SELECT s.*, c.customer_name FROM sales s
                         LEFT JOIN customer c ON s.customer_id = c.customer_id
-                        WHERE date BETWEEN :a AND :b ORDER by transaction_id DESC ");
+                        WHERE date >= :a AND date <= :b ORDER by transaction_id DESC ");
                     $result->bindParam(':a', $d1);
                     $result->bindParam(':b', $d2);
                     $result->execute();
-                    $total_sale = 0;
+                    $total_sale   = 0;
                     $total_profit = 0;
 
                     for ($i = 0; $row = $result->fetch(); $i++) {
                         $current_cost = $row['amount'];
                         // for flight_service we added a discount
-                        if($row['sale_type'] == 'Service') {
-                            $discount = floor($current_cost*$row['discount']/100.00);
+                        if ($row['sale_type'] == 'Service') {
+                            $discount = floor($current_cost * $row['discount'] / 100.00);
                             $current_cost -= $discount;
-                            $invoiceHref = 'flight_preview.php?invoice='.$row['invoice_number'].'&sale_type='.$row['sale_type'];
+                            $invoiceHref = 'flight_preview.php?invoice=' . $row['invoice_number'] . '&sale_type=' . $row['sale_type'];
+                        } else {
+                            $invoiceHref = 'preview.php?invoice=' . $row['invoice_number'] . '&sale_type=' . $row['sale_type'] . '&payfirst=&paysecond=&d1=' . $d1 . '&d2=' . $d2;
                         }
-                        else {
-                            $invoiceHref = 'preview.php?invoice='.$row['invoice_number'].'&sale_type='.$row['sale_type'].'&payfirst=&paysecond=&d1='.$d1.'&d2='.$d2;
-                         }
                         $total_sale += $current_cost;
                         $total_profit += $row['profit'];
 
@@ -190,7 +209,7 @@ require_once('auth.php');
 
                         ?>
                         <tr class="record">
-                            <td> <a href='<?php echo $invoiceHref?>'> <?php echo $row['invoice_number']; ?></td>
+                            <td><a href='<?php echo $invoiceHref ?>'> <?php echo $row['invoice_number']; ?></td>
                             <td>STI-00<?php echo $row['transaction_id']; ?></td>
                             <td><?php echo $row['date']; ?></td>
                             <td><?php echo $row['mode_of_payment']; ?></td>
@@ -201,8 +220,8 @@ require_once('auth.php');
 
                             <td><?php echo ($row['customer_name']) ? $row['customer_name'] : $row['name']; ?></td>
                             <td><?= $row['sale_type'] ?></td>
-                            <td><?=number_format($current_cost)?></td>
-                            <!--<td><?=number_format($row['profilt'])?></td>-->
+                            <td><?= number_format($current_cost) ?></td>
+                            <!--<td><?= number_format($row['profilt']) ?></td>-->
                         </tr>
                         <?php
                     }
@@ -212,8 +231,8 @@ require_once('auth.php');
                     <thead>
                     <tr>
                         <th colspan="6" style="border-top:1px solid #999999"> Total:</th>
-                       <th colspan="1" style="border-top:1px solid #999999"><?=number_format($total_sale)?></th>
-                        <!--<th colspan="1" style="border-top:1px solid #999999"><?=number_format($total_profit)?></th>-->
+                        <th colspan="1" style="border-top:1px solid #999999"><?= number_format($total_sale) ?></th>
+                        <!--<th colspan="1" style="border-top:1px solid #999999"><?= number_format($total_profit) ?></th>-->
                     </tr>
                     </thead>
                 </table>
@@ -227,7 +246,6 @@ require_once('auth.php');
 <script src="js/jquery.js"></script>
 <script type="text/javascript">
     $(function () {
-
 
         $(".delbutton").click(function () {
 
@@ -273,21 +291,21 @@ require_once('auth.php');
 
         // var $rows = $table.find('tr:has(td)'),
 
-        var $rows = $table.find('tr:has(td,th)'),
+        var $rows       = $table.find('tr:has(td,th)'),
 
-        // Temporary delimiter characters unlikely to be typed by keyboard
-        // This is to avoid accidentally splitting the actual contents
+            // Temporary delimiter characters unlikely to be typed by keyboard
+            // This is to avoid accidentally splitting the actual contents
             tmpColDelim = String.fromCharCode(11), // vertical tab character
             tmpRowDelim = String.fromCharCode(0), // null character
 
-        // actual delimiter characters for CSV format
-            colDelim = '","',
-            rowDelim = '"\r\n"',
+            // actual delimiter characters for CSV format
+            colDelim    = '","',
+            rowDelim    = '"\r\n"',
 
-        // Grab text from table into CSV formatted string
-            csv = '"' + $rows.map(function (i, row) {
-                    var $row = $(row),
-                    // $cols = $row.find('td');
+            // Grab text from table into CSV formatted string
+            csv         = '"' + $rows.map(function (i, row) {
+                    var $row  = $(row),
+                        // $cols = $row.find('td');
                         $cols = $row.find('td,th');
 
                     return $cols.map(function (j, col) {
@@ -302,10 +320,10 @@ require_once('auth.php');
                     .split(tmpRowDelim).join(rowDelim)
                     .split(tmpColDelim).join(colDelim) + '"',
 
-        // Data URI
-            csvData = 'data:application/csv;charset=utf-8,' + encodeURIComponent(csv);
+            // Data URI
+            csvData     = 'data:application/csv;charset=utf-8,' + encodeURIComponent(csv);
 
-        blob = new Blob([csvData], {type: 'text/csv;charset=utf8;'}); //new way
+        blob       = new Blob([csvData], {type: 'text/csv;charset=utf8;'}); //new way
         var csvUrl = URL.createObjectURL(blob);
 
         $(this)
