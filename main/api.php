@@ -524,3 +524,125 @@ function transferBalance() {
         'msg'     => ''
     ));
 }
+
+function getProductSubCategories() {
+    global $db;
+
+    $post = $_POST;
+
+    $query = $db->prepare('SELECT * FROM product_categories WHERE parent_id = :parentId');
+    $query->execute(array(
+        ':parentId' => $post['parentId']
+    ));
+
+    $result = $query->fetchAll(PDO::FETCH_ASSOC);
+
+    echo json_encode(array(
+        'success' => 1,
+        'msg'     => '',
+        'data'    => $result
+    ));
+}
+
+function getProducts() {
+    global $db;
+    $result = $db->prepare("SELECT common_name FROM products WHERE category_id = :categoryId GROUP BY common_name");
+    $result->bindParam(':categoryId', $_POST['categoryId']);
+    $result->execute();
+
+    $arr = array();
+    while($row = $result->fetch()) {
+        $arr[] = array(
+            'name' => $row['common_name']
+        );
+    }
+
+    echo json_encode(array(
+        'success' => 1,
+        'msg'     => '',
+        'data'    => $arr
+    ));
+}
+
+function getGenders() {
+    global $db;
+    $result2 = $db->prepare("SELECT gender, product_id
+          FROM products
+          WHERE common_name = :commonName
+          GROUP BY gender");
+    $result2->bindParam(':commonName', $_POST['commonName']);
+    $result2->execute();
+    $genders = $result2->fetchAll(PDO::FETCH_ASSOC);
+    echo json_encode(array(
+        'success' => 1,
+        'msg'     => '',
+        'data'    => $genders
+    ));
+}
+
+function getSizes() {
+    global $db;
+    $result2 = $db->prepare("SELECT size, product_id
+          FROM products
+          WHERE common_name = :commonName AND gender = :gender
+          GROUP BY size
+          ORDER BY size ASC");
+    $result2->execute(array(
+        ':commonName' => $_POST['commonName'],
+        ':gender' => $_POST['gender']
+    ));
+    $sizes = $result2->fetchAll(PDO::FETCH_ASSOC);
+    echo json_encode(array(
+        'success' => 1,
+        'msg'     => '',
+        'data'    => $sizes
+    ));
+}
+
+function getColors() {
+    global $db;
+    $result2 = $db->prepare("SELECT Attribute, product_id
+          FROM products
+          WHERE common_name = :commonName AND gender = :gender AND size = :size
+          GROUP BY Attribute");
+    $result2->execute(array(
+        ':commonName' => $_POST['commonName'],
+        ':gender' => $_POST['gender'],
+        ':size' => $_POST['size']
+    ));
+    $colors = $result2->fetchAll(PDO::FETCH_ASSOC);
+    echo json_encode(array(
+        'success' => 1,
+        'msg'     => '',
+        'data'    => $colors
+    ));
+}
+
+function getProductId() {
+    global $db;
+    $result = $db->prepare("SELECT product_id FROM products WHERE common_name = :commonName
+      AND size = :size
+      AND Attribute = :color
+      AND gender = :gender");
+    $result->execute(array(
+        ':commonName' => $_POST['commonName'],
+        ':size' => $_POST['size'],
+        ':color' => $_POST['color'],
+        ':gender' => $_POST['gender'],
+    ));
+
+    if($result->rowCount() > 0) {
+        $row = $result->fetch();
+        echo json_encode(array(
+            'success' => 1,
+            'msg'     => '',
+            'data'    => $row['product_id']
+        ));
+    } else {
+        echo json_encode(array(
+            'success' => 0,
+            'msg'     => '',
+            'data'    => null
+        ));
+    }
+}

@@ -323,7 +323,7 @@ function createRandomPassword($prefix = 'RS-') {
     }
 
     if(checkInvoiceNum($prefix.$pass)) {
-        createRandomPassword();
+        return createRandomPassword();
     }
 
     return $pass;
