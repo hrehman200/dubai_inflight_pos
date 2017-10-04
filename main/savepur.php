@@ -8,6 +8,7 @@ $b              = $_POST['date'];
 $c              = $_POST['supplier'];
 $d              = $_POST['remarks'];
 $invoice_amount = $_POST['invoice_amount'];
+$prev_invoice_amount = $_POST['prev_invoice_amount'];
 $po_no          = $_POST['po_no'];
 $po_amount      = $_POST['po_amount'];
 $attachment_1   = $_FILES['attachment_1'];
@@ -32,18 +33,31 @@ if (!empty($attachment_3['name'])) {
     }
 }
 
-$query = $db->prepare('SELECT po_amount, balance FROM purchases
-  WHERE po_no=?
-  ORDER BY date DESC
-  LIMIT 1');
-$query->execute(array($po_no));
-if ($query->rowCount() > 0) {
-    $row     = $query->fetch();
-    $balance = $row['balance'] - $invoice_amount;
-} else {
-    $balance = $po_amount - $invoice_amount;
-}
+if(!$editing) {
+    $query = $db->prepare('SELECT po_amount, balance FROM purchases
+      WHERE po_no=?
+      ORDER BY date DESC
+      LIMIT 1');
+    $query->execute(array($po_no));
+    if ($query->rowCount() > 0) {
+        $row     = $query->fetch();
+        $balance = $row['balance'] - $invoice_amount;
+    } else {
+        $balance = $po_amount - $invoice_amount;
+    }
 
+} else {
+    // match invoice_amount and see whether its changed
+    $query = $db->prepare('SELECT invoice_amount, balance FROM purchases WHERE transaction_id=?');
+    $query->execute(array($transaction_id));
+    if ($query->rowCount() > 0) {
+        $row     = $query->fetch();
+        if($row['invoice_amount'] != $invoice_amount) {
+            $balance = $row['balance'] + $prev_invoice_amount;
+            $balance -= $invoice_amount;
+        }
+    }
+}
 
 $query = $db->prepare('SELECT payment_term FROM supliers WHERE suplier_name = ? LIMIT 1');
 $query->execute(array($c));
@@ -61,7 +75,6 @@ if ($editing) {
             invoice_amount=:invoice_amount,
             po_no=:po_no,
             po_amount=:po_amount,
-            balance=:balance,
             due_date=:due_date";
 
     $arr = array(':a'              => $a,
@@ -71,10 +84,14 @@ if ($editing) {
                  ':invoice_amount' => $invoice_amount,
                  ':po_no'          => $po_no,
                  ':po_amount'      => $po_amount,
-                 ':balance'        => $balance,
                  ':due_date'       => $due_date,
                  ':transaction_id' => $transaction_id
     );
+
+    if(isset($balance)) {
+        $arr[':balance'] = $balance;
+        $sql .= ",balance=:balance";
+    }
 
     if (!is_array($attachment_1)) {
         $arr[':attachment_1'] = $attachment_1;
