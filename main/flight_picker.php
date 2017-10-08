@@ -482,11 +482,17 @@ $position = $_SESSION['SESS_LAST_NAME'];
 
         if( (flightOfferId == 0 || $('#customerId').val() == '') && divToFillId == '#timeslots' ) {
             $(divToFillId).html('');
-            return;
+            //return;
         }
 
-        if(duration == undefined) {
+        if(duration == undefined || duration == '') {
             duration = 30;
+        }
+
+        if(flightDate == '') {
+            $('#datePicker').datepicker('update', new Date().toJSON().slice(0,10))
+                .trigger('changeDate');
+            return;
         }
 
         $.ajax({
@@ -512,7 +518,7 @@ $position = $_SESSION['SESS_LAST_NAME'];
 
     $("#datePicker").datepicker({
         format: 'yyyy-mm-dd',
-        // startDate: new Date()
+        startDate: new Date()
     }).on('changeDate', function(e) {
         var pickedDate = $("#datePicker").data('datepicker').getFormattedDate('yyyy-mm-dd');
         $('#flightDate').val(pickedDate);
