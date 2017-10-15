@@ -11,6 +11,7 @@ $invoice_amount = $_POST['invoice_amount'];
 $prev_invoice_amount = $_POST['prev_invoice_amount'];
 $po_no          = $_POST['po_no'];
 $po_amount      = $_POST['po_amount'];
+$prev_po_amount      = $_POST['prev_po_amount'];
 $attachment_1   = $_FILES['attachment_1'];
 $attachment_2   = $_FILES['attachment_2'];
 $attachment_3   = $_FILES['attachment_3'];
@@ -48,13 +49,22 @@ if(!$editing) {
 
 } else {
     // match invoice_amount and see whether its changed
-    $query = $db->prepare('SELECT invoice_amount, balance FROM purchases WHERE transaction_id=?');
+    $query = $db->prepare('SELECT invoice_amount, po_amount, balance FROM purchases WHERE transaction_id=?');
     $query->execute(array($transaction_id));
     if ($query->rowCount() > 0) {
         $row     = $query->fetch();
         if($row['invoice_amount'] != $invoice_amount) {
+            // first reset
             $balance = $row['balance'] + $prev_invoice_amount;
+            // then change
             $balance -= $invoice_amount;
+        }
+
+        if($row['po_amount'] != $po_amount) {
+            // first reset
+            $balance = $row['balance'] + $prev_po_amount;
+            // then change
+            $balance = $po_amount - $invoice_amount;
         }
     }
 }

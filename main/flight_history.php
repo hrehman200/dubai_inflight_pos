@@ -161,6 +161,7 @@ session_start();
                         <th> Package</th>
                         <th> Flight Offer</th>
                         <th> Price</th>
+                        <th> Paid</th>
                         <th> Minutes</th>
                         <th> Purchase Date </th>
                     </tr>
@@ -171,11 +172,13 @@ session_start();
                     if(isset($_GET)) {
 
                         $sql = "SELECT fp.id AS flight_purchase_id, fp.deduct_from_balance, fo.code, fpkg.package_name, fo.offer_name, fo.price, fo.duration, c.customer_name, DATE_FORMAT(fp.created,'%b %d, %Y') AS created,
-                              fb.duration AS booking_duration
+                              fb.duration AS booking_duration,
+                              s.after_dis
                               FROM flight_purchases fp
                               LEFT JOIN flight_offers fo ON fp.flight_offer_id = fo.id
                               LEFT JOIN flight_packages fpkg ON fo.package_id = fpkg.id
                               LEFT JOIN flight_bookings fb ON fb.flight_purchase_id = fp.id
+                              INNER JOIN sales s ON fp.invoice_id = s.invoice_number
                               INNER JOIN customer c ON fp.customer_id = c.customer_id ";
 
                         $where = array();
@@ -207,11 +210,13 @@ session_start();
                         $result = $db->query($sql);
 
                         $total_cost     = 0;
+                        $total_paid = 0;
                         $total_duration = 0;
                         while ($row = $result->fetch()) {
                             if($row['deduct_from_balance']==0) {
                                 $total_cost += $row['price'];
                                 $total_duration += $row['duration'];
+                                $total_paid += $row['after_dis'];
                             }
                             ?>
                             <tr>
@@ -219,6 +224,7 @@ session_start();
                                 <td><?php echo $row['package_name']; ?></td>
                                 <td><?php echo $row['deduct_from_balance']>0 ? $row['offer_name'].' (Deduct from balance)' : $row['offer_name'] ; ?></td>
                                 <td><?php echo $row['deduct_from_balance']>0 ? '-' : number_format($row['price']); ?></td>
+                                <td><?=$row['after_dis']?></td>
                                 <td><?php echo $row['deduct_from_balance']>0 ? $row['booking_duration'] :$row['duration']; ?></td>
                                 <td><?= $row['created'] ?></td>
                             </tr>
@@ -234,7 +240,7 @@ session_start();
                                     <td style="text-align: center; font-size:12px;"><b>Flight time: </b><?= substr($row2['flight_time'], 0, -3) ?></td>
                                     <td></td>
                                     <td></td><?= $row2['duration'] ?></td>
-                                    <td></td>
+                                    <td colspan="2"></td>
                                 </tr>
                                 <?php
                             }
@@ -246,7 +252,8 @@ session_start();
                         <tr>
                             <td colspan="3" style="text-align: right;">Totals:</td>
                             <td><b></b><?= number_format($total_cost) ?></b></td>
-                            <td colspan="2"><b></b><?= $total_duration ?></b></td>
+                            <td><b><?=number_format($total_paid)?></b></td>
+                            <td colspan="3"><b><?= $total_duration ?></b></td>
                         </tr>
                         </tbody>
                     </table>

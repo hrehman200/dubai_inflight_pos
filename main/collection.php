@@ -94,12 +94,17 @@ include('navfixed.php');
                 </form>
 
                 <?php
-                if (!isset($_GET['d1']) || $_GET['d1'] == 0) {
-                    $first_day_this_month = date('m-01-Y');
-                    $last_day_this_month  = date('m-t-Y');
 
-                    $_GET['d1'] = $first_day_this_month;
-                    $_GET['d2'] = $last_day_this_month;
+                if(isset($_GET['d1'])  && $_GET['d1'] != '' && $_GET['d1'] != '0'){
+                    $_GET['d1'] = date('Y-m-d', strtotime($_GET['d1']));
+                } else {
+                    $_GET['d1'] = date('Y-m-01');
+                }
+
+                if(isset($_GET['d2']) && $_GET['d2'] != '' && $_GET['d2'] != '0'){
+                    $_GET['d2'] = date('Y-m-d', strtotime($_GET['d2']));
+                } else {
+                    $_GET['d2'] = date('Y-m-t');
                 }
                 ?>
 
@@ -151,7 +156,7 @@ include('navfixed.php');
                             SELECT
                               GROUP_CONCAT(so.name) AS product_name,
                               GROUP_CONCAT(so.product_code) AS product_codes,
-                              SUM(so.qty) AS quantity,
+                              GROUP_CONCAT(so.qty) AS quantity,
                               s.date AS transaction_date,
                               s.cashier,
                               s.invoice_number,
@@ -165,7 +170,7 @@ include('navfixed.php');
                               s.after_dis,
                               c.customer_name,
                               so.product_code,
-                              so.price,
+                              GROUP_CONCAT(so.price) AS price,
                               so.name,
                               so.qty,
                               0 AS units_remaining,
@@ -217,18 +222,31 @@ include('navfixed.php');
                             s1.transaction_id
                         )
                           ) result
+                        WHERE result.transaction_date >= :startDate AND result.transaction_date <= :endDate
                         ORDER BY
                           result.transaction_date DESC";
 
                         $result = $db->prepare($sql);
                         $result->execute(array(
-                            'startDate' => $_GET['d1'],
-                            'endDate'   => $_GET['d2']
+                            ':startDate' => $_GET['d1'],
+                            ':endDate'   => $_GET['d2']
                         ));
 
                         while ($row = $result->fetch()) {
-                            $unit_consumed  = $row['quantity'];
-                            $unit_remaining = $row['qty'] - $unit_consumed;
+                            $arr_unit_consumed = explode(",", $row['quantity']);
+                            $arr_unit_remaining = [];
+                            foreach($arr_unit_consumed as $uc) {
+                                $arr_unit_remaining[] = $uc;
+                            }
+
+                            $price_paid = round($row['amount'] - ($row['amount'] * $row['discount'] / 100), 0);
+
+                            $arr_price = explode(",", $row['price']);
+                            $unit_price_after_discount = [];
+                            foreach($arr_price as $price) {
+                                $unit_price_after_discount[] = round($price - ($price * $row['discount'] / 100), 2);
+                            }
+
                             ?>
                             <tr>
                                 <td><?= $row['transaction_date'] ?></td>
@@ -236,18 +254,18 @@ include('navfixed.php');
                                 <td><?= $row['invoice_number'] ?></td>
                                 <td><?= $row['sale_type'] ?></td>
                                 <td><?= $row['customer_name'] ?></td>
-                                <td><?= $row['mode_of_payment'] . ($row['mode_of_payment_1'] > 0) ? ', ' . $row['mode_of_payment_1'] : '' ?></td>
+                                <td><?= $row['mode_of_payment'] . (($row['mode_of_payment_1'] != -1)?", ".$row['mode_of_payment_1']:'') ?></td>
                                 <td><?= $row['product_name'] ?></td>
                                 <td><?= $row['product_codes'] ?></td>
                                 <td><?= $row['product_name'] ?></td>
                                 <td>AED</td>
-                                <td><?= $row['amount'] ?></td>
+                                <td><?= $price_paid?></td>
                                 <td><?= $row['mode_of_payment'] ?></td>
                                 <td><?= $row['mop_amount'] ?></td>
                                 <td><?= $row['mode_of_payment_1'] ?></td>
                                 <td><?= $row['mop1_amount'] ?></td>
                                 <td><?= $row['quantity'] ?></td>
-                                <td><?= $row['price'] ?></td>
+                                <td><?= implode(",", $unit_price_after_discount)?></td>
                                 <td><?= $row['discount'] ?></td>
                                 <td>Discount Reason</td>
                                 <td><?= $row['price'] ?></td>
@@ -259,9 +277,25 @@ include('navfixed.php');
                                 <td><?= $row['product_name'] ?></td>
                                 <td>POS</td>
                                 <td><?= $row['quantity'] ?></td>
-                                <td><?= $unit_remaining ?></td>
-                                <td><?= round($row['price'] * $unit_consumed, 2) ?></td>
-                                <td><?= round($row['price'] * $unit_remaining, 2) ?></td>
+                                <td><?= ($row['sale_type'] != 'Merchandise') ? implode(",", $arr_unit_remaining) : 0?></td>
+                                <td><?php
+                                    $revenue_consumed = 0;
+                                    for($i=0; $i<count($unit_price_after_discount); $i++) {
+                                        $revenue_consumed += round($unit_price_after_discount[$i] * $arr_unit_consumed[$i], 2);
+                                    }
+                                    echo $revenue_consumed;
+                                    ?>
+                                </td>
+                                <td><?php
+                                    if($row['sale_type'] != 'Merchandise') {
+                                        $liability = 0;
+                                        for($i=0; $i<count($unit_price_after_discount); $i++) {
+                                            $liability += round($unit_price_after_discount[$i] * $arr_unit_remaining[$i], 2);
+                                        }
+                                        echo $liability;
+                                    }
+                                    ?>
+                                </td>
                             </tr>
                             <?php
                         }

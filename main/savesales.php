@@ -26,13 +26,13 @@ if ($salesType == '' || empty($salesType )) {
     $salesType ='Service';
 }
 
-$monthNumber = date_parse_from_format("m/d/y", $c);
+$monthNumber = date_parse_from_format("Y-m-d", $c);
 $monthNum    = $monthNumber["month"];
 
 $dateObj   = DateTime::createFromFormat('!m', $monthNum);
 $monthName = $dateObj->format('M');
 
-$specificyear = date_parse_from_format("m/d/y", $c);
+$specificyear = date_parse_from_format("Y-m-d", $c);
 $salesyear    = $specificyear["year"];
 
 if ($d == 'cash') {
@@ -70,16 +70,9 @@ if (@$_POST['savingflight'] == 1) {
     adjustBalanceForDeletedFlightBookings($a);
 
     header("location: flight_preview.php?invoice=$a&payfirst=$cash&paysecond=$remaining_cash");
-    //header("location: flight_preview.php?invoice=$a");
 
 } else {
 
-  /*  $sql = "INSERT INTO sales (invoice_number,cashier,date,type,month,year,amount,profit,due_date, mode_of_payment)
-        VALUES (:a,:b,:c,:d,:monh,:year,:e,:z,:due_date, :mode_of_payment)";
-    $q   = $db->prepare($sql);
-    $q->execute(array(':a' => $a, ':b' => $b, ':c' => $c, ':d' => $d, ':monh' => $monthName, ':year' => $salesyear, ':e' => $e, ':z' => $z, ':due_date' => $f, 'mode_of_payment' => $mode_of_payment));
-
-*/
     $salesType ='Merchandise';
 
     $sql = "INSERT INTO sales (invoice_number,cashier,date,type,month,year,amount,profit,due_date, mode_of_payment, discount, customer_id, sale_type, mode_of_payment_1, mop_amount, mop1_amount, after_dis)
@@ -91,7 +84,6 @@ if (@$_POST['savingflight'] == 1) {
 
 
     header("location: preview.php?invoice=$a&payfirst=$cash&paysecond=$remaining_cash&sale_type=&d1=&d2=");
-   // header("location: flight_preview.php?invoice=$a&payfirst=$cash&paysecond=$remaining_cash");
 }
 
 

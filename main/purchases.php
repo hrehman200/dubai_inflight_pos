@@ -45,6 +45,8 @@ if ($result->rowCount() > 0) {
                                                     style="width:265px;height:30px;"/>
 
             <input type="hidden" name="prev_invoice_amount" value="<?=$row['invoice_amount']?>" />
+            <input type="hidden" name="prev_po_amount" value="<?=$row['po_amount']?>" />
+
             <br>
             <span>PO Number:<br> </span><input type="text" id="po_no" name="po_no" value="<?=$row['po_no']?>"
                                                style="width:265px;height:30px;" autocomplete="off"/><br>

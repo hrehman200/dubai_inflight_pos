@@ -1,8 +1,6 @@
 <?php
 include_once('../connect.php');
 
-call_user_func($_POST['call']);
-
 function getTimeslotsForFlightDate() {
 
     global $db;
@@ -601,7 +599,7 @@ function getSizes() {
 
 function getColors() {
     global $db;
-    $result2 = $db->prepare("SELECT Attribute, product_id
+    $result2 = $db->prepare("SELECT Attribute, product_id, image
           FROM products
           WHERE common_name = :commonName AND gender = :gender AND size = :size
           GROUP BY Attribute");
@@ -646,3 +644,15 @@ function getProductId() {
         ));
     }
 }
+
+function getVatForDiscountedAmountAndInvoice() {
+    $arr_vat = getVatDetailsForDiscountedAmountAndInvoice($_POST['discounted_amount'], $_POST['invoice'], $_POST['saving_flight']);
+    echo json_encode(array(
+        'success' => 1,
+        'data' => $arr_vat
+    ));
+}
+
+
+
+call_user_func($_POST['call']);

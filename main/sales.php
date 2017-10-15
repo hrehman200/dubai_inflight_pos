@@ -180,7 +180,7 @@ if ($position == 'cashier') {
 
                 Category : <select class="category">
                     <?php
-                    $result = $db->prepare("SELECT * FROM product_categories WHERE parent_id IS NULL");
+                    $result = $db->prepare("SELECT * FROM product_categories WHERE parent_id IS NULL OR parent_id = 0");
                     $result->execute();
                     while ($row = $result->fetch()) {
                         echo sprintf('<option value=""></option><option value="%d" data-img-src="img/%s" data-img-class="custom-img">%s</option>', $row['id'], $row['image'], $row['category_name']);
@@ -232,7 +232,7 @@ if ($position == 'cashier') {
                         </button>
                     </div>
                     <div class="span6">
-                        <img class="selectedProduct" src="img/pos.jpg" style="width: 100%; height: auto;"/>
+                        <img class="selectedProduct" src="" style="width: 100%; height: auto;"/>
                     </div>
                 </div>
             </form>
@@ -381,131 +381,162 @@ if ($position == 'cashier') {
         });
 
         function getSubCategories(parentId) {
-            $.ajax({
-                url: 'api.php',
-                method: 'POST',
-                data: {
-                    'call': 'getProductSubcategories',
-                    'parentId': parentId
-                },
-                dataType: 'json',
-                success: function (response) {
-                    if (response.success == 1) {
 
-                        if ($('.subcategory').data('picker') != undefined) {
-                            $('.subcategory').data('picker').destroy();
-                        }
-                        $('.subcategory').find('option').remove();
-                        for (var i in response.data) {
-                            var item = response.data[i];
-                            $('.subcategory').append('<option value=""></option><option value="' + item.id + '" data-img-src="img/' + item.image + '"  data-img-class="custom-img">' + item.category_name + '</option>')
-                        }
-                        $('.subcategory').imagepicker({
-                            show_label: true,
-                            changed: function (select, newValues, oldValues, event) {
-                                getProducts(newValues[0]);
+            if(parentId > 0) {
+                $.ajax({
+                    url: 'api.php',
+                    method: 'POST',
+                    data: {
+                        'call': 'getProductSubcategories',
+                        'parentId': parentId
+                    },
+                    dataType: 'json',
+                    success: function (response) {
+                        if (response.success == 1) {
+
+                            if ($('.subcategory').data('picker') != undefined) {
+                                $('.subcategory').data('picker').destroy();
                             }
-                        }).parent('div').show();
+                            $('.subcategory').find('option').remove();
+                            for (var i in response.data) {
+                                var item = response.data[i];
+                                $('.subcategory').append('<option value=""></option><option value="' + item.id + '" data-img-src="img/' + item.image + '"  data-img-class="custom-img">' + item.category_name + '</option>')
+                            }
+                            $('.subcategory').imagepicker({
+                                show_label: true,
+                                changed: function (select, newValues, oldValues, event) {
+                                    getProducts(newValues[0]);
+                                }
+                            }).parent('div').show();
+                        }
                     }
-                }
-            });
+                });
+            } else {
+                $('.subcategory').parents('div:eq(0)').hide().nextAll('.row').hide();
+                $('.selectedProduct').hide();
+            }
         }
 
         var arrProductAttr = [];
 
-        function getProducts(categoryId) {
-            $.ajax({
-                url: 'api.php',
-                method: 'POST',
-                data: {
-                    'call': 'getProducts',
-                    'categoryId': categoryId
-                },
-                dataType: 'json',
-                success: function (response) {
-                    if (response.success == 1) {
-                        $('.product').find('option').remove()
-                        for (var i in response.data) {
-                            arrProductAttr = response.data[i];
-                            $('.product').append('<option>' + arrProductAttr['name'] + '</option>')
-                        }
+        function getProducts(subcategoryId) {
+            if(subcategoryId > 0) {
+                $.ajax({
+                    url: 'api.php',
+                    method: 'POST',
+                    data: {
+                        'call': 'getProducts',
+                        'categoryId': subcategoryId
+                    },
+                    dataType: 'json',
+                    success: function (response) {
+                        $('.product').parents('.row:eq(0)').show();
+                        if (response.success == 1) {
+                            $('.product').find('option').remove()
+                            for (var i in response.data) {
+                                arrProductAttr = response.data[i];
+                                $('.product').append('<option>' + arrProductAttr['name'] + '</option>')
+                            }
 
-                        $('.product').off().on('change', function (e) {
-                            getGenders();
-                        }).trigger('change').parents('.row').show();
+                            $('.product').off().on('change', function (e) {
+                                getGenders();
+                            }).trigger('change').parents('.row').show();
+                        }
                     }
-                }
-            });
+                });
+            } else {
+                $('.product').parents('.row:eq(0)').hide().nextAll('.row').hide();
+                $('.selectedProduct').hide();
+            }
         }
 
         function getGenders() {
-            $.ajax({
-                url: 'api.php',
-                method: 'POST',
-                data: {
-                    'call': 'getGenders',
-                    'commonName': $('.product').val(),
-                },
-                dataType: 'json',
-                success: function (response) {
-                    $('.gender').html('');
-                    for (var i in response.data) {
-                        $('.gender').append('<label class="radio-inline"><input type="radio" data-product-id="' + response.data[i]['product_id'] + '" name="radio1" value="' + response.data[i]['gender'] + '">' + response.data[i]['gender'] + '</label>')
+            if($('.product').val() != '') {
+                $.ajax({
+                    url: 'api.php',
+                    method: 'POST',
+                    data: {
+                        'call': 'getGenders',
+                        'commonName': $('.product').val(),
+                    },
+                    dataType: 'json',
+                    success: function (response) {
+                        $('.gender').parents('.row:eq(0)').show();
+                        $('.gender').html('');
+                        for (var i in response.data) {
+                            $('.gender').append('<label class="radio-inline"><input type="radio" data-product-id="' + response.data[i]['product_id'] + '" name="radio1" value="' + response.data[i]['gender'] + '">' + response.data[i]['gender'] + '</label>')
+                        }
+                        $('.gender').off().on('change', function (e) {
+                            getSizes();
+                        }).trigger('change').parents('.row').show();
                     }
-                    $('.gender').on('change', function (e) {
-                        getSizes();
-                    }).trigger('change').parents('.row').show();
-                }
-            });
+                });
+            } else {
+                $('.gender').parents('.row:eq(0)').hide().nextAll('.row').hide();
+                $('.selectedProduct').hide();
+            }
         }
 
         function getSizes() {
-            $.ajax({
-                url: 'api.php',
-                method: 'POST',
-                data: {
-                    'call': 'getSizes',
-                    'commonName': $('.product').val(),
-                    'gender': $('.gender input:checked').val()
-                },
-                dataType: 'json',
-                success: function (response) {
-                    $('.size').html('');
-                    for (var i in response.data) {
-                        $('.size').append('<label class="radio-inline"><input type="radio" data-product-id="' + response.data[i]['product_id'] + '" name="radio2" value="' + response.data[i]['size'] + '">' + response.data[i]['size'] + '</label>')
+            if($('.product').val() != '' && $('.gender input:checked').val() != '') {
+                $.ajax({
+                    url: 'api.php',
+                    method: 'POST',
+                    data: {
+                        'call': 'getSizes',
+                        'commonName': $('.product').val(),
+                        'gender': $('.gender input:checked').val()
+                    },
+                    dataType: 'json',
+                    success: function (response) {
+                        $('.size').parents('.row:eq(0)').show();
+                        $('.size').html('');
+                        for (var i in response.data) {
+                            $('.size').append('<label class="radio-inline"><input type="radio" data-product-id="' + response.data[i]['product_id'] + '" name="radio2" value="' + response.data[i]['size'] + '">' + response.data[i]['size'] + '</label>')
+                        }
+                        $('.size').off().on('change', function (e) {
+                            getColors();
+                        }).trigger('change').parents('.row').show();
                     }
-                    $('.size').on('change', function (e) {
-                        getColors();
-                    }).trigger('change').parents('.row').show();
-                }
-            });
+                });
+            } else {
+                $('.size').parents('.row:eq(0)').hide().nextAll('.row').hide();
+                $('.selectedProduct').hide();
+            }
         }
 
         function getColors() {
-            $.ajax({
-                url: 'api.php',
-                method: 'POST',
-                data: {
-                    'call': 'getColors',
-                    'commonName': $('.product').val(),
-                    'gender': $('.gender input:checked').val(),
-                    'size': $('.size input:checked').val()
-                },
-                dataType: 'json',
-                success: function (response) {
-                    $('.color').html('');
-                    for (var i in response.data) {
-                        $('.color').append('<label class="radio-inline"><input type="radio" data-product-id="' + response.data[i]['product_id'] + '" name="radio3" value="' + response.data[i]['Attribute'] + '">' + response.data[i]['Attribute'] + '</label>')
-                    }
-                    $('.color input').on('change', function (e) {
-                        if($(this).is(':checked')) {
-                            $('#product').val($(this).find('option:selected').data('product-id'));
-                            $('.btnAdd').prop('disabled', false);
-                            $('.quantity').show();
+            if($('.product').val() != '' && $('.gender input:checked').val() != '' && $('.size input:checked').val() != '') {
+                $.ajax({
+                    url: 'api.php',
+                    method: 'POST',
+                    data: {
+                        'call': 'getColors',
+                        'commonName': $('.product').val(),
+                        'gender': $('.gender input:checked').val(),
+                        'size': $('.size input:checked').val()
+                    },
+                    dataType: 'json',
+                    success: function (response) {
+                        $('.color').parents('.row:eq(0)').show();
+                        $('.color').html('');
+                        for (var i in response.data) {
+                            $('.color').append('<label class="radio-inline"><input type="radio" data-product-id="' + response.data[i]['product_id'] + '"  data-product-img="' + response.data[i]['image'] + '" name="radio3" value="' + response.data[i]['Attribute'] + '">' + response.data[i]['Attribute'] + '</label>')
                         }
-                    }).trigger('change').parents('.row').show();
-                }
-            });
+                        $('.color input').off().on('change', function (e) {
+                            if ($(this).is(':checked')) {
+                                $('#product').val($(this).data('product-id'));
+                                $('.btnAdd').prop('disabled', false);
+                                $('.quantity').show();
+                                $('.selectedProduct').show().attr('src', 'img/'+$(this).data('product-img'));
+                            }
+                        }).trigger('change').parents('.row').show();
+                    }
+                });
+            } else {
+                $('.color').parents('.row:eq(0)').hide().nextAll('.row').hide();
+                $('.selectedProduct').hide();
+            }
         }
     })
 </script>

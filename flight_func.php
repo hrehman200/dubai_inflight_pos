@@ -1,6 +1,12 @@
 <?php
 
 /**
+ * Two types of things being sold
+ */
+define('TYPE_MERCHANDISE', 'Merchandise');
+define('TYPE_SERVICE', 'Service');
+
+/**
  * @param $customer_id
  * @param $flight_purchase_id
  * @param $minutes
@@ -108,9 +114,11 @@ function deductFromCreditTime($customer_id, $flight_offer_id, $balance, $creditD
 function insertFlightPurchase($invoice_id, $flight_offer_id, $customer_id, $use_balance = 0, $status = 0, $class_people = 0) {
     global $db;
 
-    $sql = "INSERT INTO flight_purchases(invoice_id, flight_offer_id, customer_id, deduct_from_balance, status, class_people)
-        VALUES (:invoice_id, :flight_offer_id, :customer_id, :use_balance, :status, :class_people)";
-    $q   = $db->prepare($sql);
+    $vat_code_id = getVatCodeId(TYPE_SERVICE);
+
+    $columns = "invoice_id, flight_offer_id, customer_id, deduct_from_balance, status, class_people";
+    $values = ":invoice_id, :flight_offer_id, :customer_id, :use_balance, :status, :class_people";
+
     $arr = array(
         ':invoice_id'      => $invoice_id,
         ':flight_offer_id' => $flight_offer_id,
@@ -119,10 +127,19 @@ function insertFlightPurchase($invoice_id, $flight_offer_id, $customer_id, $use_
         ':status'          => $status,
         ':class_people'    => $class_people
     );
+
+    if($use_balance != 1) {
+        $columns .= ",vat_code_id";
+        $values .= ",:vatCodeId";
+        $arr[':vatCodeId'] = $vat_code_id;
+    }
+
+    $sql = "INSERT INTO flight_purchases({$columns})
+        VALUES ({$values})";
+
+    $q   = $db->prepare($sql);
     $q->execute($arr);
-
     $flight_purchase_id = $db->lastInsertId();
-
     return $flight_purchase_id;
 }
 
@@ -340,8 +357,21 @@ function checkInvoiceNum($invoice_no) {
     $query->execute(array(
         ':invoiceNo' => $invoice_no
     ));
+    $exists_in_sales = ($query->rowCount() > 0);
 
-    return ($query->rowCount() > 0);
+    $query = $db->prepare("SELECT transaction_id FROM sales_order WHERE invoice = :invoiceNo");
+    $query->execute(array(
+        ':invoiceNo' => $invoice_no
+    ));
+    $exists_in_sales_order = ($query->rowCount() > 0);
+
+    $query = $db->prepare("SELECT id FROM flight_purchases WHERE invoice_id = :invoiceNo");
+    $query->execute(array(
+        ':invoiceNo' => $invoice_no
+    ));
+    $exists_in_flight_purchases = ($query->rowCount() > 0);
+
+    return ($exists_in_sales || $exists_in_sales_order || $exists_in_flight_purchases);
 }
 
 /**
@@ -362,4 +392,46 @@ function reArrayFiles($file) {
     }
 
     return $file_ary;
+}
+
+/**
+ * @param $type
+ * @return mixed
+ */
+function getVatCodeId($type) {
+    global $db;
+    $query = $db->prepare('SELECT id FROM vat_codes WHERE type=? AND active=1 ORDER BY modified ASC LIMIT 1');
+    $query->execute(array('Merchandise'));
+    $row = $query->fetch();
+    $vat_code_id = $row['id'];
+    return $vat_code_id;
+}
+
+/**
+ * @param $discounted_amount
+ * @param $invoice_no
+ * @param $saving_flight
+ * @return array
+ */
+function getVatDetailsForDiscountedAmountAndInvoice($discounted_amount, $invoice_no, $saving_flight) {
+    global $db;
+
+    if($saving_flight) {
+        $query = $db->prepare('SELECT DISTINCT vc.id, vc.percent FROM vat_codes vc
+                                          INNER JOIN flight_purchases fp ON vc.id = fp.vat_code_id
+                                          WHERE fp.invoice_id = ?');
+    } else {
+        $query = $db->prepare('SELECT DISTINCT vc.id, vc.percent FROM vat_codes vc
+                                          INNER JOIN sales_order so ON vc.id = so.vat_code_id
+                                          WHERE so.invoice = ?');
+    }
+    $query->execute(array($invoice_no));
+    $total_vat = 0;
+    $arr_vat_percents = [];
+    while($row = $query->fetch()) {
+        $arr_vat_percents[] = $row['percent'];
+        $total_vat += round($discounted_amount * $row['percent'] / 100, 2);
+    }
+
+    return array($total_vat, $arr_vat_percents);
 }

@@ -29,9 +29,24 @@ $d       = $fffffff * $c;
 $profit  = $p * $c;
 
 // query
-$sql = "INSERT INTO sales_order (invoice,product,qty,amount,name,price,profit,product_code,gen_name,date) VALUES (:a,:b,:c,:d,:e,:f,:h,:i,:j,:k)";
+$sql = "INSERT INTO
+        sales_order (invoice,product,qty,amount,name,price,profit,product_code,gen_name,date,vat_code_id)
+        VALUES
+        (:a,:b,:c,:d,:e,:f,:h,:i,:j,:k,:vatCodeId)";
 $q   = $db->prepare($sql);
-$q->execute(array(':a' => $a, ':b' => $b, ':c' => $c, ':d' => $d, ':e' => $name, ':f' => $asasa, ':h' => $profit, ':i' => $code, ':j' => $gen, ':k' => $date));
+$q->execute(array(
+    ':a' => $a,
+    ':b' => $b,
+    ':c' => $c,
+    ':d' => $d,
+    ':e' => $name,
+    ':f' => $asasa,
+    ':h' => $profit,
+    ':i' => $code,
+    ':j' => $gen,
+    ':k' => $date,
+    ':vatCodeId'=>getVatCodeId($gen)
+));
 header("location: sales.php?id=$w&invoice=$a");
 
 
