@@ -225,7 +225,7 @@ if ($position == 'cashier') {
                         / required>
                         <input type="hidden" name="discount" value="" autocomplete="off"
                                style="width: 68px; height:30px; padding-top:6px; padding-bottom: 4px; margin-right: 4px; font-size:15px;"/>
-                        <input type="hidden" name="date" value="<?php echo date("m/d/y"); ?>"/>
+                        <input type="hidden" name="date" value="<?php echo date("Y-m-d"); ?>"/>
                         <Button type="submit" class="btn btn-info btnAdd"
                                 style="width: 123px; height:35px; margin-top:-5px;" disabled>
                             <i class="icon-plus-sign icon-large"></i> Add
