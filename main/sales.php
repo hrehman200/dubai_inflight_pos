@@ -382,6 +382,9 @@ if ($position == 'cashier') {
 
         function getSubCategories(parentId) {
 
+            $('.product').parents('.row:eq(0)').hide().nextAll('.row').hide();
+            $('.selectedProduct').hide();
+
             if(parentId > 0) {
                 $.ajax({
                     url: 'api.php',
@@ -469,6 +472,10 @@ if ($position == 'cashier') {
                         $('.gender').off().on('change', function (e) {
                             getSizes();
                         }).trigger('change').parents('.row').show();
+
+                        if($('.gender input:eq(0)').val() == 'NA') {
+                           $('.gender input').click();
+                        }
                     }
                 });
             } else {
@@ -497,6 +504,10 @@ if ($position == 'cashier') {
                         $('.size').off().on('change', function (e) {
                             getColors();
                         }).trigger('change').parents('.row').show();
+
+                        if($('.size input:eq(0)').val() == 'NA') {
+                            $('.size input').click();
+                        }
                     }
                 });
             } else {
@@ -531,6 +542,10 @@ if ($position == 'cashier') {
                                 $('.selectedProduct').show().attr('src', 'img/'+$(this).data('product-img'));
                             }
                         }).trigger('change').parents('.row').show();
+
+                        if($('.color input:eq(0)').val() == 'NA') {
+                            $('.color input').click();
+                        }
                     }
                 });
             } else {

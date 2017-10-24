@@ -134,6 +134,7 @@ include('navfixed.php');
                             <th>Discount</th>
                             <th>DiscountReason</th>
                             <th>Unit Price Before Discount</th>
+                            <th>VAT</th>
                             <th>OPERATING_UNIT_NAME</th>
                             <th>Store / Location</th>
                             <th>N/A</th>
@@ -157,6 +158,8 @@ include('navfixed.php');
                               GROUP_CONCAT(so.name) AS product_name,
                               GROUP_CONCAT(so.product_code) AS product_codes,
                               GROUP_CONCAT(so.qty) AS quantity,
+                              GROUP_CONCAT(vc.percent) AS vat_percent,
+                              GROUP_CONCAT(so.qty) AS total_quantity,
                               s.date AS transaction_date,
                               s.cashier,
                               s.invoice_number,
@@ -180,6 +183,8 @@ include('navfixed.php');
                             INNER JOIN
                               sales_order so ON s.invoice_number = so.invoice
                             LEFT JOIN
+                              vat_codes vc ON so.vat_code_id = vc.id
+                            LEFT JOIN
                               customer c ON s.customer_id = c.customer_id
                             GROUP BY
                               s.transaction_id
@@ -189,7 +194,9 @@ include('navfixed.php');
                           SELECT
                             GROUP_CONCAT(fo1.offer_name) AS product_name,
                             GROUP_CONCAT(fo1.code) AS product_codes,
-                            SUM(fb1.duration) AS quantity,
+                            GROUP_CONCAT(fb1.duration) AS quantity,
+                            GROUP_CONCAT(vc.percent) AS vat_percent,
+                            GROUP_CONCAT(fo1.duration) AS total_quantity,
                             s1.date AS transaction_date,
                             s1.cashier,
                             s1.invoice_number,
@@ -216,6 +223,8 @@ include('navfixed.php');
                             flight_offers fo1 ON fp1.flight_offer_id = fo1.id
                           INNER JOIN
                             flight_bookings fb1 ON fb1.flight_purchase_id = fp1.id
+                          LEFT JOIN
+                              vat_codes vc ON fp1.vat_code_id = vc.id
                           INNER JOIN
                             customer c1 ON s1.customer_id = c1.customer_id
                           GROUP BY
@@ -233,10 +242,11 @@ include('navfixed.php');
                         ));
 
                         while ($row = $result->fetch()) {
+                            $arr_unit_total = explode(",", $row['total_quantity']);
                             $arr_unit_consumed = explode(",", $row['quantity']);
                             $arr_unit_remaining = [];
-                            foreach($arr_unit_consumed as $uc) {
-                                $arr_unit_remaining[] = $uc;
+                            for($i=0; $i<count($arr_unit_consumed); $i++) {
+                                $arr_unit_remaining[] = $arr_unit_total[$i] - $arr_unit_consumed[$i];
                             }
 
                             $price_paid = round($row['amount'] - ($row['amount'] * $row['discount'] / 100), 0);
@@ -245,6 +255,12 @@ include('navfixed.php');
                             $unit_price_after_discount = [];
                             foreach($arr_price as $price) {
                                 $unit_price_after_discount[] = round($price - ($price * $row['discount'] / 100), 2);
+                            }
+
+                            $arr_vat_percents = explode(",", $row['vat_percent']);
+                            $arr_vat_amounts = [];
+                            for($i=0; $i<count($arr_vat_percents); $i++) {
+                                $arr_vat_amounts[] = round($arr_vat_percents[$i] * $unit_price_after_discount[$i] / 100, 2);
                             }
 
                             ?>
@@ -268,7 +284,8 @@ include('navfixed.php');
                                 <td><?= implode(",", $unit_price_after_discount)?></td>
                                 <td><?= $row['discount'] ?></td>
                                 <td>Discount Reason</td>
-                                <td><?= $row['price'] ?></td>
+                                <td><?= round($row['price'], 2) ?></td>
+                                <td><?= sprintf('%s (%s%%)', implode("+", $arr_vat_amounts), implode(",", $arr_vat_percents))?></td>
                                 <td>Inflight Dubai</td>
                                 <td>Margham Dubai</td>
                                 <td>N/A</td>
@@ -293,6 +310,8 @@ include('navfixed.php');
                                             $liability += round($unit_price_after_discount[$i] * $arr_unit_remaining[$i], 2);
                                         }
                                         echo $liability;
+                                    } else {
+                                        echo 0;
                                     }
                                     ?>
                                 </td>

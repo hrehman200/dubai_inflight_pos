@@ -312,7 +312,7 @@
         var afterPerValue   = totalCash - percentageValue;
 
         $.ajax({
-            url:'api.php',
+            url: 'api.php',
             type: 'POST',
             data: {
                 'call': 'getVatForDiscountedAmountAndInvoice',
@@ -321,9 +321,9 @@
                 'saving_flight': '<?=@$_GET['savingflight']?>'
             },
             dataType: 'json',
-            success: function(response) {
-                if(response.success == 1) {
-                    $('#lblVat').html(response.data[0] +" ("+ response.data[1] + "%)");
+            success: function (response) {
+                if (response.success == 1) {
+                    $('#lblVat').html(response.data[0] + " (" + response.data[1] + "%)");
                     $('#discountedValue').val((afterPerValue + response.data[0]).toFixed(2));
                 }
             }
