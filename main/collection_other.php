@@ -79,15 +79,12 @@ include('navfixed.php');
                         </button>
                     </a>
                 </div>
-                <form action="collection.php" method="get">
+                <form action="collection_other.php" method="get">
                     From : <input type="text" name="d1" style="width: 223px; padding:14px;" class="tcal" value=""/> To:
                     <input type="text" style="width: 223px; padding:14px;" name="d2" class="tcal" value=""/>
                     <button class="btn btn-info" style="width: 123px; height:35px; margin-top:-8px;" type="submit"><i
                             class="icon icon-search icon-large"></i> Search
                     </button>
-                    <button style="width: 123px; height:35px; margin-top:-2px; float:right;"
-                            class="btn btn-large btnOther"><i
-                            class="icon icon-columns icon-large"></i> Other</button>
                     <button style="width: 123px; height:35px; margin-top:-2px; float:right;"
                             class="btn btn-info btn-large" onclick="convertToCSV()"><i
                                 class="icon icon-columns icon-large"></i> Export</button>
@@ -116,53 +113,17 @@ include('navfixed.php');
                         Collection Report from&nbsp;<?php echo $_GET['d1'] ?>&nbsp;to&nbsp;<?php echo $_GET['d2'] ?>
                     </div>
                     <table class="table table-striped" style="background-color: white;" id="tblCollection">
-                        <tr>
-                            <th>Transaction Date</th>
-                            <th>Operator Name</th>
-                            <th>TRX_CLASS Invoice No.</th>
-                            <th>TRX_TYPE</th>
-                            <th>Customer Name</th>
-                            <th>Mode of Payment</th>
-                            <th>LINE_NUMBER</th>
-                            <th>Item Code</th>
-                            <th>Item Description</th>
-                            <th>CURRENCY</th>
-                            <th>Total</th>
-                            <th>1st Mode of Payment</th>
-                            <th>Paid by 1st MOP</th>
-                            <th>2nd Mode of Payment</th>
-                            <th>Paid By 2nd MOP</th>
-                            <th>QUANTITY</th>
-                            <th>UNIT_PRICE_Sold</th>
-                            <th>Discount</th>
-                            <th>DiscountReason</th>
-                            <th>Unit Price Before Discount</th>
-                            <th>VAT</th>
-                            <th>OPERATING_UNIT_NAME</th>
-                            <th>Store / Location</th>
-                            <th>N/A</th>
-                            <th>INV_Transaction Type</th>
-                            <th>INV Source Document Number</th>
-                            <th>Item Code</th>
-                            <th>Location</th>
-                            <th>Unit Consumed</th>
-                            <th>Units Remaining</th>
-                            <th>Revenue On Consumed</th>
-                            <th>Amount Laibility</th>
-                        </tr>
-
                         <?php
                         $sql = "SELECT
                           *
                         FROM
                           (
                             (
-                            SELECT
-                              GROUP_CONCAT(so.name) AS product_name,
-                              GROUP_CONCAT(so.product_code) AS product_codes,
-                              GROUP_CONCAT(so.qty) AS quantity,
-                              GROUP_CONCAT(vc.percent) AS vat_percent,
-                              GROUP_CONCAT(so.qty) AS total_quantity,
+                            SELECT so.name AS product_name,
+                              so.product_code AS product_codes,
+                              so.qty AS quantity,
+                              vc.percent AS vat_percent,
+                              so.qty AS total_quantity,
                               s.date AS transaction_date,
                               s.cashier,
                               s.invoice_number,
@@ -176,7 +137,7 @@ include('navfixed.php');
                               s.after_dis,
                               c.customer_name,
                               so.product_code,
-                              GROUP_CONCAT(so.price) AS price,
+                              so.price AS unit_price,
                               so.name,
                               so.qty,
                               0 AS units_remaining,
@@ -189,17 +150,14 @@ include('navfixed.php');
                               vat_codes vc ON so.vat_code_id = vc.id
                             LEFT JOIN
                               customer c ON s.customer_id = c.customer_id
-                            GROUP BY
-                              s.transaction_id
                           )
                         UNION
                           (
-                          SELECT
-                            GROUP_CONCAT(fo1.offer_name) AS product_name,
-                            GROUP_CONCAT(fo1.code) AS product_codes,
-                            GROUP_CONCAT(fb1.duration) AS quantity,
-                            GROUP_CONCAT(vc.percent) AS vat_percent,
-                            GROUP_CONCAT(fo1.duration) AS total_quantity,
+                          SELECT fo1.offer_name AS product_name,
+                            fo1.code AS product_codes,
+                            fb1.duration AS quantity,
+                            vc.percent AS vat_percent,
+                            fo1.duration AS total_quantity,
                             s1.date AS transaction_date,
                             s1.cashier,
                             s1.invoice_number,
@@ -213,10 +171,10 @@ include('navfixed.php');
                             s1.after_dis,
                             c1.customer_name,
                             fo1.code AS product_code,
-                            fo1.price/fo1.duration AS price,
+                            fo1.price / fo1.duration AS unit_price,
                             fo1.offer_name,
-                            SUM(fo1.duration) AS qty,
-                            0 AS units_remaining,
+                            fo1.duration AS qty,
+                            fo1.duration - fb1.duration AS units_remaining,
                             0 AS amount_liability
                           FROM
                             sales s1
@@ -227,16 +185,14 @@ include('navfixed.php');
                           INNER JOIN
                             flight_bookings fb1 ON fb1.flight_purchase_id = fp1.id
                           LEFT JOIN
-                              vat_codes vc ON fp1.vat_code_id = vc.id
+                            vat_codes vc ON fp1.vat_code_id = vc.id
                           INNER JOIN
                             customer c1 ON s1.customer_id = c1.customer_id
-                          GROUP BY
-                            s1.transaction_id
                         )
                           ) result
                         WHERE result.transaction_date >= :startDate AND result.transaction_date <= :endDate
                         ORDER BY
-                          result.transaction_date DESC";
+                          result.transaction_date DESC, result.invoice_number";
 
                         $result = $db->prepare($sql);
                         $result->execute(array(
@@ -244,77 +200,69 @@ include('navfixed.php');
                             ':endDate'   => $_GET['d2']
                         ));
 
+                        ?>
+                        <tr>
+                            <th>Transaction Date</th>
+                            <th>TRX_CLASS Invoice No.</th>
+                            <th>TRX_TYPE</th>
+                            <th>Customer Name</th>
+                            <th>Mode of Payment</th>
+                            <th>Item Code</th>
+                            <th>Quantity</th>
+                            <th>Invoice Amount</th>
+                            <th>Line Items in Invoice</th>
+                            <th>Unit Price Sold</th>
+                            <th>Discount</th>
+                            <th>Unit Price before Discount</th>
+                            <th>Units Consumed</th>
+                            <th>Units Remaining</th>
+                            <th>Revenue on Consumed</th>
+                            <th>Amount Liability</th>
+                        </tr>
+                        <?php
                         while ($row = $result->fetch()) {
-                            $arr_unit_total = explode(",", $row['total_quantity']);
-                            $arr_unit_consumed = explode(",", $row['quantity']);
-                            $arr_unit_remaining = [];
-                            for($i=0; $i<count($arr_unit_consumed); $i++) {
-                                $arr_unit_remaining[] = $arr_unit_total[$i] - $arr_unit_consumed[$i];
-                            }
-
-                            $price_paid = round($row['amount'] - ($row['amount'] * $row['discount'] / 100), 0);
-
-                            $arr_price = explode(",", $row['price']);
-                            $unit_price_after_discount = [];
-                            foreach($arr_price as $price) {
-                                $unit_price_after_discount[] = round($price - ($price * $row['discount'] / 100), 2);
-                            }
-
-                            $arr_vat_percents = explode(",", $row['vat_percent']);
-                            $arr_vat_amounts = [];
-                            for($i=0; $i<count($arr_vat_percents); $i++) {
-                                $arr_vat_amounts[] = round($arr_vat_percents[$i] * $unit_price_after_discount[$i] / 100, 2);
-                            }
-
                             ?>
                             <tr>
                                 <td><?= $row['transaction_date'] ?></td>
-                                <td><?= $row['cashier'] ?></td>
                                 <td><?= $row['invoice_number'] ?></td>
                                 <td><?= $row['sale_type'] ?></td>
                                 <td><?= $row['customer_name'] ?></td>
                                 <td><?= $row['mode_of_payment'] . (($row['mode_of_payment_1'] != -1)?", ".$row['mode_of_payment_1']:'') ?></td>
-                                <td><?= $row['product_name'] ?></td>
                                 <td><?= $row['product_codes'] ?></td>
-                                <td><?= $row['product_name'] ?></td>
-                                <td>AED</td>
-                                <td><?= $price_paid?></td>
-                                <td><?= $row['mode_of_payment'] ?></td>
-                                <td><?= $row['mop_amount'] ?></td>
-                                <td><?= $row['mode_of_payment_1'] ?></td>
-                                <td><?= $row['mop1_amount'] ?></td>
                                 <td><?= $row['quantity'] ?></td>
-                                <td><?= implode(",", $unit_price_after_discount)?></td>
-                                <td><?= $row['discount'] ?></td>
-                                <td>Discount Reason</td>
-                                <td><?= round($row['price'], 2) ?></td>
-                                <td><?= sprintf('%s (%s%%)', implode("+", $arr_vat_amounts), implode(",", $arr_vat_percents))?></td>
-                                <td>Inflight Dubai</td>
-                                <td>Margham Dubai</td>
-                                <td>N/A</td>
-                                <td>Sales</td>
-                                <td>-</td>
-                                <td><?= $row['product_name'] ?></td>
-                                <td>POS</td>
-                                <td><?= $row['quantity'] ?></td>
-                                <td><?= ($row['sale_type'] != 'Merchandise') ? implode(",", $arr_unit_remaining) : 0?></td>
                                 <td><?php
-                                    $revenue_consumed = 0;
-                                    for($i=0; $i<count($unit_price_after_discount); $i++) {
-                                        $revenue_consumed += round($unit_price_after_discount[$i] * $arr_unit_consumed[$i], 2);
+                                    $discount_value = round($row['amount'] * $row['discount'] / 100, 2);
+                                    echo $row['amount'] - $discount_value;
+                                    ?></td>
+                                <td><?php
+                                    if($row['sale_type'] == 'Merchandise') {
+                                        $result2 = $db->prepare('SELECT COUNT(transaction_id) AS line_items FROM sales_order WHERE invoice = ?');
+                                    } else {
+                                        $result2 = $db->prepare('SELECT COUNT(id) AS line_items FROM flight_purchases WHERE invoice_id = ?');
                                     }
-                                    echo $revenue_consumed;
+                                    $result2->execute(array($row['invoice_number']));
+                                    $row2 = $result2->fetch();
+                                    echo $row2['line_items'];
+                                    ?></td>
+                                <td><?php
+                                    $unit_price = round($row['unit_price'], 2);
+                                    $discount_value = round($unit_price * $row['discount'] / 100, 2);
+                                    $unit_price_after_discount = $unit_price - $discount_value;
+                                    echo $unit_price_after_discount;
+                                    ?></td>
+                                <td><?= $row['discount'] ?></td>
+                                <td><?= $unit_price?></td>
+                                <td><?= $row['quantity'] ?></td>
+                                <td><?= $row['units_remaining']?></td>
+                                <td><?php
+                                    echo $unit_price_after_discount * $row['quantity'];
                                     ?>
                                 </td>
                                 <td><?php
-                                    if($row['sale_type'] != 'Merchandise') {
-                                        $liability = 0;
-                                        for($i=0; $i<count($unit_price_after_discount); $i++) {
-                                            $liability += round($unit_price_after_discount[$i] * $arr_unit_remaining[$i], 2);
-                                        }
-                                        echo $liability;
-                                    } else {
+                                    if($row['sale_type'] == 'Merchandise') {
                                         echo 0;
+                                    } else {
+                                        echo $unit_price_after_discount * $row['units_remaining'];
                                     }
                                     ?>
                                 </td>
@@ -393,9 +341,4 @@ include('navfixed.php');
             alert('CSV export only works in Chrome, Firefox, and Opera.');
         }
     }
-
-    $('.btnOther').on('click', function(e){
-        e.preventDefault();
-        window.location.href = 'collection_other.php';
-    });
 </script>
