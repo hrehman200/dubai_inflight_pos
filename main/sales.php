@@ -230,11 +230,14 @@ if ($position == 'cashier') {
                                 style="width: 123px; height:35px; margin-top:-5px;" disabled>
                             <i class="icon-plus-sign icon-large"></i> Add
                         </button>
+
                     </div>
                     <div class="span6">
+                        <div class="msg-qty alert alert-danger hidden"></div>
                         <img class="selectedProduct" src="" style="width: 100%; height: auto;"/>
                     </div>
                 </div>
+
             </form>
             <table class="table table-bordered" id="resultTable" data-responsive="table">
                 <thead>
@@ -384,8 +387,9 @@ if ($position == 'cashier') {
 
             $('.product').parents('.row:eq(0)').hide().nextAll('.row').hide();
             $('.selectedProduct').hide();
+            $('.msg-qty').addClass('hidden');
 
-            if(parentId > 0) {
+            if (parentId > 0) {
                 $.ajax({
                     url: 'api.php',
                     method: 'POST',
@@ -423,7 +427,8 @@ if ($position == 'cashier') {
         var arrProductAttr = [];
 
         function getProducts(subcategoryId) {
-            if(subcategoryId > 0) {
+            $('.msg-qty').addClass('hidden');
+            if (subcategoryId > 0) {
                 $.ajax({
                     url: 'api.php',
                     method: 'POST',
@@ -454,7 +459,8 @@ if ($position == 'cashier') {
         }
 
         function getGenders() {
-            if($('.product').val() != '') {
+            $('.msg-qty').addClass('hidden');
+            if ($('.product').val() != '') {
                 $.ajax({
                     url: 'api.php',
                     method: 'POST',
@@ -473,8 +479,8 @@ if ($position == 'cashier') {
                             getSizes();
                         }).trigger('change').parents('.row').show();
 
-                        if($('.gender input:eq(0)').val() == 'NA') {
-                           $('.gender input').click();
+                        if ($('.gender input:eq(0)').val() == 'NA') {
+                            $('.gender input').click();
                         }
                     }
                 });
@@ -485,7 +491,8 @@ if ($position == 'cashier') {
         }
 
         function getSizes() {
-            if($('.product').val() != '' && $('.gender input:checked').val() != '') {
+            $('.msg-qty').addClass('hidden');
+            if ($('.product').val() != '' && $('.gender input:checked').val() != '') {
                 $.ajax({
                     url: 'api.php',
                     method: 'POST',
@@ -505,7 +512,7 @@ if ($position == 'cashier') {
                             getColors();
                         }).trigger('change').parents('.row').show();
 
-                        if($('.size input:eq(0)').val() == 'NA') {
+                        if ($('.size input:eq(0)').val() == 'NA') {
                             $('.size input').click();
                         }
                     }
@@ -517,7 +524,8 @@ if ($position == 'cashier') {
         }
 
         function getColors() {
-            if($('.product').val() != '' && $('.gender input:checked').val() != '' && $('.size input:checked').val() != '') {
+            $('.msg-qty').addClass('hidden');
+            if ($('.product').val() != '' && $('.gender input:checked').val() != '' && $('.size input:checked').val() != '') {
                 $.ajax({
                     url: 'api.php',
                     method: 'POST',
@@ -532,18 +540,19 @@ if ($position == 'cashier') {
                         $('.color').parents('.row:eq(0)').show();
                         $('.color').html('');
                         for (var i in response.data) {
-                            $('.color').append('<label class="radio-inline"><input type="radio" data-product-id="' + response.data[i]['product_id'] + '"  data-product-img="' + response.data[i]['image'] + '" name="radio3" value="' + response.data[i]['Attribute'] + '">' + response.data[i]['Attribute'] + '</label>')
+                            $('.color').append('<label class="radio-inline"><input type="radio" data-product-id="' + response.data[i]['product_id'] + '"  data-product-img="' + response.data[i]['image'] + '" data-qty="' + response.data[i]['qty'] + '" name="radio3" value="' + response.data[i]['Attribute'] + '">' + response.data[i]['Attribute'] + '</label>')
                         }
                         $('.color input').off().on('change', function (e) {
                             if ($(this).is(':checked')) {
                                 $('#product').val($(this).data('product-id'));
                                 $('.btnAdd').prop('disabled', false);
                                 $('.quantity').show();
-                                $('.selectedProduct').show().attr('src', 'img/'+$(this).data('product-img'));
+                                $('.selectedProduct').show().attr('src', 'img/' + $(this).data('product-img'));
+                                $('input[name="qty"]').trigger('change');
                             }
                         }).trigger('change').parents('.row').show();
 
-                        if($('.color input:eq(0)').val() == 'NA') {
+                        if ($('.color input:eq(0)').val() == 'NA') {
                             $('.color input').click();
                         }
                     }
@@ -553,6 +562,29 @@ if ($position == 'cashier') {
                 $('.selectedProduct').hide();
             }
         }
-    })
+
+        var _onQtyChange = function (e) {
+
+            var qtyAvailable = $('.color input:checked').data('qty');
+            var qty          = $(this).val();
+
+            console.log(qtyAvailable);
+
+            if (qty > qtyAvailable) {
+                $('.btnAdd').hide();
+                var msg = (qtyAvailable <= 0) ? 'Not in stock' : 'Only '+qtyAvailable+' items available';
+                $('.msg-qty').removeClass('hidden').html(msg);
+
+            } else {
+                $('.btnAdd').show();
+                $('.msg-qty').addClass('hidden');
+
+            }
+        };
+
+        $('input[name="qty"]').on('keyup', _onQtyChange)
+            .on('change', _onQtyChange);
+
+    });
 </script>
 

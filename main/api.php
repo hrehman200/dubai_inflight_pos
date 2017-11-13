@@ -599,7 +599,7 @@ function getSizes() {
 
 function getColors() {
     global $db;
-    $result2 = $db->prepare("SELECT Attribute, product_id, image
+    $result2 = $db->prepare("SELECT Attribute, product_id, image, qty
           FROM products
           WHERE common_name = :commonName AND gender = :gender AND size = :size
           GROUP BY Attribute");
