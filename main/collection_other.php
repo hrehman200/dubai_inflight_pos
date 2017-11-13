@@ -182,7 +182,7 @@ include('navfixed.php');
                             flight_purchases fp1 ON s1.invoice_number = fp1.invoice_id
                           INNER JOIN
                             flight_offers fo1 ON fp1.flight_offer_id = fo1.id
-                          INNER JOIN
+                          LEFT JOIN
                             flight_bookings fb1 ON fb1.flight_purchase_id = fp1.id
                           LEFT JOIN
                             vat_codes vc ON fp1.vat_code_id = vc.id
@@ -208,6 +208,7 @@ include('navfixed.php');
                             <th>Customer Name</th>
                             <th>Mode of Payment</th>
                             <th>Item Code</th>
+                            <th>Item Name</th>
                             <th>Quantity</th>
                             <th>Invoice Amount</th>
                             <th>Line Items in Invoice</th>
@@ -229,6 +230,7 @@ include('navfixed.php');
                                 <td><?= $row['customer_name'] ?></td>
                                 <td><?= $row['mode_of_payment'] . (($row['mode_of_payment_1'] != -1)?", ".$row['mode_of_payment_1']:'') ?></td>
                                 <td><?= $row['product_codes'] ?></td>
+                                <td><?= $row['product_name'] ?></td>
                                 <td><?= $row['quantity'] ?></td>
                                 <td><?php
                                     $discount_value = round($row['amount'] * $row['discount'] / 100, 2);

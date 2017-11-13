@@ -224,7 +224,7 @@ include('navfixed.php');
                             flight_purchases fp1 ON s1.invoice_number = fp1.invoice_id
                           INNER JOIN
                             flight_offers fo1 ON fp1.flight_offer_id = fo1.id
-                          INNER JOIN
+                          LEFT JOIN
                             flight_bookings fb1 ON fb1.flight_purchase_id = fp1.id
                           LEFT JOIN
                               vat_codes vc ON fp1.vat_code_id = vc.id

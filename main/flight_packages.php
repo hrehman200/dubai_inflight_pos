@@ -104,21 +104,31 @@ $position = $_SESSION['SESS_LAST_NAME'];
             <div class="contentheader">
                 <i class="icon-dashboard"></i> Dashboard
 
-                <font style=" font:bold 44px 'Aleo'; text-shadow:1px 1px 25px #000; color:#fff;">
-                    <center>Inflight Dubai</center>
-                </font>
-
+                <div align="center">
+                    <h3>Flight Packages</h3>
                 <?php
                 $packages = $db->prepare("SELECT * FROM flight_packages");
                 $packages->execute(array());
 
                 while($row = $packages->fetch()) {
-                    echo sprintf('<a class="btn btn-primary" href="flight_picker.php?pkg_id=%d&id=&invoice=%s">%s</a><br/>', $row['id'], $finalcode, $row['package_name']);
+                    echo sprintf('<a class="btn" href="flight_picker.php?pkg_id=%d&id=&invoice=%s">
+                    <img src="img/flight_pacakges/%s" width="128" class="" /> <br/>
+                    %s</a>', $row['id'], $finalcode, $row['image'], $row['package_name']);
                 }
                 ?>
+                </div>
             </div>
         </div>
     </div>
 </body>
 <?php include('footer.php'); ?>
 </html>
+
+<style>
+    .contentheader a {
+        padding: 10px;
+        margin: 10px;
+        width: 150px;
+        height: 150px;
+    }
+</style>
