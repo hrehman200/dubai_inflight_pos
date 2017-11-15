@@ -172,7 +172,7 @@ $position = $_SESSION['SESS_LAST_NAME'];
                 $result->execute(array('package_id'=>$_GET['pkg_id']));
                 $row = $result->fetch();
                 ?>
-                <h4><?php echo $row['package_name']; ?></h4>
+                <h4 id="pkgName"><?php echo $row['package_name']; ?></h4>
 
                 <select class="span6" name="flightOffer" id="flightOffer">
                     <option value="0">Select a Flight Offer</option>
@@ -217,8 +217,13 @@ $position = $_SESSION['SESS_LAST_NAME'];
                         <label style="display: inline;" for="chkOnlySlotsWithDuration"><input type="text" class="input-mini" id="txtOfferMinutes" /> minutes</label>
                         <br/>
 
-                        <input type="checkbox" id="chkClassSession" name="chkClassSession" value="1" />
-                        <label style="display: inline;" for="chkClassSession">Class Session <span id="spClassPeople" style="padding-left:25px;"><input type="text" class="input-mini" id="txtClassPeople" name="txtClassPeople" value="0" /> people</span> </label>
+                        <input type="checkbox" id="chkClassSession" name="chkClassSession" class="class-session" value="1" />
+                        <label style="display: inline;" for="chkClassSession" class="class-session">Class Session
+                            <span id="spClassPeople" style="padding-left:25px;">
+                                <input type="text" class="input-mini" id="txtClassPeople" name="txtClassPeople" value="0" /> people
+                                <button id="btnAddClassSession" class="btn btn-small">Add</button>
+                            </span>
+                        </label>
                         <br/>
 
                         <input type="checkbox" id="chkOnlyOfficeTimeSlots" name="chkOnlyOfficeTimeSlots" value="1" unchecked style='display : none;'/>
@@ -391,6 +396,13 @@ $position = $_SESSION['SESS_LAST_NAME'];
 
     }).trigger('change');
 
+    // class session not for FTF
+    if($('#pkgName').text().indexOf('FTF') != -1 && $('#pkgName').text().toLowerCase().indexOf('class session') == -1) {
+        $('.class-session').hide();
+    } else {
+        $('.class-session').show();
+    }
+
     $('#chkOnlySlotsWithDuration, #chkOnlyOfficeTimeSlots').on('change', function(e) {
         $('#datePicker').trigger('changeDate');
     });
@@ -408,8 +420,10 @@ $position = $_SESSION['SESS_LAST_NAME'];
     $('#chkClassSession').on('change', function(e) {
         if($(this).is(':checked')) {
             $('#spClassPeople').show();
+            $('#timeslots').hide();
         }else{
             $('#spClassPeople').hide();
+            $('#timeslots').show();
         }
     }).trigger('change');
 
@@ -749,6 +763,15 @@ $position = $_SESSION['SESS_LAST_NAME'];
             }
         });
     };
+
+    $('#btnAddClassSession').click(function(e) {
+        e.preventDefault();
+        if($('#flightOffer').val() != 0 && $('#customerId').val() != '' && $('#txtClassPeople').val() > 0) {
+            $('#formFlightTime').submit();
+        } else {
+            alert('Please select offer and customer');
+        }
+    });
 
     function deductFromCreditTime(customer_id, credit_time, flight_offer_id, flight_minutes) {
         var dialog = bootbox.dialog({
