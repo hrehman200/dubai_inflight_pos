@@ -53,7 +53,7 @@
 <script language="javascript" type="text/javascript">
     /* Visit http://www.yaldex.com/ for full source code
      and get more free JavaScript, CSS and DHTML scripts! */
-    var timerID = null;
+    var timerID      = null;
     var timerRunning = false;
     function stopclock() {
         if (timerRunning)
@@ -129,6 +129,39 @@
                     }
                     ?>
                 </select>
+
+                From:
+                <select id="fromMonth" name="fromMonth">
+                    <option>Jan</option>
+                    <option>Feb</option>
+                    <option>Mar</option>
+                    <option>Apr</option>
+                    <option>May</option>
+                    <option>Jun</option>
+                    <option>Jul</option>
+                    <option>Aug</option>
+                    <option>Sep</option>
+                    <option>Oct</option>
+                    <option>Nov</option>
+                    <option>Dec</option>
+                </select>
+
+                To:
+                <select id="toMonth" name="toMonth">
+                    <option>Jan</option>
+                    <option>Feb</option>
+                    <option>Mar</option>
+                    <option>Apr</option>
+                    <option>May</option>
+                    <option>Jun</option>
+                    <option>Jul</option>
+                    <option>Aug</option>
+                    <option>Sep</option>
+                    <option>Oct</option>
+                    <option>Nov</option>
+                    <option>Dec</option>
+                </select>
+
             </form>
 
             <table class="table table-striped table-bordered">
@@ -136,31 +169,31 @@
                 <?php
                 $year               = isset($_GET['year']) ? $_GET['year'] : date('Y');
                 $month_index        = (int)$_GET['monthIndex'];
-                $months             = array(
-                    array('Jan', 'Feb', 'Mar'),
-                    array('Apr', 'May', 'Jun'),
-                    array('Jul', 'Aug', 'Sep'),
-                    array('Oct', 'Nov', 'Dec'),
-                );
                 $all_months         = array('Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec');
-                $month_placeholders = rtrim(str_repeat('?, ', count($all_months)), ', ') ;
+                $month_placeholders = rtrim(str_repeat('?, ', count($all_months)), ', ');
+                $from_month         = isset($_GET['fromMonth']) ? $_GET['fromMonth'] : 'Jan';
+                $to_month           = isset($_GET['toMonth']) ? $_GET['toMonth'] : 'Dec';
+                $from_month_index   = array_search($from_month, $all_months);
+                $to_month_index     = array_search($to_month, $all_months);
+                $months             = array_slice($all_months, $from_month_index, $to_month_index+1);
 
-                function getFYEstimatedForEntity($entity_name, $entity_id=null) {
+                function getFYEstimatedForEntity($entity_name, $entity_id = null) {
 
                     global $db, $all_months, $month_placeholders, $year;
 
                     $query = "SELECT SUM(value) AS value FROM business_plan_yearly bpy
                       INNER JOIN business_plan_entities bpe ON bpy.business_plan_entity_id = bpe.id
                       WHERE ";
-                    if($entity_id != null) {
-                        $query .= "bpe.id = ".$entity_id;
+                    if ($entity_id != null) {
+                        $query .= "bpe.id = " . $entity_id;
                     } else {
-                        $query .= "bpe.name = '".$entity_name."'";
+                        $query .= "bpe.name = '" . $entity_name . "'";
                     }
-                    $query .=  " AND bpy.month IN ($month_placeholders) AND year = ?";
-                    $stmt = $db->prepare($query);
+                    $query .= " AND bpy.month IN ($month_placeholders) AND year = ?";
+                    $stmt  = $db->prepare($query);
                     $stmt->execute(array_merge($all_months, array($year)));
                     $row = $stmt->fetch();
+
                     return round($row['value'], 1);
                 }
 
@@ -169,7 +202,7 @@
                     $query = "SELECT SUM(s.amount) AS amount FROM sales s
                         INNER JOIN flight_purchases fp ON s.invoice_number = fp.invoice_id
                         INNER JOIN flight_offers fo ON fp.flight_offer_id = fo.id
-                        WHERE fo.offer_name LIKE '%".$offer_name."%'
+                        WHERE fo.offer_name LIKE '%" . $offer_name . "%'
                         AND s.month = :month
                         AND s.year = :year";
 
@@ -179,19 +212,21 @@
                         ':year'  => $year
                     ));
                     $row = $stmt->fetch();
+
                     return round($row['amount'], 1);
                 }
 
                 function getFlightSaleForYear($offer_name, $year) {
                     global $db, $month_placeholders, $all_months;
-                        $stmt = $db->prepare("SELECT SUM(s.amount) AS amount FROM sales s
+                    $stmt = $db->prepare("SELECT SUM(s.amount) AS amount FROM sales s
                         INNER JOIN flight_purchases fp ON s.invoice_number = fp.invoice_id
                         INNER JOIN flight_offers fo ON fp.flight_offer_id = fo.id
-                        WHERE fo.offer_name LIKE '%".$offer_name."%'
+                        WHERE fo.offer_name LIKE '%" . $offer_name . "%'
                         AND s.month IN ($month_placeholders)
                         AND s.year = ?");
                     $stmt->execute(array_merge($all_months, array($year)));
                     $row = $stmt->fetch();
+
                     return round($row['amount'], 1);
                 }
 
@@ -205,51 +240,55 @@
                         ':year'  => $year
                     ));
                     $row = $stmt_merchandise->fetch();
+
                     return round($row['amount'], 1);
                 }
 
-                $merchandise_1 = getMerchandiseSale($months[$month_index][0], $year);
-                $merchandise_2 = getMerchandiseSale($months[$month_index][1], $year);
-                $merchandise_3 = getMerchandiseSale($months[$month_index][2], $year);
+                $arr_merhandise = [];
+                foreach($months as $m) {
+                    $arr_merhandise[] = getMerchandiseSale($m, $year);
+                }
 
                 $stmt = $db->prepare("SELECT SUM(amount) AS amount FROM sales WHERE sale_type = 'Merchandise'
                   AND month IN ($month_placeholders) AND year = ?");
                 $stmt->execute(array_merge($all_months, array($year)));
-                $row = $stmt->fetch();
+                $row               = $stmt->fetch();
                 $total_merchandise = $row['amount'];
 
                 $fy_estimated_merchandise = getFYEstimatedForEntity(null, 9);
 
                 // --------------- FTF ----------------
-                $ftf_1 = getFlightSaleForMonth('FTF', $months[$month_index][0], $year);
-                $ftf_2 = getFlightSaleForMonth('FTF', $months[$month_index][0], $year);
-                $ftf_3 = getFlightSaleForMonth('FTF', $months[$month_index][0], $year);
-                $total_ftf = getFlightSaleForYear('FTF', $year);
+                $arr_ftf = [];
+                foreach($months as $m) {
+                    $arr_ftf[] = getFlightSaleForMonth('FTF', $m, $year);
+                }
+                $total_ftf        = getFlightSaleForYear('FTF', $year);
                 $fy_estimated_ftf = getFYEstimatedForEntity('FTF');
 
                 // --------------- COGS Merchandise ----------------
                 $fy_estimated_merchandise_cogs = getFYEstimatedForEntity(null, 24);
 
                 // --------------- SKyDivers ----------------
-                $skydivers_1 = getFlightSaleForMonth('Skydivers', $months[$month_index][0], $year);
-                $skydivers_2 = getFlightSaleForMonth('Skydivers', $months[$month_index][0], $year);
-                $skydivers_3 = getFlightSaleForMonth('Skydivers', $months[$month_index][0], $year);
-                $total_skydivers = getFlightSaleForYear('Skydivers', $year);
+                $arr_skydivers = [];
+                foreach($months as $m) {
+                    $arr_skydivers[] = getFlightSaleForMonth('Skydivers', $m, $year);
+                }
+                $total_skydivers        = getFlightSaleForYear('Skydivers', $year);
                 $fy_estimated_skydivers = getFYEstimatedForEntity('SkyDivers');
                 ?>
 
                 <thead id="tblHead">
                 <tr>
                     <th>
-                        <button class="btn btn-small btn-primary btnPrevMonths"> < </button>
-                        <button class="btn btn-small btn-primary btnNextMonths"> > </button>
                     </th>
-                    <th><?= $_GET['year'] ?><br/><?= $months[$month_index][0] ?></th>
-                    <th><?= $_GET['year'] ?><br/><?= $months[$month_index][0] ?></th>
-                    <th><?= $_GET['year'] ?><br/><?= $months[$month_index][1] ?></th>
-                    <th><?= $_GET['year'] ?><br/><?= $months[$month_index][1] ?></th>
-                    <th><?= $_GET['year'] ?><br/><?= $months[$month_index][2] ?></th>
-                    <th><?= $_GET['year'] ?><br/><?= $months[$month_index][2] ?></th>
+                    <?php
+                    foreach($months as $m) {
+                        ?>
+                        <th><?= $_GET['year'] ?><br/><?= $m ?></th>
+                        <th><?= $_GET['year'] ?><br/><?= $m ?></th>
+                    <?php
+                    }
+                    ?>
                     <th><?= $_GET['year'] ?><br/>FY Total</th>
                     <th><?= $_GET['year'] ?><br/>FY Total</th>
                     <th><?= $_GET['year'] ?><br/>Deviation</th>
@@ -276,14 +315,18 @@
                     ?>
                     <tr>
                         <td>
-                            <button class="btn btn-small btn-secondary btnParentRow" data-parent-id="<?=$row['id']?>" > +</button>
+                            <button class="btn btn-small btn-secondary btnParentRow" data-parent-id="<?= $row['id'] ?>">
+                                +
+                            </button>
                             <b><span><?= $row['name'] ?></span></b></td>
-                        <td></td>
-                        <td></td>
-                        <td></td>
-                        <td></td>
-                        <td></td>
-                        <td></td>
+                        <?php
+                        foreach($months as $m) {
+                            ?>
+                            <td></td>
+                            <td></td>
+                            <?php
+                        }
+                        ?>
                         <td></td>
                         <td></td>
                         <td></td>
@@ -303,93 +346,56 @@
                     $arr_to_display = array();
                     while ($row2 = $result2->fetch()) {
                         $arr_to_display[$row2['name']][] = array(
-                            'month'=>$row2['month'],
-                            'value'=>$row2['value'],
-                            'id'=>$row2['id'],
-                            'parent_id'=>$row2['parent_id']
+                            'month'     => $row2['month'],
+                            'value'     => $row2['value'],
+                            'id'        => $row2['id'],
+                            'parent_id' => $row2['parent_id']
                         );
                     }
 
                     $is_cogs = ($row['name'] == 'Cost of Goods Sold (COGS)');
 
-                    foreach ($arr_to_display as $entity_name=>$arr_monthwise_data) {
+                    foreach ($arr_to_display as $entity_name => $arr_monthwise_data) {
                         ?>
-                        <tr class="row_<?=$arr_monthwise_data[0]['parent_id']?>">
+                        <tr class="row_<?= $arr_monthwise_data[0]['parent_id'] ?>">
                             <td><?= $entity_name ?></td>
-                            <td><input type="text" class="input-small" data-entity-id="<?= $arr_monthwise_data[0]['id'] ?>"
-                                       data-index="1"
-                                       value="<?= getMonthValue($months[$month_index][0], $arr_monthwise_data) ?>"/>
-                            </td>
-                            <td>
-                                <?php
-                                switch($entity_name) {
-                                    case 'Merchandise':
-                                        if($is_cogs) {
-                                            echo getNPercentOf(30, $merchandise_1);
-                                        } else {
-                                            echo $merchandise_1;
-                                        }
-                                        break;
-                                    case 'FTF':
-                                        echo $ftf_1;
-                                        break;
-                                    case 'SkyDivers':
-                                        echo $skydivers_1;
-                                        break;
-                                }
+
+                            <?php
+                            for($i=0; $i<count($months); $i++) {
                                 ?>
-                            </td>
-                            <td><input type="text" class="input-small" data-entity-id="<?= $arr_monthwise_data[0]['id'] ?>"
-                                       data-index="3"
-                                       value="<?= getMonthValue($months[$month_index][1], $arr_monthwise_data) ?>"/>
-                            </td>
-                            <td>
+                                <td><input type="text" class="input-small"
+                                           data-entity-id="<?= $arr_monthwise_data[0]['id'] ?>"
+                                           data-index="<?=$i+1?>"
+                                           value="<?= getMonthValue($months[$i], $arr_monthwise_data) ?>"/>
+                                </td>
+                                <td>
+                                    <?php
+                                    switch ($entity_name) {
+                                        case 'Merchandise':
+                                            if ($is_cogs) {
+                                                echo getNPercentOf(30, $arr_merhandise[$i]);
+                                            } else {
+                                                echo $arr_merhandise[$i];
+                                            }
+                                            break;
+                                        case 'FTF':
+                                            echo $arr_ftf[$i];
+                                            break;
+                                        case 'SkyDivers':
+                                            echo $arr_skydivers[$i];
+                                            break;
+                                    }
+                                    ?>
+                                </td>
                                 <?php
-                                switch($entity_name) {
-                                    case 'Merchandise':
-                                        if($is_cogs) {
-                                            echo getNPercentOf(30, $merchandise_2);
-                                        } else {
-                                            echo $merchandise_2;
-                                        }
-                                        break;
-                                    case 'FTF':
-                                        echo $ftf_2;
-                                        break;
-                                    case 'SkyDivers':
-                                        echo $skydivers_2;
-                                        break;
-                                }
-                                ?>
-                            </td>
-                            <td><input type="text" class="input-small" data-entity-id="<?= $arr_monthwise_data[0]['id'] ?>"
-                                       data-index="5"
-                                       value="<?= getMonthValue($months[$month_index][2], $arr_monthwise_data) ?>"/>
-                            </td>
-                            <td>
-                                <?php
-                                switch($entity_name) {
-                                    case 'Merchandise':
-                                        if($is_cogs) {
-                                            echo getNPercentOf(30, $merchandise_3);
-                                        } else {
-                                            echo $merchandise_3;
-                                        }
-                                        break;
-                                    case 'FTF':
-                                        echo $ftf_3;
-                                        break;
-                                    case 'SkyDivers':
-                                        echo $skydivers_3;
-                                        break;
-                                }
-                                ?>
-                            </td>
+                            }
+                            ?>
+
                             <td class="fyEstimted">
                                 <?php
-                                switch($entity_name) {
+                                switch ($entity_name) {
                                     case 'Merchandise':
-                                        if($is_cogs) {
+                                        if ($is_cogs) {
                                             echo $fy_estimated_merchandise_cogs;
                                         } else {
                                             echo $fy_estimated_merchandise;
@@ -406,9 +412,9 @@
                             </td>
                             <td>
                                 <?php
-                                switch($entity_name) {
+                                switch ($entity_name) {
                                     case 'Merchandise':
-                                        if($is_cogs) {
+                                        if ($is_cogs) {
                                             $total_merchandise = getNPercentOf(30, $total_merchandise);
                                         }
                                         echo $total_merchandise;
@@ -424,9 +430,9 @@
                             </td>
                             <td class="derivation">
                                 <?php
-                                switch($entity_name) {
+                                switch ($entity_name) {
                                     case 'Merchandise':
-                                        if($is_cogs) {
+                                        if ($is_cogs) {
                                             echo round($fy_estimated_merchandise_cogs - $total_merchandise, 1);
                                         } else {
                                             echo round($fy_estimated_merchandise - $total_merchandise, 1);
@@ -445,20 +451,22 @@
                         <?php
                     }
                     ?>
-                    <tr class="rowTotal" data-parent-id="<?=$row['id']?>">
+                    <tr class="rowTotal" data-parent-id="<?= $row['id'] ?>">
                         <td data-index="0"><b>Total</b></td>
-                        <td data-index="1"></td>
-                        <td data-index="2"></td>
-                        <td data-index="3"></td>
-                        <td data-index="4"></td>
-                        <td data-index="5"></td>
-                        <td data-index="6"></td>
-                        <td data-index="7"></td>
-                        <td data-index="8"></td>
-                        <td data-index="9"></td>
+                        <?php
+                        $count = 0;
+                        for($i=0; $i<count($months)*2; $i+=2) {
+                            echo sprintf('<td data-index="%d"></td>', $i+1);
+                            echo sprintf('<td data-index="%d"></td>', $i+2);
+                            $count+=2;
+                        }
+                        ?>
+                        <td data-index="<?=$count+1?>"></td>
+                        <td data-index="<?=$count+2?>"></td>
+                        <td data-index="<?=$count+3?>"></td>
                     </tr>
                     <tr>
-                        <td colspan="10">&nbsp;</td>
+                        <td colspan="<?=count($months)+4?>">&nbsp;</td>
                     </tr>
                     <?php
                 }
@@ -550,31 +558,12 @@
 
 <script type="text/javascript">
 
-    $('#year').on('change', function (e) {
+    $('#year, #fromMonth, #toMonth').on('change', function (e) {
         $(e.target).parent().submit();
     });
 
-    $('.btnPrevMonths').on('click', function (e) {
-        e.preventDefault();
-        e.stopPropagation();
-        var monthIndex = $('#monthIndex').val();
-        if (monthIndex > 0) {
-            monthIndex--;
-            $('#monthIndex').val(monthIndex);
-            $('#bpForm').submit();
-        }
-    });
-
-    $('.btnNextMonths').on('click', function (e) {
-        e.preventDefault();
-        e.stopPropagation();
-        var monthIndex = $('#monthIndex').val();
-        if (monthIndex < 3) {
-            monthIndex++;
-            $('#monthIndex').val(monthIndex);
-            $('#bpForm').submit();
-        }
-    });
+    $('#fromMonth').prop('selectedIndex', <?=$from_month_index?>);
+    $('#toMonth').prop('selectedIndex', <?=$to_month_index?>);
 
     $('.btnParentRow').on('click', function (e) {
         var parentId = $(this).data('parent-id');
@@ -611,10 +600,10 @@
         }
     });
 
-    var _recalculate = function() {
-        $('.rowTotal td').each(function(index, obj) {
+    var _recalculate = function () {
+        $('.rowTotal td').each(function (index, obj) {
             var _index = $(this).data('index');
-            if(_index != 0) {
+            if (_index != 0) {
                 var rowTotal = $(this).parent();
                 var parentId = rowTotal.data('parent-id');
                 var prevRows = rowTotal.prevAll('.row_' + parentId);
@@ -638,6 +627,6 @@
     _recalculate();
 
     $('td:contains("EBITDA")').css('background-color', 'yellow')
-        .siblings().css('background-color','yellow');
+        .siblings().css('background-color', 'yellow');
 
 </script>
