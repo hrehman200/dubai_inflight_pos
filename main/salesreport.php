@@ -194,10 +194,10 @@ require_once('auth.php');
 
                     for ($i = 0; $row = $result->fetch(); $i++) {
                         $current_cost = $row['amount'];
-                        // for flight_service we added a discount
+                        $discount = $current_cost * $row['discount'] / 100.00;
+                        $current_cost -= $discount;
+
                         if ($row['sale_type'] == 'Service') {
-                            $discount = floor($current_cost * $row['discount'] / 100.00);
-                            $current_cost -= $discount;
                             $invoiceHref = 'flight_preview.php?invoice=' . $row['invoice_number'] . '&sale_type=' . $row['sale_type'];
                         } else {
                             $invoiceHref = 'preview.php?invoice=' . $row['invoice_number'] . '&sale_type=' . $row['sale_type'] . '&payfirst=&paysecond=&d1=' . $d1 . '&d2=' . $d2;
@@ -220,7 +220,7 @@ require_once('auth.php');
 
                             <td><?php echo ($row['customer_name']) ? $row['customer_name'] : $row['name']; ?></td>
                             <td><?= $row['sale_type'] ?></td>
-                            <td><?= number_format($current_cost) ?></td>
+                            <td><?= number_format($current_cost, 2) ?></td>
                             <!--<td><?= number_format($row['profilt']) ?></td>-->
                         </tr>
                         <?php

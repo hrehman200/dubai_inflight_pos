@@ -273,8 +273,8 @@ $secondPaymentOption = $_GET['paysecond'];
                             <tr>
                                 <td colspan="3" style="text-align: right;">Discount:</td>
                                 <td><?php
-                                    $discount_value = floor($discount * $total_cost / 100);
-                                    echo sprintf('-%d (%s%%)', $discount_value, $discount);
+                                    $discount_value = $discount * $total_cost / 100;
+                                    echo sprintf('-%.2f (%s%%)', $discount_value, $discount);
                                     ?></td>
                                 <td colspan="2"></td>
                             </tr>
@@ -293,7 +293,7 @@ $secondPaymentOption = $_GET['paysecond'];
                                 <td><b><?php
                                         $total = $total_cost - $discount_value;
                                         $total += $vat_amount;
-                                        echo number_format($total);
+                                        echo number_format($total, 2);
                                         ?></b></td>
                                 <td colspan="2"></td>
                             </tr>
@@ -306,7 +306,7 @@ $secondPaymentOption = $_GET['paysecond'];
                                         echo $modeOfPayment;
                                         ?></td>
                                     <td><?php
-                                        echo number_format($firstPaymentOption);
+                                        echo number_format($firstPaymentOption, 2);
                                         ?></td>
                                     <td colspan="2"></td>
                                 </tr>
@@ -322,7 +322,7 @@ $secondPaymentOption = $_GET['paysecond'];
                                         echo $modeOfPayment1;
                                         ?></td>
                                     <td><?php
-                                        echo number_format($secondPaymentOption);
+                                        echo number_format($secondPaymentOption, 2);
                                         ?></td>
                                     <td colspan="2"></td>
                                 </tr>

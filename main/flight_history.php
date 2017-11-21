@@ -72,11 +72,11 @@ session_start();
             showtime();
         }
         window.onload = startclock;
-    </SCRIPT>
+    </script>
 
     <script src="js/jquery-1.12.4.min.js" type="text/javascript"></script>
 
-    <link rel="stylesheet" type="text/css" href="css/bootstrap-datepicker.standalone.css">
+    <link rel="stylesheet" type="text/css" href="css/bootstrap-datepicker.standalone.css" />
     <script src="js/bootstrap-datepicker.min.js" type="text/javascript"></script>
 
 </head>
@@ -116,7 +116,7 @@ session_start();
             </ul>
 
             <div style="margin-top: -19px; margin-bottom: 21px;">
-                <a href="flight_picker.php?pkg_id=1&id=&invoice=RS-2526330">
+                <a href="flight_picker.php">
                     <button class="btn btn-default btn-large" style="float: none;"><i
                             class="icon icon-circle-arrow-left icon-large"></i> Back
                     </button>
@@ -150,13 +150,14 @@ session_start();
             </form>
             <div class="content" id="content">
                 <div style="font-weight:bold; text-align:center;font-size:14px;margin-bottom: 15px;">
-                    Flight History from&nbsp;<?php echo @$_GET['startDate'] ?>
-                    &nbsp;to&nbsp;<?php echo @$_GET['endDate'] ?>
+                    Flight History from&nbsp;<?php echo @$_GET['startDate']; ?>
+                    &nbsp;to&nbsp;<?php echo @$_GET['endDate']; ?>
                 </div>
 
                 <table class="table table-bordered table-striped" data-responsive="table">
                     <thead>
                     <tr>
+                        <th> Invoice No.</th>
                         <th> Customer</th>
                         <th> Package</th>
                         <th> Flight Offer</th>
@@ -173,7 +174,8 @@ session_start();
 
                         $sql = "SELECT fp.id AS flight_purchase_id, fp.deduct_from_balance, fo.code, fpkg.package_name, fo.offer_name, fo.price, fo.duration, c.customer_name, DATE_FORMAT(fp.created,'%b %d, %Y') AS created,
                               fb.duration AS booking_duration,
-                              s.after_dis
+                              s.after_dis,
+                              s.invoice_number
                               FROM flight_purchases fp
                               LEFT JOIN flight_offers fo ON fp.flight_offer_id = fo.id
                               LEFT JOIN flight_packages fpkg ON fo.package_id = fpkg.id
@@ -220,6 +222,7 @@ session_start();
                             }
                             ?>
                             <tr>
+                                <td><a href="flight_preview.php?invoice=<?=$row['invoice_number']?>" target="_blank"><?=$row['invoice_number']?></a></td>
                                 <td><?php echo $row['customer_name']; ?></td>
                                 <td><?php echo $row['package_name']; ?></td>
                                 <td><?php echo $row['deduct_from_balance']>0 ? $row['offer_name'].' (Deduct from balance)' : $row['offer_name'] ; ?></td>
@@ -236,10 +239,10 @@ session_start();
                             while ($row2 = $query2->fetch()) {
                                 ?>
                                 <tr>
-                                    <td colspan="2"></td>
+                                    <td colspan="3"></td>
                                     <td style="text-align: center; font-size:12px;"><b>Flight time: </b><?= substr($row2['flight_time'], 0, -3) ?></td>
                                     <td></td>
-                                    <td></td><?= $row2['duration'] ?></td>
+                                    <td><?= $row2['duration'] ?></td>
                                     <td colspan="2"></td>
                                 </tr>
                                 <?php
@@ -250,7 +253,7 @@ session_start();
                         }
                         ?>
                         <tr>
-                            <td colspan="3" style="text-align: right;">Totals:</td>
+                            <td colspan="4" style="text-align: right;">Totals:</td>
                             <td><b></b><?= number_format($total_cost) ?></b></td>
                             <td><b><?=number_format($total_paid)?></b></td>
                             <td colspan="3"><b><?= $total_duration ?></b></td>
