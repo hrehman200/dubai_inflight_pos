@@ -212,15 +212,21 @@
                                 <th> Price</th>
                                 <th> Discount</th>
                                 <th> Amount</th>
+                                <th> VAT</th>
                             </tr>
                             </thead>
                             <tbody>
 
                             <?php
                             $id     = $_GET['invoice'];
-                            $result = $db->prepare("SELECT * FROM sales_order WHERE invoice= :userid");
+                            $result = $db->prepare("SELECT so.*, vc.vat_code, vc.percent 
+                              FROM sales_order so
+                              LEFT JOIN vat_codes vc ON so.vat_code_id = vc.id
+                              WHERE invoice= :userid");
                             $result->bindParam(':userid', $id);
                             $result->execute();
+
+                            $total_amount = 0;
                             for ($i = 0; $row = $result->fetch(); $i++) {
                                 ?>
                                 <tr class="record">
@@ -236,80 +242,32 @@
                                     <td>
                                         <?php
                                         $ddd = $row['discount'];
-                                        echo formatMoney($ddd, true);
+                                        echo formatMoney($ddd, true).'%';
                                         ?>
                                     </td>
                                     <td>
                                         <?php
-                                        $dfdf = $row['amount'];
-                                        echo formatMoney($dfdf, true);
+                                        $discount_percent = $row['discount'];
+                                        $discount_amount = $discount_percent * $row['amount'] / 100;
+                                        $row['amount'] -= ($discount_amount * $row['qty']);
+                                        $total_amount += $row['amount'];
+                                        echo number_format($row['amount'], 2);
                                         ?>
                                     </td>
+                                    <td><?php
+                                        $vat_percent = $row['percent'];
+                                        $vat_amount = $vat_percent * $row['amount'] / 100;
+                                        echo number_format($vat_amount, 2);
+                                        ?></td>
                                 </tr>
                                 <?php
                             }
                             ?>
 
                             <tr>
-                                <td colspan="5" style=" text-align:right;"><strong style="font-size: 12px;">Sub-total:
-                                        &nbsp;</strong></td>
-                                <td colspan="2"><strong style="font-size: 12px;">
-                                        <?php
-                                        $sdsd     = $_GET['invoice'];
-                                        $resultas = $db->prepare("SELECT sum(amount) FROM sales_order WHERE invoice= :a");
-
-                                        /* $resultas = $db->prepare("SELECT sum(sales_order.amount),sales.discount  FROM sales_order
-                                                                     Inner join sales On sales_order.invoice = sales.invoice_number
-                                                                      WHERE invoice= :a"); */
-                                        $resultas->bindParam(':a', $sdsd);
-                                        $resultas->execute();
-                                        $row = $resultas->fetch();
-                                        $sub_total = $row['sum(amount)'];
-                                        echo formatMoney($sub_total, true);
-
-                                        ?>
-                                    </strong></td>
-                            </tr>
-
-                            <tr>
-                                <td colspan="5" style=" text-align:right;"><strong style="font-size: 12px;">Discount:
-                                        &nbsp;</strong></td>
-                                <td colspan="2"><strong style="font-size: 12px;">
-                                        <?php
-                                        $sdsd = $_GET['invoice'];
-                                        // $resultas = $db->prepare("SELECT sum(amount) FROM sales_order WHERE invoice= :a");
-
-                                        $resultas = $db->prepare("SELECT discount, after_dis  FROM sales
-  												WHERE invoice_number= :a");
-                                        $resultas->bindParam(':a', $sdsd);
-                                        $resultas->execute();
-                                        for ($i = 0; $rowas = $resultas->fetch(); $i++) {
-                                            $discount_percent = $rowas['discount'];
-                                            $discount_amount = round($discount_percent * $sub_total / 100, 2);
-                                            $amount_after_discount = $sub_total - $discount_amount;
-                                            $amount_after_discount_and_vat = $rowas['after_dis'];
-                                            echo sprintf('-%.2f (%d%%)', $discount_amount, $discount_percent);
-                                        }
-                                        ?>
-                                    </strong></td>
-                            </tr>
-
-                            <tr>
-                                <td colspan="5" style="text-align:right;"><b>VAT:</b> &nbsp;</td>
-                                <td colspan="2">
-                                    <b>
-                                        <?php
-                                        $arr_vat = getVatDetailsForDiscountedAmountAndInvoice($amount_after_discount, $_GET['invoice'], false);
-                                        echo sprintf('%.2f (%s%%)', $arr_vat[0], implode(",", $arr_vat[1]));
-                                        ?>
-                                    </b>
-                                </td>
-                            </tr>
-
-                            <tr>
                                 <td colspan="5" style=" text-align:right;"><strong style="font-size: 12px;">Total:</strong> &nbsp;</td>
                                 <td colspan="2"><strong style="font-size: 12px;">
-                                        <?=$amount_after_discount_and_vat?>
+                                        <?=number_format($total_amount, 2)?>
                                     </strong></td>
                             </tr>
 

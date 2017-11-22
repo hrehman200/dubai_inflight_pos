@@ -252,12 +252,12 @@ include('navfixed.php');
                                 $arr_unit_remaining[] = $arr_unit_total[$i] - $arr_unit_consumed[$i];
                             }
 
-                            $price_paid = round($row['amount'] - ($row['amount'] * $row['discount'] / 100), 0);
+                            $price_paid = $row['amount']; //round($row['amount'] - ($row['amount'] * $row['discount'] / 100), 0);
 
                             $arr_price = explode(",", $row['price']);
                             $unit_price_after_discount = [];
                             foreach($arr_price as $price) {
-                                $unit_price_after_discount[] = round($price - ($price * $row['discount'] / 100), 2);
+                                $unit_price_after_discount[] = $price; //round($price - ($price * $row['discount'] / 100), 2);
                             }
 
                             $arr_vat_percents = explode(",", $row['vat_percent']);

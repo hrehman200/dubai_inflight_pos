@@ -142,21 +142,16 @@
 
         <br>
 
-        <!-- for discounted Value Start-->
-
-        <!--                 <?php
-        //if(isset($_GET['savingflight']) && $_GET['savingflight'] == 1) {
-        ?>
- --> <input type="number" name="discount" placeholder="Discount %" step="any"
+        <!--<input type="number" name="discount" placeholder="Discount %" step="any"
             style="width: 268px; height:30px;  margin-bottom: 15px;" value="" onkeyup="myDiscountedInputFunction(this);"
-            required/>
-            <!--  <?php
+            required/>-->
+              <?php
             }
-            ?> -->
+            ?>
 
             <br/>
 
-            <span style="width: auto; padding-right:5px;">VAT</span>
+            <!--<span style="width: auto; padding-right:5px;">VAT</span>
             <label id="lblVat"
                    style="display:inline-block; width: 225px; height:30px;  margin-bottom: 15px; text-align: left;">-</label>
             <br/>
@@ -165,7 +160,7 @@
             <input type="text" name="discountedValue" placeholder="Discounted Value" id="discountedValue"
                    style="width: 225px; height:30px;  margin-bottom: 15px;" step="any" readonly/>
 
-            <br>
+            <br>-->
 
             <!-- for discounted Value End -->
 
@@ -286,8 +281,8 @@
         console.log(value.value);
 
         var paidValue                                   = value.value;
-        var discountedValue                             = document.getElementById("discountedValue").value;
-        var remainingValue                              = discountedValue - paidValue;
+        var total_value                             = document.getElementById("total_cash").value;
+        var remainingValue                              = total_value - paidValue;
         document.getElementById("remaining_cash").value = remainingValue;
 
         if (remainingValue == 0) {

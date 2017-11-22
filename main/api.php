@@ -653,6 +653,19 @@ function getVatForDiscountedAmountAndInvoice() {
     ));
 }
 
+function saveDiscount() {
+
+    global $db;
+
+    $query = $db->prepare("UPDATE sales_order SET discount = ? WHERE transaction_id = ?");
+    $query->execute([$_POST['discount'], $_POST['transaction_id']]);
+
+    echo json_encode(array(
+        'success' => 1,
+        'msg'     => ''
+    ));
+}
+
 
 
 call_user_func($_POST['call']);

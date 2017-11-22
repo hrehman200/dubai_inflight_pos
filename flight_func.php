@@ -6,6 +6,8 @@
 define('TYPE_MERCHANDISE', 'Merchandise');
 define('TYPE_SERVICE', 'Service');
 
+define('FLAT_DISCOUNT', 20);    // percent
+
 /**
  * @param $customer_id
  * @param $flight_purchase_id

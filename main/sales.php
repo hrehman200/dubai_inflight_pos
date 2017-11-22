@@ -248,7 +248,8 @@ if ($position == 'cashier') {
                     <th> Price</th>
                     <th> Qty</th>
                     <th> Amount</th>
-                    <th> Profit</th>
+                    <th> Discount</th>
+                    <th> VAT</th>
                     <th> Action</th>
                 </tr>
                 </thead>
@@ -256,9 +257,14 @@ if ($position == 'cashier') {
 
                 <?php
                 $id     = $_GET['invoice'];
-                $result = $db->prepare("SELECT * FROM sales_order WHERE invoice= :userid");
+                $result = $db->prepare("SELECT so.*, vc.vat_code, vc.percent 
+                  FROM sales_order so
+                  LEFT JOIN vat_codes vc ON so.vat_code_id = vc.id
+                  WHERE so.invoice= :userid");
                 $result->bindParam(':userid', $id);
                 $result->execute();
+
+                $total_amount = 0;
                 for ($i = 1; $row = $result->fetch(); $i++) {
                     ?>
                     <tr class="record">
@@ -275,18 +281,30 @@ if ($position == 'cashier') {
                             echo formatMoney($ppp, true);
                             ?>
                         </td>
-                        <td><?php echo $row['qty']; ?></td>
-                        <td>
+                        <td class="tdQty"><?php echo $row['qty']; ?></td>
+                        <td class="tdAmount">
                             <?php
-                            $dfdf = $row['amount'];
-                            echo formatMoney($dfdf, true);
+                            $amount = $row['amount'];
+                            echo formatMoney($amount, true);
                             ?>
                         </td>
-                        <td>
-                            <?php
-                            $profit = $row['profit'];
-                            echo formatMoney($profit, true);
+                        <td><?php
+                            $discount_percent = $row['discount'];
+                            $discount_amount = $discount_percent * $amount / 100;
+                            $amount -= ($discount_amount * $row['qty']);
                             ?>
+                            <input type="number" class="input-mini discountPercent" style="width: 40px;" value="<?=$discount_percent?>" placeholder="%" />
+                            (<span class="discountAmount">-<?=$discount_amount?></span>)
+                            <button class="btn btn-mini btn-inverse btnSaveDiscount" data-transaction-id="<?=$row['transaction_id']?>"><i class="icon icon-save"></i> Save</button>
+                        </td>
+                        <td><?php
+                            $vat_percent = $row['percent'];
+                            $vat_amount = $vat_percent * $amount / 100;
+
+                            $total_amount += $amount;
+                            ?>
+                            <span id="vatAmount">(<?=$row['percent']?>%)</span>
+                            <span id="vatPercent"><?=$vat_amount?></span>
                         </td>
                         <td width="90"><a
                                 href="delete.php?id=<?php echo $row['transaction_id']; ?>&invoice=<?php echo $_GET['invoice']; ?>&dle=<?php echo $_GET['id']; ?>&qty=<?php echo $row['qty']; ?>&code=<?php echo $row['product']; ?>">
@@ -298,17 +316,7 @@ if ($position == 'cashier') {
                 }
                 ?>
                 <tr>
-                    <th></th>
-                    <th></th>
-                    <th></th>
-                    <th></th>
-                    <th></th>
-                    <td> Total Amount:</td>
-                    <td> Total Profit:</td>
-                    <th></th>
-                </tr>
-                <tr>
-                    <th colspan="5"><strong style="font-size: 12px; color: #222222;">Total:</strong></th>
+                    <th colspan="6"><strong style="font-size: 12px; color: #222222;">Total:</strong></th>
                     <td colspan="1"><strong style="font-size: 12px; color: #222222;">
                             <?php
                             function formatMoney($number, $fractional = false) {
@@ -327,26 +335,10 @@ if ($position == 'cashier') {
                                 return $number;
                             }
 
-                            $sdsd     = $_GET['invoice'];
-                            $resultas = $db->prepare("SELECT sum(amount) FROM sales_order WHERE invoice= :a");
-                            $resultas->bindParam(':a', $sdsd);
-                            $resultas->execute();
-                            for ($i = 0; $rowas = $resultas->fetch(); $i++) {
-                                $fgfg = $rowas['sum(amount)'];
-                                echo formatMoney($fgfg, true);
-                            }
+                            echo $total_amount;
                             ?>
-                        </strong></td>
-                    <td colspan="1"><strong style="font-size: 12px; color: #222222;">
-                            <?php
-                            $resulta = $db->prepare("SELECT sum(profit) FROM sales_order WHERE invoice= :b");
-                            $resulta->bindParam(':b', $sdsd);
-                            $resulta->execute();
-                            for ($i = 0; $qwe = $resulta->fetch(); $i++) {
-                                $asd = $qwe['sum(profit)'];
-                                echo formatMoney($asd, true);
-                            }
-                            ?>
+                        </strong>AED</td>
+                    <td colspan="2"><strong style="font-size: 12px; color: #222222;">
 
                     </td>
                     <th></th>
@@ -358,7 +350,7 @@ if ($position == 'cashier') {
             <a rel="facebox"
                href="checkout.php?pt=<?php echo $_GET['id'] ?>&
                invoice=<?php echo $_GET['invoice'] ?>&
-               total=<?php echo $fgfg ?>&
+               total=<?php echo $total_amount ?>&
                totalprof=<?php echo $asd ?>&
                salesType=<?php echo $salesType ?>&
                productName=<?php echo $productName ?>&
@@ -568,8 +560,6 @@ if ($position == 'cashier') {
             var qtyAvailable = $('.color input:checked').data('qty');
             var qty          = $(this).val();
 
-            console.log(qtyAvailable);
-
             if (qty > qtyAvailable) {
                 $('.btnAdd').hide();
                 var msg = (qtyAvailable <= 0) ? 'Not in stock' : 'Only '+qtyAvailable+' items available';
@@ -584,6 +574,40 @@ if ($position == 'cashier') {
 
         $('input[name="qty"]').on('keyup', _onQtyChange)
             .on('change', _onQtyChange);
+
+        var _onDiscountPercentChange = function(e) {
+            var quantity = $(e.target).parents('tr').find('.tdQty').text();
+            var totalAmount = $(e.target).parents('tr').find('.tdAmount').text();
+            var discountPercent = $(e.target).val();
+            var discountAmount = discountPercent * totalAmount / 100;
+            $(e.target).parents('tr').find('.discountAmount').text('-'+discountAmount.toFixed(2));
+        };
+
+        $('.discountPercent').on('keyup', _onDiscountPercentChange)
+            .on('change', _onDiscountPercentChange);
+
+        $('.btnSaveDiscount').on('click', function(e) {
+
+            var transactionId = $(e.target).data('transaction-id');
+
+            $.ajax({
+                url: 'api.php',
+                method: 'POST',
+                data: {
+                    'call': 'saveDiscount',
+                    'discount': $(e.target).parents('tr').find('.discountPercent').val(),
+                    'transaction_id': transactionId
+                },
+                dataType: 'json',
+                success: function (response) {
+                    if(response.success == 1) {
+                        window.location.href = window.location.href;
+                    } else {
+                        alert(response.msg);
+                    }
+                }
+            });
+        });
 
     });
 </script>

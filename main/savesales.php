@@ -17,9 +17,11 @@ $total_cash = $_POST['total_cash'];
 
 $cash = $_POST['cash'];
 $remaining_cash = $_POST['remaining_cash'];
-$discountedValue = $_POST['discountedValue'];
 
-$discount = $_POST['discount'];
+$query = $db->prepare('SELECT SUM(discount) AS total_discount FROM sales_order WHERE invoice=?');
+$query->execute([$a]);
+$row = $query->fetch();
+$discount = $row['total_discount'];
 
 if ($salesType == '' || empty($salesType )) {
     # code...
@@ -79,7 +81,7 @@ if (@$_POST['savingflight'] == 1) {
         VALUES (:a,:b,:c,:d,:monh,:year,:e,:z,:due_date, :mode_of_payment, :discount, :customerId, :Service, :mode_of_payment_1, :mop_amount, :mop1_amount, :discountedValue)";
     $q   = $db->prepare($sql);
     $q->execute(array(':a' => $a, ':b' => $b, ':c' => $c, ':d' => $d, ':monh' => $monthName, ':year' => $salesyear, ':e' => $e, ':z' => $z, ':due_date' => $f, ':mode_of_payment' => $mode_of_payment, ':discount' => $discount, ':customerId' => $customer_id, ':Service' => $salesType, ':mode_of_payment_1' => $mode_of_payment_1
-        , ':mop_amount' => $cash, ':mop1_amount' => $remaining_cash, ':discountedValue' => $discountedValue));
+        , ':mop_amount' => $cash, ':mop1_amount' => $remaining_cash, ':discountedValue' => $total_cash));
 
 
 
