@@ -118,8 +118,8 @@ function insertFlightPurchase($invoice_id, $flight_offer_id, $customer_id, $use_
 
     $vat_code_id = getVatCodeId(TYPE_SERVICE);
 
-    $columns = "invoice_id, flight_offer_id, customer_id, deduct_from_balance, status, class_people";
-    $values = ":invoice_id, :flight_offer_id, :customer_id, :use_balance, :status, :class_people";
+    $columns = "invoice_id, flight_offer_id, customer_id, deduct_from_balance, status, class_people, discount";
+    $values = ":invoice_id, :flight_offer_id, :customer_id, :use_balance, :status, :class_people, :discount";
 
     $arr = array(
         ':invoice_id'      => $invoice_id,
@@ -127,7 +127,8 @@ function insertFlightPurchase($invoice_id, $flight_offer_id, $customer_id, $use_
         ':customer_id'     => $customer_id,
         ':use_balance'     => $use_balance,
         ':status'          => $status,
-        ':class_people'    => $class_people
+        ':class_people'    => $class_people,
+        ':discount'        => FLAT_DISCOUNT
     );
 
     if($use_balance != 1) {

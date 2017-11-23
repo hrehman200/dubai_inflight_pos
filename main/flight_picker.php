@@ -249,6 +249,8 @@ $position = $_SESSION['SESS_LAST_NAME'];
                         <th> Package</th>
                         <th> Flight Offer</th>
                         <th> Price</th>
+                        <th> Discount</th>
+                        <th> VAT</th>
                         <th> Minutes</th>
                         <th> Action</th>
                     </tr>
@@ -261,22 +263,27 @@ $position = $_SESSION['SESS_LAST_NAME'];
                     $url = 'http://' . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'];
                     $str_query = parse_url($url, PHP_URL_QUERY);
 
-                    $result = $db->prepare("SELECT fp.id AS flight_purchase_id, fp.deduct_from_balance, fp.class_people, fo.code, fpkg.package_name, fo.offer_name, fo.price, fo.duration FROM flight_purchases fp
+                    $result = $db->prepare("SELECT fp.id AS flight_purchase_id, fp.deduct_from_balance, fp.class_people, fp.discount, vc.percent,
+                      fo.code, fpkg.package_name, fo.offer_name, fo.price, fo.duration 
+                      FROM flight_purchases fp
                       LEFT JOIN flight_offers fo ON fp.flight_offer_id = fo.id
                       LEFT JOIN flight_packages fpkg ON fo.package_id = fpkg.id
+                      LEFT JOIN vat_codes vc ON fp.vat_code_id = vc.id
                       WHERE fp.invoice_id= :invoiceId");
                     $result->bindParam(':invoiceId', $id);
                     $result->execute();
 
                     $total_cost = 0;
                     $total_duration = 0;
+                    $current_price = 0;
                     while($row = $result->fetch()) {
                         if($row['deduct_from_balance']==0) {
                             if($row['class_people'] > 0) {
-                                $total_cost += $row['price'] + (CLASS_SESSION_COST * $row['class_people']);
+                                $current_price = $row['price'] + (CLASS_SESSION_COST * $row['class_people']);
                             } else {
-                                $total_cost += $row['price'];
+                                $current_price = $row['price'];
                             }
+                            $total_cost += $current_price;
                         }
                         $total_duration += $row['duration'];
                         ?>
@@ -284,16 +291,32 @@ $position = $_SESSION['SESS_LAST_NAME'];
                             <td><?php echo $row['code']; ?></td>
                             <td><?php echo $row['package_name']; ?></td>
                             <td><?php echo $row['deduct_from_balance']==1 ? $row['offer_name'].' (Deduct from balance)' : $row['offer_name']; ?></td>
-                            <td>
+                            <td class="tdAmount">
                                 <?php
                                 if ($row['deduct_from_balance']==1) {
                                     echo '-';
-                                } else if ($row['class_people'] > 0) {
-                                    echo $row['price'] + (CLASS_SESSION_COST * $row['class_people']);
                                 } else {
-                                    echo $row['price'];
+                                    echo $current_price;
                                 }
                                 ?></td>
+                            <td>
+                                <?php
+                                $discount_percent = $row['discount'];
+                                $discount_amount = $discount_percent * $current_price / 100;
+                                $total_cost -= $discount_amount;
+                                ?>
+                                <input type="number" class="input-mini discountPercent" style="width: 40px;" value="<?=$discount_percent?>" placeholder="%" />
+                                (<span class="discountAmount">-<?=$discount_amount?></span>)
+                                <button class="btn btn-mini btn-inverse btnSaveDiscount" data-transaction-id="<?=$row['flight_purchase_id']?>"><i class="icon icon-save"></i> Save</button>
+                            </td>
+                            <td>
+                                <?php
+                                $vat_percent = $row['percent'];
+                                $vat_amount = $vat_percent * $current_price / 100;
+                                ?>
+                                <span id="vatAmount">(<?=$row['percent']?>%)</span>
+                                <span id="vatPercent"><?=$vat_amount?></span>
+                            </td>
                             <td><?php echo $row['deduct_from_balance']==1 ? '-' : $row['duration']; ?></td>
                             <td width="90"><a
                                     href="delete_flight_order.php?flight_purchase_id=<?php echo $row['flight_purchase_id'] . "&" . $str_query; ?>">
@@ -314,6 +337,8 @@ $position = $_SESSION['SESS_LAST_NAME'];
                                 <td colspan="2"></td>
                                 <td style="text-align: center;"><?=substr($row2['flight_time'],0,-3)?></td>
                                 <td></td>
+                                <td></td>
+                                <td></td>
                                 <td><?=$row2['duration']?></td>
                                 <td><a href="delete_flight_order.php?booking_id=<?php echo $row2['id'] . "&" . $str_query; ?>">
                                         <button class="btn btn-mini btn-warning"><i class="icon icon-remove"></i> Cancel</button>
@@ -329,6 +354,8 @@ $position = $_SESSION['SESS_LAST_NAME'];
                     <tr>
                         <td colspan="3" style="text-align: right;">Totals:</td>
                         <td><?=$total_cost?></td>
+                        <td></td>
+                        <td></td>
                         <td colspan="2"><?=$total_duration?></td>
                     </tr>
                     </tbody>
@@ -1074,6 +1101,42 @@ $position = $_SESSION['SESS_LAST_NAME'];
             return uri + separator + key + "=" + value;
         }
     }
+
+    var _onDiscountPercentChange = function(e) {
+        var quantity = $(e.target).parents('tr').find('.tdQty').text();
+        var totalAmount = $(e.target).parents('tr').find('.tdAmount').text();
+        var discountPercent = $(e.target).val();
+        var discountAmount = discountPercent * totalAmount / 100;
+        $(e.target).parents('tr').find('.discountAmount').text('-'+discountAmount.toFixed(2));
+    };
+
+    $('.discountPercent').on('keyup', _onDiscountPercentChange)
+        .on('change', _onDiscountPercentChange);
+
+    $('.btnSaveDiscount').on('click', function(e) {
+
+        var transactionId = $(e.target).data('transaction-id');
+        console.log(transactionId);
+
+        $.ajax({
+            url: 'api.php',
+            method: 'POST',
+            data: {
+                'call': 'saveDiscount',
+                'discount': $(e.target).parents('tr').find('.discountPercent').val(),
+                'transaction_id': transactionId,
+                'saving_flight': 1
+            },
+            dataType: 'json',
+            success: function (response) {
+                if(response.success == 1) {
+                    window.location.href = window.location.href;
+                } else {
+                    alert(response.msg);
+                }
+            }
+        });
+    });
 
 
 </script>

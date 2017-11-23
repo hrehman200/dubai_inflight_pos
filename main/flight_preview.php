@@ -202,6 +202,8 @@ $secondPaymentOption = $_GET['paysecond'];
                                 <th> Package</th>
                                 <th> Offer</th>
                                 <th> Price</th>
+                                <th> Discount</th>
+                                <th> VAT</th>
                                 <th> Minutes</th>
                             </tr>
                             </thead>
@@ -210,21 +212,25 @@ $secondPaymentOption = $_GET['paysecond'];
                             <?php
                             $invoice_id = $_GET['invoice'];
 
-                            $result = $db->prepare("SELECT fp.id AS flight_purchase_id, fp.deduct_from_balance, fp.class_people, fo.code, fpkg.package_name, fo.offer_name, fo.price, fo.duration FROM flight_purchases fp
+                            $result = $db->prepare("SELECT fp.id AS flight_purchase_id, fp.deduct_from_balance, fp.class_people, fo.code, fpkg.package_name, fo.offer_name, fo.price, fo.duration,
+                                      fp.discount, vc.percent
+                                      FROM flight_purchases fp
                                       LEFT JOIN flight_offers fo ON fp.flight_offer_id = fo.id
                                       LEFT JOIN flight_packages fpkg ON fo.package_id = fpkg.id
+                                      LEFT JOIN vat_codes vc ON fp.vat_code_id = vc.id
                                       WHERE fp.invoice_id= :invoiceId");
                             $result->bindParam(':invoiceId', $invoice_id);
                             $result->execute();
 
                             $total_cost     = 0;
                             $total_duration = 0;
+                            $current_price  = 0;
                             while ($row = $result->fetch()) {
                                 if ($row['deduct_from_balance'] == 0) {
                                     if ($row['class_people'] > 0) {
-                                        $total_cost += $row['price'] + (CLASS_SESSION_COST * $row['class_people']);
+                                        $current_price = $row['price'] + (CLASS_SESSION_COST * $row['class_people']);
                                     } else {
-                                        $total_cost += $row['price'];
+                                        $current_price = $row['price'];
                                     }
                                     $total_duration += $row['duration'];
                                 }
@@ -237,12 +243,26 @@ $secondPaymentOption = $_GET['paysecond'];
                                         <?php
                                         if ($row['deduct_from_balance'] == 1) {
                                             echo '-';
-                                        } else if ($row['class_people'] > 0) {
-                                            echo number_format($row['price'] + (CLASS_SESSION_COST * $row['class_people']));
                                         } else {
-                                            echo number_format($row['price']);
+                                            echo number_format($current_price);
                                         }
                                         ?></td>
+                                    <td>
+                                        <?php
+                                        $discount_percent = $row['discount'];
+                                        $discount_amount = $discount_percent * $current_price / 100;
+                                        $current_price -= $discount_amount;
+                                        echo sprintf("-%.2f (%.1f%%)", $discount_amount, $discount_percent);
+                                        $total_cost += $current_price;
+                                        ?>
+                                    </td>
+                                    <td>
+                                        <?php
+                                        $vat_percent = $row['percent'];
+                                        $vat_amount = $vat_percent * $current_price / 100;
+                                        echo sprintf("%.2f (%.1f%%)", $vat_amount, $vat_percent);
+                                        ?>
+                                    </td>
                                     <td><?php echo $row['deduct_from_balance'] == 1 ? '-' : $row['duration']; ?></td>
                                 </tr>
 
@@ -256,6 +276,8 @@ $secondPaymentOption = $_GET['paysecond'];
                                         <td colspan="2"></td>
                                         <td style="text-align: center;"><?= substr($row2['flight_time'], 0, -3) ?></td>
                                         <td></td>
+                                        <td></td>
+                                        <td></td>
                                         <td><?= $row2['duration'] ?></td>
                                     </tr>
                                     <?php
@@ -266,34 +288,9 @@ $secondPaymentOption = $_GET['paysecond'];
                             }
                             ?>
                             <tr>
-                                <td colspan="3" style="text-align: right;">Sub Total:</td>
-                                <td><?= number_format($total_cost) ?></td>
-                                <td colspan="2"><?= $total_duration ?></td>
-                            </tr>
-                            <tr>
-                                <td colspan="3" style="text-align: right;">Discount:</td>
-                                <td><?php
-                                    $discount_value = $discount * $total_cost / 100;
-                                    echo sprintf('-%.2f (%s%%)', $discount_value, $discount);
-                                    ?></td>
-                                <td colspan="2"></td>
-                            </tr>
-                            <tr>
-                                <td colspan="3" style="text-align: right;">VAT:</td>
-                                <td><?php
-                                    $amount_after_discount = $total_cost - $discount_value;
-                                    $arr_vat               = getVatDetailsForDiscountedAmountAndInvoice($amount_after_discount, $invoice, true);
-                                    $vat_amount            = $arr_vat[0];
-                                    echo sprintf('%.2f (%s%%)', $arr_vat[0], implode(",", $arr_vat[1]));
-                                    ?></td>
-                                <td colspan="2"></td>
-                            </tr>
-                            <tr>
-                                <td colspan="3" style="text-align: right;"><b>Total:</b></td>
+                                <td colspan="4" style="text-align: right;"><b>Total:</b></td>
                                 <td><b><?php
-                                        $total = $total_cost - $discount_value;
-                                        $total += $vat_amount;
-                                        echo number_format($total, 2);
+                                        echo number_format($total_cost, 2);
                                         ?></b></td>
                                 <td colspan="2"></td>
                             </tr>
@@ -302,7 +299,7 @@ $secondPaymentOption = $_GET['paysecond'];
                             if ($modeOfPayment != -1) {
                                 ?>
                                 <tr>
-                                    <td colspan="3" style="text-align: right;"><?php
+                                    <td colspan="4" style="text-align: right;"><?php
                                         echo $modeOfPayment;
                                         ?></td>
                                     <td><?php
@@ -318,7 +315,7 @@ $secondPaymentOption = $_GET['paysecond'];
                             if ($modeOfPayment1 != -1) {
                                 ?>
                                 <tr>
-                                    <td colspan="3" style="text-align: right;"><?php
+                                    <td colspan="4" style="text-align: right;"><?php
                                         echo $modeOfPayment1;
                                         ?></td>
                                     <td><?php
@@ -337,7 +334,7 @@ $secondPaymentOption = $_GET['paysecond'];
                             $sales_row = $sales_query->fetch();
                             ?>
                             <tr>
-                                <td colspan="3" style="text-align: right;">Change:</td>
+                                <td colspan="4" style="text-align: right;">Change:</td>
                                 <td><?php echo number_format($sales_row['changeVal']); ?></td>
                                 <td colspan="2"></td>
                             </tr>

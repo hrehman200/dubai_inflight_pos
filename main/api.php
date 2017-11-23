@@ -657,7 +657,12 @@ function saveDiscount() {
 
     global $db;
 
-    $query = $db->prepare("UPDATE sales_order SET discount = ? WHERE transaction_id = ?");
+    if(@$_POST['saving_flight'] == 1) {
+        $query = $db->prepare("UPDATE flight_purchases SET discount = ? WHERE id = ?");
+
+    } else {
+        $query = $db->prepare("UPDATE sales_order SET discount = ? WHERE transaction_id = ?");
+    }
     $query->execute([$_POST['discount'], $_POST['transaction_id']]);
 
     echo json_encode(array(
