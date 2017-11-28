@@ -241,14 +241,14 @@
                                     </td>
                                     <td>
                                         <?php
+                                        $discount_percent = $row['discount'];
+                                        $discount_amount = $discount_percent * $row['amount'] / 100;
                                         $ddd = $row['discount'];
-                                        echo formatMoney($ddd, true).'%';
+                                        echo sprintf('-%.2f, (%.1f%%)', $discount_amount, $discount_percent);
                                         ?>
                                     </td>
                                     <td>
                                         <?php
-                                        $discount_percent = $row['discount'];
-                                        $discount_amount = $discount_percent * $row['amount'] / 100;
                                         $row['amount'] -= ($discount_amount * $row['qty']);
                                         $total_amount += $row['amount'];
                                         echo number_format($row['amount'], 2);
