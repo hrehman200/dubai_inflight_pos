@@ -260,6 +260,7 @@ if ($position == 'cashier') {
                 $result = $db->prepare("SELECT so.*, vc.vat_code, vc.percent 
                   FROM sales_order so
                   LEFT JOIN vat_codes vc ON so.vat_code_id = vc.id
+                  LEFT JOIN discounts d ON so.discount_id = d.id
                   WHERE so.invoice= :userid");
                 $result->bindParam(':userid', $id);
                 $result->execute();
@@ -293,9 +294,19 @@ if ($position == 'cashier') {
                             $discount_amount = $discount_percent * $amount / 100;
                             $amount -= ($discount_amount * $row['qty']);
                             ?>
-                            <input type="number" class="input-mini discountPercent" style="width: 40px;" value="<?=$discount_percent?>" placeholder="%" />
+
+                            <select class="discountPercent" data-transaction-id="<?=$row['transaction_id']?>">
+                                <option value="0" data-percent="0">None</option>
+                            <?php
+                            $query = $db->query(sprintf('SELECT * FROM discounts WHERE type = "%s" AND status=1', TYPE_SERVICE));
+                            $query->execute();
+                            while($row2 = $query->fetch()) {
+                                $selected = (($row['discount_id']==$row2['id'])?'selected':'');
+                                echo sprintf('<option value="%d" %s data-percent="%.2f">%s (%.0f%%)</option>', $row2['id'], $selected, $row2['percent'], $row2['category'], $row2['percent']);
+                            }
+                            ?>
+                            </select>
                             (<span class="discountAmount">-<?=$discount_amount?></span>)
-                            <button class="btn btn-mini btn-inverse btnSaveDiscount" data-transaction-id="<?=$row['transaction_id']?>"><i class="icon icon-save"></i> Save</button>
                         </td>
                         <td><?php
                             $vat_percent = $row['percent'];
@@ -578,15 +589,9 @@ if ($position == 'cashier') {
         var _onDiscountPercentChange = function(e) {
             var quantity = $(e.target).parents('tr').find('.tdQty').text();
             var totalAmount = $(e.target).parents('tr').find('.tdAmount').text();
-            var discountPercent = $(e.target).val();
+            var discountPercent = $(e.target).find('option:selected').data('percent');
             var discountAmount = discountPercent * totalAmount / 100;
             $(e.target).parents('tr').find('.discountAmount').text('-'+discountAmount.toFixed(2));
-        };
-
-        $('.discountPercent').on('keyup', _onDiscountPercentChange)
-            .on('change', _onDiscountPercentChange);
-
-        $('.btnSaveDiscount').on('click', function(e) {
 
             var transactionId = $(e.target).data('transaction-id');
 
@@ -595,7 +600,8 @@ if ($position == 'cashier') {
                 method: 'POST',
                 data: {
                     'call': 'saveDiscount',
-                    'discount': $(e.target).parents('tr').find('.discountPercent').val(),
+                    'discount': discountPercent,
+                    'discount_id': $(e.target).val(),
                     'transaction_id': transactionId
                 },
                 dataType: 'json',
@@ -607,7 +613,9 @@ if ($position == 'cashier') {
                     }
                 }
             });
-        });
+        };
+
+        $('.discountPercent').on('change', _onDiscountPercentChange);
 
     });
 </script>

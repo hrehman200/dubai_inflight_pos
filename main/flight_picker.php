@@ -263,12 +263,13 @@ $position = $_SESSION['SESS_LAST_NAME'];
                     $url = 'http://' . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'];
                     $str_query = parse_url($url, PHP_URL_QUERY);
 
-                    $result = $db->prepare("SELECT fp.id AS flight_purchase_id, fp.deduct_from_balance, fp.class_people, fp.discount, vc.percent,
+                    $result = $db->prepare("SELECT fp.id AS flight_purchase_id, fp.deduct_from_balance, fp.class_people, fp.discount, fp.discount_id, vc.percent,
                       fo.code, fpkg.package_name, fo.offer_name, fo.price, fo.duration 
                       FROM flight_purchases fp
                       LEFT JOIN flight_offers fo ON fp.flight_offer_id = fo.id
                       LEFT JOIN flight_packages fpkg ON fo.package_id = fpkg.id
                       LEFT JOIN vat_codes vc ON fp.vat_code_id = vc.id
+                      LEFT JOIN discounts d ON fp.discount_id = d.id
                       WHERE fp.invoice_id= :invoiceId");
                     $result->bindParam(':invoiceId', $id);
                     $result->execute();
@@ -305,9 +306,18 @@ $position = $_SESSION['SESS_LAST_NAME'];
                                 $discount_amount = $discount_percent * $current_price / 100;
                                 $total_cost -= $discount_amount;
                                 ?>
-                                <input type="number" class="input-mini discountPercent" style="width: 40px;" value="<?=$discount_percent?>" placeholder="%" />
+                                <select class="discountPercent" data-transaction-id="<?=$row['flight_purchase_id']?>">
+                                    <option value="0" data-percent="0">None</option>
+                                    <?php
+                                    $query = $db->query(sprintf('SELECT * FROM discounts WHERE type = "%s" AND status=1', TYPE_MERCHANDISE));
+                                    $query->execute();
+                                    while($row2 = $query->fetch()) {
+                                        $selected = (($row['discount_id']==$row2['id'])?'selected':'');
+                                        echo sprintf('<option value="%d" %s data-percent="%.2f">%s (%.0f%%)</option>', $row2['id'], $selected, $row2['percent'], $row2['category'], $row2['percent']);
+                                    }
+                                    ?>
+                                </select>
                                 (<span class="discountAmount">-<?=$discount_amount?></span>)
-                                <button class="btn btn-mini btn-inverse btnSaveDiscount" data-transaction-id="<?=$row['flight_purchase_id']?>"><i class="icon icon-save"></i> Save</button>
                             </td>
                             <td>
                                 <?php
@@ -1105,25 +1115,19 @@ $position = $_SESSION['SESS_LAST_NAME'];
     var _onDiscountPercentChange = function(e) {
         var quantity = $(e.target).parents('tr').find('.tdQty').text();
         var totalAmount = $(e.target).parents('tr').find('.tdAmount').text();
-        var discountPercent = $(e.target).val();
+        var discountPercent = $(e.target).find('option:selected').data('percent');
         var discountAmount = discountPercent * totalAmount / 100;
         $(e.target).parents('tr').find('.discountAmount').text('-'+discountAmount.toFixed(2));
-    };
-
-    $('.discountPercent').on('keyup', _onDiscountPercentChange)
-        .on('change', _onDiscountPercentChange);
-
-    $('.btnSaveDiscount').on('click', function(e) {
 
         var transactionId = $(e.target).data('transaction-id');
-        console.log(transactionId);
 
         $.ajax({
             url: 'api.php',
             method: 'POST',
             data: {
                 'call': 'saveDiscount',
-                'discount': $(e.target).parents('tr').find('.discountPercent').val(),
+                'discount': discountPercent,
+                'discount_id': $(e.target).val(),
                 'transaction_id': transactionId,
                 'saving_flight': 1
             },
@@ -1136,7 +1140,9 @@ $position = $_SESSION['SESS_LAST_NAME'];
                 }
             }
         });
-    });
+    };
+
+    $('.discountPercent').on('change', _onDiscountPercentChange);
 
 
 </script>
