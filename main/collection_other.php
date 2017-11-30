@@ -141,13 +141,16 @@ include('navfixed.php');
                               so.name,
                               so.qty,
                               0 AS units_remaining,
-                              0 AS amount_liability
+                              0 AS amount_liability,
+                              d.category AS discount_reason
                             FROM
                               sales s
                             INNER JOIN
                               sales_order so ON s.invoice_number = so.invoice
                             LEFT JOIN
                               vat_codes vc ON so.vat_code_id = vc.id
+                            LEFT JOIN
+                              discounts d ON so.discount_id = d.id
                             LEFT JOIN
                               customer c ON s.customer_id = c.customer_id
                           )
@@ -175,7 +178,8 @@ include('navfixed.php');
                             fo1.offer_name,
                             fo1.duration AS qty,
                             fo1.duration - fb1.duration AS units_remaining,
-                            0 AS amount_liability
+                            0 AS amount_liability,
+                            d.category AS discount_reason
                           FROM
                             sales s1
                           INNER JOIN
@@ -186,6 +190,8 @@ include('navfixed.php');
                             flight_bookings fb1 ON fb1.flight_purchase_id = fp1.id
                           LEFT JOIN
                             vat_codes vc ON fp1.vat_code_id = vc.id
+                          LEFT JOIN
+                            discounts d on fp1.discount_id = d.id
                           INNER JOIN
                             customer c1 ON s1.customer_id = c1.customer_id
                         )
@@ -203,38 +209,71 @@ include('navfixed.php');
                         ?>
                         <tr>
                             <th>Transaction Date</th>
+                            <th>Operator Name</th>
                             <th>TRX_CLASS Invoice No.</th>
                             <th>TRX_TYPE</th>
                             <th>Customer Name</th>
                             <th>Mode of Payment</th>
+                            <th>LINE_NUMBER</th>
                             <th>Item Code</th>
-                            <th>Item Name</th>
-                            <th>Quantity</th>
-                            <th>Invoice Amount</th>
-                            <th>Line Items in Invoice</th>
-                            <th>Unit Price Sold</th>
+                            <th>Item Description</th>
+                            <th>CURRENCY</th>
+                            <th>Total</th>
+                            <th>1st Mode of Payment</th>
+                            <th>Paid by 1st MOP</th>
+                            <th>2nd Mode of Payment</th>
+                            <th>Paid By 2nd MOP</th>
+                            <th>QUANTITY</th>
+                            <th>UNIT_PRICE_Sold</th>
                             <th>Discount</th>
-                            <th>Unit Price before Discount</th>
-                            <th>Units Consumed</th>
+                            <th>DiscountReason</th>
+                            <th>Unit Price Before Discount</th>
+                            <th>VAT</th>
+                            <th>OPERATING_UNIT_NAME</th>
+                            <th>Store / Location</th>
+                            <th>N/A</th>
+                            <th>INV_Transaction Type</th>
+                            <th>INV Source Document Number</th>
+                            <th>Item Code</th>
+                            <th>Location</th>
+                            <th>Unit Consumed</th>
                             <th>Units Remaining</th>
-                            <th>Revenue on Consumed</th>
-                            <th>Amount Liability</th>
+                            <th>Revenue On Consumed</th>
+                            <th>Amount Laibility</th>
                         </tr>
                         <?php
                         while ($row = $result->fetch()) {
+
+                            $price_paid = $row['amount'];
+
                             ?>
                             <tr>
                                 <td><?= $row['transaction_date'] ?></td>
+                                <td><?= $row['cashier'] ?></td>
                                 <td><?= $row['invoice_number'] ?></td>
                                 <td><?= $row['sale_type'] ?></td>
                                 <td><?= $row['customer_name'] ?></td>
                                 <td><?= $row['mode_of_payment'] . (($row['mode_of_payment_1'] != -1)?", ".$row['mode_of_payment_1']:'') ?></td>
+                                <td><?= $row['product_name'] ?></td>
                                 <td><?= $row['product_codes'] ?></td>
                                 <td><?= $row['product_name'] ?></td>
+                                <td>AED</td>
+                                <td><?=$price_paid?></td>
+                                <td><?= $row['mode_of_payment'] ?></td>
+                                <td><?= $row['mop_amount'] ?></td>
+                                <td><?= $row['mode_of_payment_1'] ?></td>
+                                <td><?= $row['mop1_amount'] ?></td>
                                 <td><?= $row['quantity'] ?></td>
                                 <td><?php
+                                    $unit_price = round($row['unit_price'], 2);
+                                    $discount_value = round($unit_price * $row['discount'] / 100, 2);
+                                    $unit_price_after_discount = $unit_price - $discount_value;
+                                    echo $unit_price_after_discount;
+                                    ?></td>
+
+                                <td><?php
                                     $discount_value = round($row['amount'] * $row['discount'] / 100, 2);
-                                    echo $row['amount'] - $discount_value;
+                                    echo $row['discount'].'%'; //$row['amount'] - $discount_value;
                                     ?></td>
                                 <td><?php
                                     if($row['sale_type'] == 'Merchandise') {
@@ -244,18 +283,21 @@ include('navfixed.php');
                                     }
                                     $result2->execute(array($row['invoice_number']));
                                     $row2 = $result2->fetch();
-                                    echo $row2['line_items'];
+                                    //echo $row2['line_items'];
+
+                                    echo $row['discount_reason'];
                                     ?></td>
-                                <td><?php
-                                    $unit_price = round($row['unit_price'], 2);
-                                    $discount_value = round($unit_price * $row['discount'] / 100, 2);
-                                    $unit_price_after_discount = $unit_price - $discount_value;
-                                    echo $unit_price_after_discount;
-                                    ?></td>
-                                <td><?= $row['discount'] ?></td>
-                                <td><?= $unit_price?></td>
-                                <td><?= $row['quantity'] ?></td>
-                                <td><?= $row['units_remaining']?></td>
+                                <td><?=$row['unit_price']?></td>
+                                <td><?= $row['vat_percent'].'%' ?></td>
+                                <td><?= $row['product_name'] ?></td>
+                                <td>Inflight Dubai</td>
+                                <td>N/A</td>
+                                <td>Sales</td>
+                                <td>-</td>
+                                <td><?= $row['product_code'] ?></td>
+                                <td>POS</td>
+                                <td><?=$row['quantity']?></td>
+                                <td><?=$row['total_quantity'] - $row['quantity']; ?></td>
                                 <td><?php
                                     echo $unit_price_after_discount * $row['quantity'];
                                     ?>

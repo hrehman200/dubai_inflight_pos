@@ -298,7 +298,7 @@ if ($position == 'cashier') {
                             <select class="discountPercent" data-transaction-id="<?=$row['transaction_id']?>">
                                 <option value="0" data-percent="0">None</option>
                             <?php
-                            $query = $db->query(sprintf('SELECT * FROM discounts WHERE type = "%s" AND status=1', TYPE_SERVICE));
+                            $query = $db->query(sprintf('SELECT * FROM discounts WHERE type = "%s" AND status=1', TYPE_MERCHANDISE));
                             $query->execute();
                             while($row2 = $query->fetch()) {
                                 $selected = (($row['discount_id']==$row2['id'])?'selected':'');
