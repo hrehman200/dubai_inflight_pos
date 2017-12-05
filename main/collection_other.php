@@ -254,7 +254,7 @@ include('navfixed.php');
                             LEFT JOIN
                               customer c ON s.customer_id = c.customer_id
                           )
-                        UNION
+                        UNION ALL
                           (
                           SELECT fo1.offer_name AS product_name,
                             fo1.code AS product_codes,
@@ -424,7 +424,7 @@ include('navfixed.php');
                                     if($row['sale_type'] == 'Merchandise') {
                                         echo 0;
                                     } else {
-                                        echo $unit_price_after_discount * $row['units_remaining'];
+                                        echo $unit_price_after_discount * ($row['total_quantity'] - $row['quantity']);
                                     }
                                     ?>
                                 </td>
