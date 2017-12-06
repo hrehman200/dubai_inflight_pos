@@ -1,3 +1,6 @@
+<?php
+$invoice   = $_GET['invoice'];
+?>
 <!DOCTYPE html>
 <html>
 <head>
@@ -23,21 +26,26 @@
     <script src="src/facebox.js" type="text/javascript"></script>
     <script language="javascript">
         function Clickheretoprint() {
-            var disp_setting = "toolbar=yes,location=no,directories=yes,menubar=yes,";
-            disp_setting += "scrollbars=yes,width=800, height=400, left=100, top=25";
-            var content_vlue = document.getElementById("content").innerHTML;
+            /*var disp_setting = "toolbar=yes,location=no,directories=yes,menubar=yes,";
+             disp_setting += "scrollbars=yes,width=800, height=400, left=100, top=25";
+             var content_vlue = document.getElementById("content").innerHTML;
 
-            var docprint = window.open("", "", disp_setting);
-            docprint.document.open();
-            docprint.document.write('</head><body onLoad="self.print()" style="width: 800px; font-size: 13px; font-family: arial;">');
-            docprint.document.write(content_vlue);
-            docprint.document.close();
-            docprint.focus();
+             var docprint = window.open("", "", disp_setting);
+             docprint.document.open();
+             docprint.document.write('</head><body onLoad="self.print()" style="width: 800px; font-size: 13px; font-family: arial;">');
+             docprint.document.write(content_vlue);
+             docprint.document.close();
+             docprint.focus();*/
+
+            $("<iframe>")
+                .hide()
+                .attr("src", "preview_print.php?invoice=<?=$invoice?>")
+                .appendTo("body");
+
         }
     </script>
     <?php
 
-    $invoice   = $_GET['invoice'];
     $sale_type = $_GET['sale_type'];
 
     //&payfirst=$cash&paysecond=$remaining_cash
@@ -75,7 +83,7 @@
       INNER JOIN sales_order so ON vc.id = so.vat_code_id
       WHERE so.invoice = ?');
     $result->execute(array($invoice));
-    $row = $result->fetch();
+    $row       = $result->fetch();
     $vat_codes = $row['vat_code'];
     ?>
     <?php
@@ -86,9 +94,7 @@
     <script language="javascript" type="text/javascript">
         /* Visit http://www.yaldex.com/ for full source code
          and get more free JavaScript, CSS and DHTML scripts! */
-        <
-        !--Begin
-        var timerID = null;
+        var timerID      = null;
         var timerRunning = false;
         function stopclock() {
             if (timerRunning)
@@ -114,7 +120,6 @@
             showtime();
         }
         window.onload = startclock;
-        // End -->
     </SCRIPT>
 <body>
 
@@ -194,7 +199,7 @@
                                 </tr>
                                 <tr>
                                     <td>Vat Code:</td>
-                                    <td><?=$vat_codes?></td>
+                                    <td><?= $vat_codes ?></td>
                                 </tr>
                             </table>
 
@@ -242,21 +247,21 @@
                                     <td>
                                         <?php
                                         $discount_percent = $row['discount'];
-                                        $discount_amount = $discount_percent * $row['amount'] / 100;
-                                        $ddd = $row['discount'];
+                                        $discount_amount  = $discount_percent * $row['amount'] / 100;
+                                        $ddd              = $row['discount'];
                                         echo sprintf('-%.2f, (%.1f%%)', $discount_amount, $discount_percent);
                                         ?>
                                     </td>
                                     <td>
                                         <?php
                                         $row['amount'] -= ($discount_amount * $row['qty']);
-                                        $total_amount += $row['amount'];
+                                        $total_amount  += $row['amount'];
                                         echo number_format($row['amount'], 2);
                                         ?>
                                     </td>
                                     <td><?php
                                         $vat_percent = $row['percent'];
-                                        $vat_amount = $vat_percent * $row['amount'] / 100;
+                                        $vat_amount  = $vat_percent * $row['amount'] / 100;
                                         echo number_format($vat_amount, 2);
                                         ?></td>
                                 </tr>
@@ -265,16 +270,19 @@
                             ?>
 
                             <tr>
-                                <td colspan="5" style=" text-align:right;"><strong style="font-size: 12px;">Total:</strong> &nbsp;</td>
+                                <td colspan="5" style=" text-align:right;"><strong
+                                            style="font-size: 12px;">Total:</strong> &nbsp;
+                                </td>
                                 <td colspan="2"><strong style="font-size: 12px;">
-                                        <?=number_format($total_amount, 2)?>
+                                        <?= number_format($total_amount, 2) ?>
                                     </strong></td>
                             </tr>
 
 
                             <tr>
                                 <td colspan="5" style=" text-align:right;"><strong
-                                        style="font-size: 12px; color: #222222;"><?php echo $modeOfPayment; ?>:&nbsp;</strong></td>
+                                            style="font-size: 12px; color: #222222;"><?php echo $modeOfPayment; ?>:&nbsp;</strong>
+                                </td>
                                 <td colspan="2"><strong style="font-size: 12px; color: #222222;">
                                         <?php
 
@@ -300,11 +308,11 @@
                             </tr>
 
                             <?php
-                            if($modeOfPayment1 != '-1') {
+                            if ($modeOfPayment1 != '-1') {
                                 ?>
                                 <tr>
                                     <td colspan="5" style=" text-align:right;"><strong
-                                            style="font-size: 12px; color: #222222;"><?php echo $modeOfPayment1; ?>
+                                                style="font-size: 12px; color: #222222;"><?php echo $modeOfPayment1; ?>
                                             :&nbsp;</strong></td>
                                     <td colspan="2"><strong style="font-size: 12px; color: #222222;">
                                             <?php
