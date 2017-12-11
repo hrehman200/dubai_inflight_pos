@@ -51,7 +51,12 @@ if ($_POST['useBalance'] == 1 && $_POST['useCredit'] == 0) {
     $booked_duration = $row['booked_duration'];
 
     $minutes = $offer_duration - $booked_duration;
-    updateCustomerFlightBalance($customer_id, $flight_purchase_id, $minutes);
+
+    if($minutes == 0) {
+        updateCustomerFlightBalance($customer_id, $flight_purchase_id, $minutes, false, true);
+    } else {
+        updateCustomerFlightBalance($customer_id, $flight_purchase_id, $minutes);
+    }
 }
 
 $location = sprintf("location: flight_picker.php?id=%s&invoice=%s&pkg_id=%s&offer_id=%s&customer_id=%s&customer_name=%s&date=%s", $flight_purchase_id, $invoice, $_POST['pkg_id'], $_POST['flightOffer'], $_POST['customerId'], $_POST['customer'], $_POST['flightDate']);
