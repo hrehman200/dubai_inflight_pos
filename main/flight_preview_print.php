@@ -76,7 +76,7 @@ $secondPaymentOption = $_GET['paysecond'];
     <style type="text/css" media="print">
         @page {
             size: 3in 6in;
-            margin: 10px;
+            margin: 4mm;
         }
 
         html, body {
@@ -122,7 +122,10 @@ $secondPaymentOption = $_GET['paysecond'];
                 <tbody>
 
                     <tr>
-                        <td colspan="3" style="padding-bottom:5px;"><?=date("M j, Y")?></td>
+                        <td colspan="3" ><?=date("M j, Y")?></td>
+                    </tr>
+                    <tr>
+                        <td colspan="3" style="padding-bottom:5px;"><?=$invoice?></td>
                     </tr>
 
                 <?php
@@ -155,19 +158,19 @@ $secondPaymentOption = $_GET['paysecond'];
                         <td><?php echo $row['deduct_from_balance'] == 1 ? $row['offer_name'] . ' (Deduct from balance)' : $row['offer_name']; ?></td>
                         <td>
                             <?php
-                            if ($row['deduct_from_balance'] == 1) {
-                                echo '-';
-                            } else {
-                                echo number_format($current_price);
-                            }
-                            ?></td>
-                            <?php
+
                             $discount_percent = $row['discount'];
                             $discount_amount  = $discount_percent * $current_price / 100;
                             $current_price    -= $discount_amount;
                             //echo sprintf("-%.2f (%.1f%%)", $discount_amount, $discount_percent);
                             $total_cost += $current_price;
-                            ?>
+
+                            if ($row['deduct_from_balance'] == 1) {
+                                echo '-';
+                            } else {
+                                echo number_format($current_price, 2);
+                            }
+                            ?></td>
                     </tr>
 
                     <?php
