@@ -33,7 +33,7 @@ else if($position=='admin') {
 else if ($position=='account') {
     echo '<!--<a href="index.php"><i class="icon-dashboard icon-2x"></i> <br/> Dashboard </a>-->
 				<a href="salesreport.php?d1=0&d2=0"><i class="icon-bar-chart icon-2x"></i> <br/> Sales Report</a>
-				<a href="collection.php?d1=0&d2=0"><i class="icon-bar-chart icon-2x"></i> <br/> Collection Report</a>     
+				<a href="collection_other.php?d1=0&d2=0"><i class="icon-bar-chart icon-2x"></i> <br/> Collection Report</a>     
 				<a rel="facebox" href="select_customer.php"><i class="icon-user icon-2x"></i> <br/> Customer Ledger</a> 
 				<a href="accountreceivables.php?d1=0&d2=0"><i class="icon-bar-chart icon-2x"></i> <br/> Accounts Receivable Report</a></li> 
 				<a href="products.php"><i class="icon-table icon-2x"></i> <br/> Products</a>   </li>      

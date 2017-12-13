@@ -898,6 +898,12 @@ $position = $_SESSION['SESS_LAST_NAME'];
                                 $('#flightPurchaseId').val('');
                                 $('#flightDuration').val(minutes);
                                 $('#flightOffer').val(flightOfferId);
+
+                                // for cases when we dont have the offer in select
+                                if($('#flightOffer').val() != flightOfferId) {
+                                    $('#flightOffer').append('<option value="'+flightOfferId+'">Dummy</option>')
+                                        .val(flightOfferId);
+                                }
                                 $('#formFlightTime').submit();
                             } else {
                                 alert('Balance does not have ' + minutes + ' minutes.');

@@ -6,7 +6,7 @@
 define('TYPE_MERCHANDISE', 'Merchandise');
 define('TYPE_SERVICE', 'Service');
 
-define('FLAT_DISCOUNT', 20);    // percent
+define('FLAT_DISCOUNT', 0);    // percent
 
 /**
  * @param $customer_id
@@ -437,4 +437,17 @@ function getVatDetailsForDiscountedAmountAndInvoice($discounted_amount, $invoice
     }
 
     return array($total_vat, $arr_vat_percents);
+}
+
+/**
+ * @param $flight_purchase_id
+ * @return mixed
+ */
+function getRemainingMinutesOfFlightPurchase($flight_purchase_id) {
+    global $db;
+
+    $query = $db->prepare('SELECT minutes FROM flight_credits WHERE flight_purchase_id = ?');
+    $query->execute(array($flight_purchase_id));
+    $row = $query->fetch();
+    return $row['minutes'];
 }

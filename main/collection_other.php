@@ -139,9 +139,9 @@ include('navfixed.php');
                                   LEFT JOIN
                                     flight_bookings fb1 ON fb1.flight_purchase_id = fp1.id
                                 WHERE fpkg.package_name LIKE 'FTF%'
-                                  AND (s1.mode_of_payment IN ('Cash', 'Card', 'Online') 
+                                  AND (s1.mode_of_payment IN ('Cash', 'Card', 'Online', 'Account', 'credit_time', 'credit_cash') 
                                        OR 
-                                       s1.mode_of_payment_1 IN ('Cash', 'Card', 'Online'))
+                                       s1.mode_of_payment_1 IN ('Cash', 'Card', 'Online', 'Account', 'credit_time', 'credit_cash'))
                                   AND (s1.date >= :startDate AND s1.date <= :endDate)     
                                 GROUP BY package_name";
 
@@ -178,9 +178,9 @@ include('navfixed.php');
                                   LEFT JOIN
                                     flight_bookings fb1 ON fb1.flight_purchase_id = fp1.id
                                 WHERE fpkg.id IN (6, 8)
-                                  AND (s1.mode_of_payment IN ('Cash', 'Card', 'Online') 
+                                  AND (s1.mode_of_payment IN ('Cash', 'Card', 'Online', 'Account', 'credit_time', 'credit_cash') 
                                        OR 
-                                       s1.mode_of_payment_1 IN ('Cash', 'Card', 'Online'))
+                                       s1.mode_of_payment_1 IN ('Cash', 'Card', 'Online', 'Account', 'credit_time', 'credit_cash'))
                                   AND (s1.date >= :startDate AND s1.date <= :endDate)     
                                 GROUP BY fpkg.id";
 
@@ -222,6 +222,8 @@ include('navfixed.php');
                             SELECT so.name AS product_name,
                               so.product_code AS product_codes,
                               so.qty AS quantity,
+                              0 AS deduct_from_balance,
+                              0 AS from_flight_purchase_id,
                               vc.percent AS vat_percent,
                               so.qty AS total_quantity,
                               s.date AS transaction_date,
@@ -259,6 +261,8 @@ include('navfixed.php');
                           SELECT fo1.offer_name AS product_name,
                             fo1.code AS product_codes,
                             fb1.duration AS quantity,
+                            fp1.deduct_from_balance,
+                            fb1.from_flight_purchase_id,
                             vc.percent AS vat_percent,
                             fo1.duration AS total_quantity,
                             s1.date AS transaction_date,
@@ -344,10 +348,17 @@ include('navfixed.php');
                         </tr>
                         <?php
                         $prev_invoice_no = '';
-                        $line_no = 1;
-                        while ($row = $result->fetch()) {
+                        $arr = $result->fetchAll();
+                        foreach ($arr as $row) {
 
                             $price_paid = $row['amount'];
+
+                            if($row['deduct_from_balance'] == 1 && $row['from_flight_purchase_id'] > 0) {
+                                $remaining_units = getRemainingMinutesOfFlightPurchase($row['from_flight_purchase_id']);
+                            } else {
+                                $remaining_units = $row['total_quantity'] - $row['quantity'];
+                            }
+
                             ?>
                             <tr>
                                 <td><?= $row['transaction_date'] ?></td>
@@ -357,14 +368,10 @@ include('navfixed.php');
                                 <td><?= $row['customer_name'] ?></td>
                                 <td><?= $row['mode_of_payment'] . (($row['mode_of_payment_1'] != -1)?", ".$row['mode_of_payment_1']:'') ?></td>
                                 <td><?php
-                                    if($row['invoice_number'] != $prev_invoice_no) {
-                                        $line_no = 1;
-                                        $invoice_no = $line_no;
-                                    } else {
-                                        $invoice_no = ++$line_no;
-                                    }
-                                    $prev_invoice_no = $row['invoice_number'];
-                                    echo $invoice_no;
+                                    $temp = array_filter($arr, function($v) use ($row) {
+                                        return $v['invoice_number'] == $row['invoice_number'];
+                                    });
+                                    echo count($temp);
                                     ?></td>
                                 <td><?= $row['product_codes'] ?></td>
                                 <td><?= $row['product_name'] ?></td>
@@ -415,7 +422,7 @@ include('navfixed.php');
                                 <td><?= $row['product_code'] ?></td>
                                 <td>POS</td>
                                 <td><?=$row['quantity']?></td>
-                                <td><?=$row['total_quantity'] - $row['quantity']; ?></td>
+                                <td><?=$remaining_units ?></td>
                                 <td><?php
                                     echo $unit_price_after_discount * $row['quantity'];
                                     ?>
@@ -424,7 +431,7 @@ include('navfixed.php');
                                     if($row['sale_type'] == 'Merchandise') {
                                         echo 0;
                                     } else {
-                                        echo $unit_price_after_discount * ($row['total_quantity'] - $row['quantity']);
+                                        echo $unit_price_after_discount * ($remaining_units);
                                     }
                                     ?>
                                 </td>
