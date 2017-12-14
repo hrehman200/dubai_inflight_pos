@@ -1107,7 +1107,12 @@ $position = $_SESSION['SESS_LAST_NAME'];
         dialog.modal('show');
     }
 
-    function cancelFlight(flightBookingId) {
+    function cancelFlight(flightBookingId, elem) {
+
+        if(flightBookingId == '') {
+            return;
+        }
+
         $.ajax({
             url: 'api.php',
             method: 'POST',
@@ -1118,7 +1123,8 @@ $position = $_SESSION['SESS_LAST_NAME'];
             dataType: 'json',
             success: function (response) {
                 if (response.success == 1) {
-                    location.reload(true);
+                    var pickedDate = $("#datePicker").data('datepicker').getFormattedDate('yyyy-mm-dd');
+                    _getCustomerBookings($('#customerId').val(), pickedDate);
                 } else {
                     alert(response.msg);
                 }

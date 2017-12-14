@@ -237,10 +237,14 @@ function addBalance($booking_id) {
     }
 
     $customer_id             = $row['customer_id'];
-    $from_flight_purchase_id = $row['flight_purchase_id'];
+    $flight_purchase_id      = $row['flight_purchase_id'];
+    $from_flight_purchase_id = $row['from_flight_purchase_id'];
     $balance                 = $row['duration'];
 
-    if ($row['deduct_from_balance'] <= 1) {
+    if($row['deduct_from_balance'] == 0) {
+        updateCustomerFlightBalance($customer_id, $flight_purchase_id, $balance, true);
+
+    } else if ($row['deduct_from_balance'] == 1) {
         updateCustomerFlightBalance($customer_id, $from_flight_purchase_id, $balance, true);
 
     } else if ($row['deduct_from_balance'] == 2) {
