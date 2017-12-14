@@ -355,6 +355,7 @@ function getCustomerBookings() {
                     . '</td>
                         <td>
                             <a href="javascript:;" onclick="reschedule(' . $row['flight_booking_id'] . ')" class="btn btn-small">Reschedule</a>
+                            <a href="javascript:;" onclick="cancelFlight(' . $row['flight_booking_id'] . ')" class="btn btn-small">Cancel</a>
                         </td>
                     </tr>', $row['customer_name'], $row['offer_name'], $row['created'], $row['flight_time'],
                     ($row['deduct_from_balance'] > 0) ? $row['booking_duration'] : $row['duration'],
@@ -472,6 +473,17 @@ function rescheduleFlightTime() {
         'flightTime' => $post['flight_time'],
         'flightBookingId' => $post['flight_booking_id']
     ));
+
+    echo json_encode(array(
+        'success' => 1,
+        'msg'     => ''
+    ));
+}
+
+function cancelFlight() {
+    global $db;
+
+    deleteFlightBooking($_POST['flight_booking_id']);
 
     echo json_encode(array(
         'success' => 1,

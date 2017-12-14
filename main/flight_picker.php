@@ -1107,6 +1107,25 @@ $position = $_SESSION['SESS_LAST_NAME'];
         dialog.modal('show');
     }
 
+    function cancelFlight(flightBookingId) {
+        $.ajax({
+            url: 'api.php',
+            method: 'POST',
+            data: {
+                'call': 'cancelFlight',
+                'flight_booking_id': flightBookingId,
+            },
+            dataType: 'json',
+            success: function (response) {
+                if (response.success == 1) {
+                    location.reload(true);
+                } else {
+                    alert(response.msg);
+                }
+            }
+        });
+    }
+
     function updateQueryStringParameter(uri, key, value) {
         var re = new RegExp("([?&])" + key + "=.*?(&|$)", "i");
         var separator = uri.indexOf('?') !== -1 ? "&" : "?";
