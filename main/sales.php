@@ -279,20 +279,20 @@ if ($position == 'cashier') {
                         <td>
                             <?php
                             $ppp = $row['price'];
-                            echo formatMoney($ppp, true);
+                            echo number_format($ppp, 2);
                             ?>
                         </td>
                         <td class="tdQty"><?php echo $row['qty']; ?></td>
                         <td class="tdAmount">
                             <?php
                             $amount = $row['amount'];
-                            echo formatMoney($amount, true);
+                            echo number_format($amount, 2);
                             ?>
                         </td>
                         <td><?php
                             $discount_percent = $row['discount'];
                             $discount_amount = $discount_percent * $amount / 100;
-                            $amount -= ($discount_amount * $row['qty']);
+                            $amount -= $discount_amount;
                             ?>
 
                             <select class="discountPercent" data-transaction-id="<?=$row['transaction_id']?>">
@@ -330,22 +330,6 @@ if ($position == 'cashier') {
                     <th colspan="6"><strong style="font-size: 12px; color: #222222;">Total:</strong></th>
                     <td colspan="1"><strong style="font-size: 12px; color: #222222;">
                             <?php
-                            function formatMoney($number, $fractional = false) {
-                                if ($fractional) {
-                                    $number = sprintf('%.2f', $number);
-                                }
-                                while (true) {
-                                    $replaced = preg_replace('/(-?\d+)(\d\d\d)/', '$1,$2', $number);
-                                    if ($replaced != $number) {
-                                        $number = $replaced;
-                                    } else {
-                                        break;
-                                    }
-                                }
-
-                                return $number;
-                            }
-
                             echo $total_amount;
                             ?>
                         </strong>AED</td>

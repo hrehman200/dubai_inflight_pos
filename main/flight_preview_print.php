@@ -106,7 +106,6 @@ $secondPaymentOption = $_GET['paysecond'];
         <div class="span12" align="center">
             <img src="img/inflight_logo.png" width="180" style="margin-left:35px;"/>
 
-
             <?php
             $resulta = $db->prepare("SELECT * FROM customer WHERE customer_name= :a");
             $resulta->bindParam(':a', $cname);
@@ -117,16 +116,21 @@ $secondPaymentOption = $_GET['paysecond'];
             }
             ?>
 
+            <center>
+                <div style="font:bold 15px 'Aleo';">Tax Invoice <br> Inflight Dubai LLC <br>TRN:100225068400003</div>
+                <br>
+            </center>
+
             <table cellpadding="0" cellspacing="0"
                    style="font-family: arial; font-size: 12px;	text-align:left;" width="100%">
                 <tbody>
 
-                    <tr>
-                        <td colspan="3" ><?=date("M j, Y")?></td>
-                    </tr>
-                    <tr>
-                        <td colspan="3" style="padding-bottom:5px;"><?=$invoice?></td>
-                    </tr>
+                <tr>
+                    <td colspan="3">Date :<?= date("M j, Y") ?></td>
+                </tr>
+                <tr>
+                    <td colspan="3" style="padding-bottom:5px;"> Doc# :<?= $invoice ?></td>
+                </tr>
 
                 <?php
                 $invoice_id = $_GET['invoice'];
@@ -161,9 +165,14 @@ $secondPaymentOption = $_GET['paysecond'];
 
                             $discount_percent = $row['discount'];
                             $discount_amount  = $discount_percent * $current_price / 100;
-                            $current_price    -= $discount_amount;
-                            //echo sprintf("-%.2f (%.1f%%)", $discount_amount, $discount_percent);
+                            $current_price_w_discount = $current_price - $discount_amount;
                             $total_cost += $current_price;
+
+                            $total_discount += $discount_amount;
+
+                            $vat_percent = $row['percent'];
+                            $vat_amount  = $vat_percent * $current_price_w_discount / 100;
+                            $total_vat_amount += $vat_amount;
 
                             if ($row['deduct_from_balance'] == 1) {
                                 echo '-';
@@ -176,11 +185,27 @@ $secondPaymentOption = $_GET['paysecond'];
                     <?php
                 }
                 ?>
+
+                <tr>
+                    <td style="text-align: left;">Discount:</td>
+                    <td><?php
+                        echo "-" . number_format($discount_amount, 2);
+                    ?></td>
+                </tr>
                 <tr>
                     <td style="text-align: left;"><b>Total:</b></td>
                     <td><b><?php
-                            echo number_format($total_cost, 2);
+                            echo number_format($total_cost - $discount_amount, 2);
                             ?></b></td>
+                </tr>
+                <tr>
+                    <td>VAT:
+                    </td>
+                    <td>
+                        <?php
+                        echo sprintf("%.2f", $total_vat_amount);
+                        ?>
+                    </td>
                 </tr>
 
                 <?php

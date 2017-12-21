@@ -322,6 +322,7 @@ $position = $_SESSION['SESS_LAST_NAME'];
                             <td>
                                 <?php
                                 $vat_percent = $row['percent'];
+                                $current_price -= $discount_amount;
                                 $vat_amount = $vat_percent * $current_price / 100;
                                 ?>
                                 <span id="vatAmount">(<?=$row['percent']?>%)</span>

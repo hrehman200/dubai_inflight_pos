@@ -241,22 +241,21 @@ $invoice   = $_GET['invoice'];
                                     <td>
                                         <?php
                                         $ppp = $row['price'];
-                                        echo formatMoney($ppp, true);
+                                        echo number_format($ppp, 2);
                                         ?>
                                     </td>
                                     <td>
                                         <?php
                                         $discount_percent = $row['discount'];
                                         $discount_amount  = $discount_percent * $row['amount'] / 100;
-                                        $ddd              = $row['discount'];
                                         echo sprintf('-%.2f, (%.1f%%)', $discount_amount, $discount_percent);
                                         ?>
                                     </td>
                                     <td>
                                         <?php
-                                        $row['amount'] -= ($discount_amount * $row['qty']);
-                                        $total_amount  += $row['amount'];
-                                        echo number_format($row['amount'], 2);
+                                        $total_amount += $row['amount'];
+                                        $total_amount -= $discount_amount;
+                                        echo number_format($row['amount'] - $discount_amount, 2);
                                         ?>
                                     </td>
                                     <td><?php
@@ -285,24 +284,7 @@ $invoice   = $_GET['invoice'];
                                 </td>
                                 <td colspan="2"><strong style="font-size: 12px; color: #222222;">
                                         <?php
-
-                                        function formatMoney($number, $fractional = false) {
-                                            if ($fractional) {
-                                                $number = sprintf('%.2f', $number);
-                                            }
-                                            while (true) {
-                                                $replaced = preg_replace('/(-?\d+)(\d\d\d)/', '$1,$2', $number);
-                                                if ($replaced != $number) {
-                                                    $number = $replaced;
-                                                } else {
-                                                    break;
-                                                }
-                                            }
-
-                                            return $number;
-                                        }
-
-                                        echo $firstPaymentOption;
+                                        echo number_format($firstPaymentOption, 2);
                                         ?>
                                     </strong></td>
                             </tr>
@@ -316,7 +298,7 @@ $invoice   = $_GET['invoice'];
                                             :&nbsp;</strong></td>
                                     <td colspan="2"><strong style="font-size: 12px; color: #222222;">
                                             <?php
-                                            echo $secondPaymentOption;
+                                            echo number_format($secondPaymentOption, 2);
                                             ?>
                                         </strong></td>
                                 </tr>

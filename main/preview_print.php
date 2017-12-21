@@ -2,6 +2,7 @@
 <html>
 <head>
     <title>
+
     </title>
 
 
@@ -39,12 +40,12 @@
 
     error_reporting(0);
 
-    $invoice   = $_GET['invoice'];
+    $invoice = $_GET['invoice'];
     $sale_type = $_GET['sale_type'];
 
     //&payfirst=$cash&paysecond=$remaining_cash
 
-    $firstPaymentOption  = $_GET['payfirst'];
+    $firstPaymentOption = $_GET['payfirst'];
     $secondPaymentOption = $_GET['paysecond'];
 
     include_once('../connect.php');
@@ -52,23 +53,23 @@
     $result->bindParam(':userid', $invoice);
     $result->execute();
     for ($i = 0; $row = $result->fetch(); $i++) {
-        $cname   = $row['name'];
+        $cname = $row['name'];
         $invoice = $row['invoice_number'];
-        $date    = $row['date'];
-        $cash    = $row['due_date'];
+        $date = $row['date'];
+        $cash = $row['due_date'];
         $cashier = $row['cashier'];
 
         $pt = $row['type'];
         $am = $row['amount'];
         if ($pt == 'cash') {
-            $cash   = $row['due_date'];
+            $cash = $row['due_date'];
             $amount = $cash - $am;
         }
 
-        $modeOfPayment  = $row['mode_of_payment'];
+        $modeOfPayment = $row['mode_of_payment'];
         $modeOfPayment1 = $row['mode_of_payment_1'];
 
-        $firstPaymentOption  = $row['mop_amount'];
+        $firstPaymentOption = $row['mop_amount'];
         $secondPaymentOption = $row['mop1_amount'];
     }
     ?>
@@ -89,17 +90,20 @@
     ?>
     <table cellpadding="3" cellspacing="0"
            style="font-family: arial; font-size: 12px;	text-align:left; width:100%;">
-
+        <center>
+            <div style="font:bold 15px 'Aleo';">Tax Invoice <br> Inflight Dubai LLC <br>TRN:100225068400003</div>
+        </center>
         <tbody>
+        <Br>
         <tr>
-            <td colspan="3"><?= date("M j, Y") ?></td>
+            <td colspan="3">Date :<?= date("M j, Y") ?></td>
         </tr>
         <tr>
-            <td colspan="3" style="padding-bottom:5px;"><?=$invoice?></td>
+            <td colspan="3" style="padding-bottom:5px;"> Doc# :<?= $invoice ?></td>
         </tr>
 
         <?php
-        $id     = $_GET['invoice'];
+        $id = $_GET['invoice'];
         $result = $db->prepare("SELECT so.*, vc.vat_code, vc.percent 
                               FROM sales_order so
                               LEFT JOIN vat_codes vc ON so.vat_code_id = vc.id
@@ -108,22 +112,25 @@
         $result->execute();
 
         $total_amount = 0;
+        $total_vat_percent = 0;
+
         for ($i = 0; $row = $result->fetch(); $i++) {
+
+            $discount_percent = $row['discount'];
+            $discount_amount += $discount_percent * $row['amount'] / 100;
+            $arr_discount_percent[] = $discount_percent;
+
+            $vat_percent = $row['percent'];
+            $vat_amount  = $vat_percent * $row['amount'] / 100;
+            $total_vat_amount += $vat_amount;
+
+
             ?>
             <tr class="record">
-                <td><?php echo $row['name']; ?></td>
-                <td align="left">x<?php echo $row['qty']; ?></td>
-
-                <?php
-                $discount_percent = $row['discount'];
-                $discount_amount  = $discount_percent * $row['amount'] / 100;
-                $ddd              = $row['discount'];
-                ?>
-
-                <td align="right">
+                <td><br><br><?php echo $row['name']; ?></td>
+                <td align="left"><br><br>x<?php echo $row['qty']; ?></td>
+                <td align="right"><br><br>
                     <?php
-                    $row['amount'] -= ($discount_amount * $row['qty']);
-                    $total_amount  += $row['amount'];
                     echo number_format($row['amount'], 2);
                     ?>
                 </td>
@@ -131,21 +138,31 @@
             <?php
         }
         ?>
-
+        <tr>
+            <td colspan="2"><br>
+                Discount: &nbsp;
+            </td>
+            <td align="right"><br>
+                <?php echo sprintf("-%.2f", $discount_amount); ?>
+            </td>
+        </tr>
         <tr>
             <td colspan="2"><strong
                 >Total:</strong> &nbsp;
             </td>
-            <td align="right"><strong>
-                    <?= number_format($total_amount, 2) ?>
-                </strong></td>
+            <td align="right"><b>
+                    <?php
+                    $total_amount -= $discount_amount;
+                    echo number_format($firstPaymentOption, 2);
+                    ?></b>
+            </td>
         </tr>
 
 
         <tr>
-            <td colspan="2"><?php echo $modeOfPayment; ?>:
+            <td colspan="2"><br><br><?php echo $modeOfPayment; ?>:
             </td>
-            <td align="right">
+            <td align="right"><br><br>
                 <?php
 
                 function formatMoney($number, $fractional = false) {
@@ -181,7 +198,15 @@
             <?php
         }
         ?>
-
+        <tr>
+            <td colspan="2">VAT: &nbsp;
+            </td>
+            <td align="right">
+                <?php
+                echo sprintf("%.2f", $total_vat_amount);
+                ?>
+            </td>
+        </tr>
         </tbody>
     </table>
 
