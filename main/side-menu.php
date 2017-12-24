@@ -5,7 +5,7 @@ require_once '../connect.php';
 //session_start();
 $current_page = basename($_SERVER['PHP_SELF']);
 $position = $_SESSION['SESS_LAST_NAME'];
-if ($position == 'cashier') {
+if ($position == 'cashier'  || $position == 'Operator') {
     $finalcode='RS-'.createRandomPassword();
     echo '
    <li class="'.($current_page=='index.php'?'active':'').'"><a href="index.php"><i class="icon-dashboard icon-2x"></i> Dashboard </a></li>

@@ -260,7 +260,8 @@ $invoice   = $_GET['invoice'];
                                     </td>
                                     <td><?php
                                         $vat_percent = $row['percent'];
-                                        $vat_amount  = $vat_percent * $row['amount'] / 100;
+                                        $current_amount_w_discount = $row['amount'] - $discount_amount;
+                                        $vat_amount  = $vat_percent * $current_amount_w_discount / 100;
                                         echo number_format($vat_amount, 2);
                                         ?></td>
                                 </tr>

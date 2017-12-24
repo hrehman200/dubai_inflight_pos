@@ -113,15 +113,18 @@
 
         $total_amount = 0;
         $total_vat_percent = 0;
+        $total_vat_amount = 0;
 
         for ($i = 0; $row = $result->fetch(); $i++) {
 
             $discount_percent = $row['discount'];
-            $discount_amount += $discount_percent * $row['amount'] / 100;
+            $discount_amount = $discount_percent * $row['amount'] / 100;
+            $total_discount_amount += $discount_amount;
             $arr_discount_percent[] = $discount_percent;
 
             $vat_percent = $row['percent'];
-            $vat_amount  = $vat_percent * $row['amount'] / 100;
+            $current_amount_w_discount = $row['amount'] - $discount_amount;
+            $vat_amount  = $vat_percent * $current_amount_w_discount / 100;
             $total_vat_amount += $vat_amount;
 
 
@@ -143,7 +146,7 @@
                 Discount: &nbsp;
             </td>
             <td align="right"><br>
-                <?php echo sprintf("-%.2f", $discount_amount); ?>
+                <?php echo sprintf("-%.2f", $total_discount_amount); ?>
             </td>
         </tr>
         <tr>
