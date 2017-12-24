@@ -5,7 +5,7 @@
 //session_start();
 
 $position=$_SESSION['SESS_LAST_NAME'];
-if($position=='cashier') {
+if($position=='cashier' || $position == 'Operator') {
     echo '
             <a href="sales.php?id=cash&invoice='.$finalcode.'"><i class="icon-shopping-cart icon-2x"></i><br> Merchandise</a>
 			<a href="products.php"><i class="icon-list-alt icon-2x"></i><br>Products</a>

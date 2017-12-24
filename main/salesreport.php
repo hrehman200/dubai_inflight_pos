@@ -183,9 +183,22 @@ require_once('auth.php');
                     <?php
                     include_once('../connect.php');
 
-                    $result = $db->prepare("SELECT s.*, c.customer_name FROM sales s
-                        LEFT JOIN customer c ON s.customer_id = c.customer_id
-                        WHERE date >= :a AND date <= :b ORDER by transaction_id DESC ");
+                    $sql = "SELECT s.*, c.customer_name FROM sales s
+                        LEFT JOIN customer c ON s.customer_id = c.customer_id";
+
+                    if($_SESSION['SESS_LAST_NAME'] == 'Operator') {
+                        $sql .= " INNER JOIN user u ON s.cashier = u.name AND u.position = 'Operator' ";
+                    }
+
+                    $sql .= " WHERE date >= :a AND date <= :b";
+                    
+                    if($_SESSION['SESS_LAST_NAME'] == 'Operator') {
+                        $sql .= sprintf(" AND u.name = '%s'", $_SESSION['SESS_FIRST_NAME']);
+                    }
+                    
+                    $sql .= " ORDER by transaction_id DESC";
+
+                    $result = $db->prepare($sql);
                     $result->bindParam(':a', $d1);
                     $result->bindParam(':b', $d2);
                     $result->execute();
