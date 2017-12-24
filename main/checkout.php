@@ -122,6 +122,7 @@
             $result = $db->prepare("SELECT * FROM customer WHERE customer_id = :customer_id");
             $result->execute(array('customer_id' => $_GET['customerId']));
             $row = $result->fetch();
+            $customer_name = $row['customer_name'];
 
             echo '<input type="hidden" name="credit_time" id="credit_time" value="' . $row['credit_time'] . '" />';
             echo '<input type="hidden" name="credit_cash" id="credit_cash" value="' . $row['credit_cash'] . '" />';
@@ -324,6 +325,15 @@
             }
         });
     }
+
+    <?php
+    if($customer_name == 'FDR') {
+    ?>
+        $('#cash').val(0);
+        $('#saveButton').prop('disabled', false).click();
+    <?php
+    }
+    ?>
 
 </script>
 
