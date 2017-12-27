@@ -169,9 +169,9 @@ $invoice   = $_GET['invoice'];
                     <div style="width: 100%; height: 190px;">
                         <div style="width: 900px; float: left;">
                             <center>
-                                <div style="font:bold 25px 'Aleo';">Sales Receipt</div>
-                                Inflight Dubai <br>
-                                Indoor SkyDiving <br> <br>
+                                <div style="font:bold 25px 'Aleo';">TAX Receipt</div>
+                                Inflight Dubai LLC <br>
+                                TRN:100225068400003 <br> <br>
                             </center>
                             <div>
                                 <?php

@@ -91,7 +91,7 @@
     <table cellpadding="3" cellspacing="0"
            style="font-family: arial; font-size: 12px;	text-align:left; width:100%;">
         <center>
-            <div style="font:bold 15px 'Aleo';">Tax Invoice <br> Inflight Dubai LLC <br>TRN:100225068400003</div>
+            <div style="font:bold 15px 'Aleo';">Tax Invoice <br> Inflight Dubai LLC <br> Margham-AlAin Road, Dubai,AE <br>TRN:100225068400003</div>
         </center>
         <tbody>
         <Br>
@@ -124,15 +124,20 @@
 
             $vat_percent = $row['percent'];
             $current_amount_w_discount = $row['amount'] - $discount_amount;
-            $vat_amount  = $vat_percent * $current_amount_w_discount / 100;
+            $vat_amount  = $vat_percent * $current_amount_w_discount / 105;
             $total_vat_amount += $vat_amount;
 
 
             ?>
+            <tr>
+            <td colspan="3"><u>Discrption_________________________Qty__AED </u></td>
+             <!--<td align="left">Qty</td>
+             <td align="right">AED<td>-->
+        </tr>
             <tr class="record">
-                <td><br><br><?php echo $row['name']; ?></td>
-                <td align="left"><br><br>x<?php echo $row['qty']; ?></td>
-                <td align="right"><br><br>
+                <td><br><?php echo $row['name']; ?></td>
+                <td align="left"><br>x<?php echo $row['qty']; ?></td>
+                <td align="right"><br>
                     <?php
                     echo number_format($row['amount'], 2);
                     ?>
@@ -202,7 +207,7 @@
         }
         ?>
         <tr>
-            <td colspan="2">VAT: &nbsp;
+            <td colspan="2">VAT (5%): &nbsp;
             </td>
             <td align="right">
                 <?php
