@@ -17,13 +17,6 @@ $from_flight_purchase_id = $_POST['fromFlightPurchaseId'];
 $is_class_session        = $_POST['chkClassSession'] == 1;
 $class_people            = $_POST['txtClassPeople'];
 
-//print_r($creditDuration);
-// print_r($useCredit);
-//print_r($_POST['useBalance']);
-
-//exit();
-
-
 if ($_POST['useBalance'] == 1 && $_POST['useCredit'] == 0) {
     // insert balance use
     $flight_purchase_id = insertFlightPurchase($invoice, $flight_offer_id, $customer_id, 1, 0, $class_people);

@@ -138,11 +138,14 @@ include('navfixed.php');
                                     flight_packages fpkg ON fo1.package_id = fpkg.id
                                   LEFT JOIN
                                     flight_bookings fb1 ON fb1.flight_purchase_id = fp1.id
+                                  INNER JOIN 
+                                    customer c ON fp1.customer_id = c.customer_id  
                                 WHERE fpkg.package_name LIKE 'FTF%'
                                   AND (s1.mode_of_payment IN ('Cash', 'Card', 'Online', 'Account', 'credit_time', 'credit_cash') 
                                        OR 
                                        s1.mode_of_payment_1 IN ('Cash', 'Card', 'Online', 'Account', 'credit_time', 'credit_cash'))
-                                  AND (s1.date >= :startDate AND s1.date <= :endDate)     
+                                  AND (s1.date >= :startDate AND s1.date <= :endDate)  
+                                  AND (c.customer_name != 'FDR' OR c.customer_name IS NULL)
                                 GROUP BY package_name";
 
                         $result = $db->prepare($sql);
@@ -177,11 +180,14 @@ include('navfixed.php');
                                     flight_packages fpkg ON fo1.package_id = fpkg.id
                                   LEFT JOIN
                                     flight_bookings fb1 ON fb1.flight_purchase_id = fp1.id
+                                  INNER JOIN 
+                                    customer c ON fp1.customer_id = c.customer_id   
                                 WHERE fpkg.id IN (6, 8)
                                   AND (s1.mode_of_payment IN ('Cash', 'Card', 'Online', 'Account', 'credit_time', 'credit_cash') 
                                        OR 
                                        s1.mode_of_payment_1 IN ('Cash', 'Card', 'Online', 'Account', 'credit_time', 'credit_cash'))
-                                  AND (s1.date >= :startDate AND s1.date <= :endDate)     
+                                  AND (s1.date >= :startDate AND s1.date <= :endDate)  
+                                  AND (c.customer_name != 'FDR' OR c.customer_name IS NULL)
                                 GROUP BY fpkg.id";
 
                         $result = $db->prepare($sql);
@@ -301,6 +307,7 @@ include('navfixed.php');
                         )
                           ) result
                         WHERE result.transaction_date >= :startDate AND result.transaction_date <= :endDate
+                        AND (result.customer_name != 'FDR' OR result.customer_name IS NULL)
                         ORDER BY
                           result.transaction_date DESC, result.invoice_number";
 

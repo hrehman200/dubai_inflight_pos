@@ -196,7 +196,8 @@ require_once('auth.php');
                         $sql .= sprintf(" AND u.name = '%s'", $_SESSION['SESS_FIRST_NAME']);
                     }
                     
-                    $sql .= " ORDER by transaction_id DESC";
+                    $sql .= " AND (c.customer_name != 'FDR' OR c.customer_name IS NULL)
+                    ORDER by transaction_id DESC";
 
                     $result = $db->prepare($sql);
                     $result->bindParam(':a', $d1);
