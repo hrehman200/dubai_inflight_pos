@@ -55,9 +55,7 @@ function getTimeslotsForFlightDate() {
         $percent_booked    = (int)floor($row['bookedDuration'] / 30 * 100);
         $percent_unbooked  = 100 - $percent_booked;
 
-        if ($counter > 0 && $counter % 6 == 0) {
-            $str .= '<br/><br/>';
-        }
+
 
         /*if ($percent_unbooked >= 100) {
             $background = "#51a351";
@@ -106,7 +104,7 @@ function getTimeslotsForFlightDate() {
             continue;
         }
 
-        $str .= sprintf('<span class="label lb-lg"
+        $temp_str = sprintf('<span class="label lb-lg"
             data-remaining-minutes="%d"
             data-unlocked="%d"
             data-toggle="tooltip"
@@ -117,9 +115,15 @@ function getTimeslotsForFlightDate() {
             padding:10px;
             color:white;">%s</span>', 30 - $row['bookedDuration'], $unlocked, $tooltip_title, $background, date("H:i", $tNow));
 
+        $str .= $temp_str;
+
         $tNow = strtotime("+{$slot_increment} minutes", $tNow);
 
         $counter++;
+
+        if ($counter > 0 && $counter % 6 == 0) {
+            $str .= '<br/><br/>';
+        }
     }
 
 
