@@ -168,7 +168,7 @@ $position = $_SESSION['SESS_LAST_NAME'];
                 <input type="hidden" name="useCredit" id="useCredit" value="0" />
 
                 <?php
-                $result = $db->prepare("SELECT * FROM flight_packages WHERE id = :package_id");
+                $result = $db->prepare("SELECT * FROM flight_packages WHERE id = :package_id AND status = 1");
                 $result->execute(array('package_id'=>$_GET['pkg_id']));
                 $row = $result->fetch();
                 ?>
@@ -177,7 +177,7 @@ $position = $_SESSION['SESS_LAST_NAME'];
                 <select class="span6" name="flightOffer" id="flightOffer">
                     <option value="0">Select a Flight Offer</option>
                     <?php
-                    $result = $db->prepare("SELECT * FROM flight_offers WHERE package_id = :package_id");
+                    $result = $db->prepare("SELECT * FROM flight_offers WHERE package_id = :package_id AND status = 1");
                     $result->execute(array('package_id'=>$_GET['pkg_id']));
                     for ($i = 0; $row = $result->fetch(); $i++) {
                         ?>
@@ -542,7 +542,7 @@ $position = $_SESSION['SESS_LAST_NAME'];
         }
 
         if(flightDate == '') {
-            $('#datePicker').datepicker('update', new Date().toJSON().slice(0,10))
+            $('#datePicker').datepicker('update', new Date())
                 .trigger('changeDate');
             return;
         }

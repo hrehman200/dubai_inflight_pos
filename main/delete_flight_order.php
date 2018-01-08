@@ -17,7 +17,11 @@ if ($flight_purchase_id > 0) {
     $str_query = str_replace('booking_id=' . $booking_id, "", $str_query);
 }
 
-$location = sprintf("flight_picker.php?%s", $str_query);
+if(isset($_SESSION['CUSTOMER_ID'])) {
+    $location = sprintf("store.php?%s", $str_query);
+} else {
+    $location = sprintf("flight_picker.php?%s", $str_query);
+}
 
 ?>
 <script type="text/javascript">

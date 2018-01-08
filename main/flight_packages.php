@@ -107,7 +107,7 @@ $position = $_SESSION['SESS_LAST_NAME'];
                 <div align="center">
                     <h3>Flight Packages</h3>
                 <?php
-                $packages = $db->prepare("SELECT * FROM flight_packages");
+                $packages = $db->prepare("SELECT * FROM flight_packages WHERE status = 1");
                 $packages->execute(array());
 
                 while($row = $packages->fetch()) {
