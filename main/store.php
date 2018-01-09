@@ -1,17 +1,7 @@
 <!DOCTYPE html>
 <head>
     <!-- js -->
-    <link href="src/facebox.css" media="screen" rel="stylesheet" type="text/css"/>
     <script src="js/jquery-1.12.4.min.js" type="text/javascript"></script>
-    <script src="src/facebox.js" type="text/javascript"></script>
-    <script type="text/javascript">
-        jQuery(document).ready(function ($) {
-            $('a[rel*=facebox]').facebox({
-                loadingImage: 'src/loading.gif',
-                closeImage: 'src/closelabel.png'
-            })
-        })
-    </script>
     <title>
         POS
     </title>
@@ -25,7 +15,7 @@
     ?>
 
     <link href="vendors/uniform.default.css" rel="stylesheet" media="screen">
-    <link href="css/bootstrap.css" rel="stylesheet">
+    <link href="css/bootstrap_dark.min.css" rel="stylesheet">
     <link rel="stylesheet" type="text/css" href="css/DT_bootstrap.css">
     <link rel="stylesheet" type="text/css" href="css/bootstrap-datepicker.standalone.css">
 
@@ -53,6 +43,12 @@
             margin-right: -34%;
             font-size: 14px;
         }
+
+        .btn-large {
+            margin: 10px 0;
+            width: 300px;
+            display: block;
+        }
     </style>
     <link href="css/bootstrap-responsive.css" rel="stylesheet">
 
@@ -66,39 +62,6 @@
     <script src="js/polyfiller.js" type="text/javascript"></script>
 
     <link href="../style.css" media="screen" rel="stylesheet" type="text/css"/>
-    <!--sa poip up-->
-
-
-    <script language="javascript" type="text/javascript">
-        /* Visit http://www.yaldex.com/ for full source code
-         and get more free JavaScript, CSS and DHTML scripts! */
-        var timerID = null;
-        var timerRunning = false;
-        function stopclock() {
-            if (timerRunning)
-                clearTimeout(timerID);
-            timerRunning = false;
-        }
-        function showtime() {
-            var now = new Date();
-            var hours = now.getHours();
-            var minutes = now.getMinutes();
-            var seconds = now.getSeconds()
-            var timeValue = "" + ((hours > 12) ? hours - 12 : hours)
-            if (timeValue == "0") timeValue = 12;
-            timeValue += ((minutes < 10) ? ":0" : ":") + minutes
-            timeValue += ((seconds < 10) ? ":0" : ":") + seconds
-            timeValue += (hours >= 12) ? " P.M." : " A.M."
-            document.clock.face.value = timeValue;
-            timerID = setTimeout("showtime()", 1000);
-            timerRunning = true;
-        }
-        function startclock() {
-            stopclock();
-            showtime();
-        }
-        window.onload = startclock;
-    </SCRIPT>
 
 </head>
 <body>
@@ -108,11 +71,6 @@
 <div class="container-fluid">
     <div class="row-fluid">
         <div class="span10 offset1">
-            <div class="contentheader">
-                <i class="icon-money"></i>
-                Book Flight
-            </div>
-
             <?php
             if(isset($_SESSION['CUSTOMER_FIRST_NAME'])) {
                 ?>
@@ -361,19 +319,29 @@
                         </tbody>
                     </table>
                     <br>
-                    <button class="btn btn-success btn-large btn-block btnCheckout">
-                        <i class="icon icon-save icon-large"></i>
-                        PROCEED
-                    </button>
+
+                    <div align="center">
+                        <button class="btn btn-success btn-large btn-block btnCheckout">
+                            <i class="icon icon-save icon-large"></i>
+                            PROCEED
+                        </button>
+                    </div>
+
                     <div class="clearfix"></div>
                 </div>
                 <?php
             } else {
                 ?>
-                <div align="center" class="">
-                    <h3>Register or Login to book a flight time</h3>
+                <div class="" align="center">
+                    <br>
+                    <img src="<?=BASE_URL?>main/img/inflight_logo.png" width="350" style="margin-left:90px;" /><br>
+
+                    <button class="btn btn-large btnRegister" data-link="customer_add.php">Signup (New Customer)</button>
+                    <button class="btn btn-large btnLogin" data-link="customer_login.php">Login</button>
+                    <button class="btn btn-large btnForgotPass" data-link="customer_forgotpass.php">Forgot Password</button>
+
                 </div>
-                <?php
+            <?php
             }
             ?>
 
@@ -422,6 +390,26 @@
     </div>
 </div>
 
+<div id="forgotpass-modal" class="modal fade" style="width: 350px; left:58%;">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+                <h4 class="modal-title">Forgot Password</h4>
+            </div>
+            <div class="modal-body">
+                <p>Loading...</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                <button type="button" id="btnSendPassReset" class="btn btn-primary" data-loading-text="<i>Submitting...</i>">
+                    Submit
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <form id="payment_form" action="https://testsecureacceptance.cybersource.com/pay" method="post">
     <input type="hidden" name="access_key" value="3eb56338e7c33eeb80e937d4c10421fc">
     <input type="hidden" name="profile_id" value="INFDU01"><!--Your Profile Id-->
@@ -445,23 +433,39 @@
     $('.btnCheckout').on('click', function(e) {
         e.preventDefault();
 
-        $.ajax({
-            url: 'api.php',
-            method: 'POST',
-            data: {
-                'call': 'getSignature',
-                'data': $('#payment_form').serializeArray(),
-            },
-            dataType: 'json',
-            success: function (response) {
-                if(response.success == 1) {
-                    $('#payment_form')
-                        .find('#signature').remove().end()
-                        .append('<input type="hidden" id="signature" name="signature" value="' + response.data + '" />')
-                        .submit();
+        var amount = $('#payment_form').find('input[name="amount"]').val();
+        if(amount > 0) {
+            $.ajax({
+                url: 'api.php',
+                method: 'POST',
+                data: {
+                    'call': 'getSignature',
+                    'data': $('#payment_form').serializeArray(),
+                },
+                dataType: 'json',
+                success: function (response) {
+                    if (response.success == 1) {
+                        $('#payment_form')
+                            .find('#signature').remove().end()
+                            .append('<input type="hidden" id="signature" name="signature" value="' + response.data + '" />')
+                            .submit();
+                    }
                 }
-            }
-        });
+            });
+        } else {
+            $.ajax({
+                method: 'POST',
+                dataType: 'json',
+                url: './store_savesales.php',
+                data: {
+                    req_reference_number: '<?=$_GET['invoice']?>',
+                    req_amount: 0
+                },
+                complete: function(response) {
+                    window.location.href = 'flight_preview.php?invoice=<?=$_GET['invoice']?>';
+                }
+            });
+        }
     });
 
     var _setMinutes = function () {
@@ -603,6 +607,7 @@
                     $('#spBookings').html(response.bookings);
                     $('#divCustomerDetails').html(response.data.table2);
                     $('#spCreditTime').html(response.credit_time);
+                    $('.btn-transfer').remove();
                 }
             }
         });
@@ -630,7 +635,7 @@
         }
 
         if (flightDate == '') {
-            $('#datePicker').datepicker('update', new Date().toJSON().slice(0, 10))
+            $('#datePicker').datepicker('update', new Date())
                 .trigger('changeDate');
             return;
         }
@@ -703,15 +708,21 @@
         }
     });
 
-    $('#btnRegister').on('click', function (e) {
+    $('.btnRegister').on('click', function (e) {
         e.preventDefault();
         $('#add-customer-modal').modal('show').find('.modal-body').load($(this).data('link'));
     });
 
-    $('#btnLogin').on('click', function (e) {
+    $('.btnLogin').on('click', function (e) {
         e.preventDefault();
         $('#login-customer-modal').modal('show').find('.modal-body').load($(this).data('link'));
     });
+
+    $('.btnForgotPass').on('click', function (e) {
+        e.preventDefault();
+        $('#forgotpass-modal').modal('show').find('.modal-body').load($(this).data('link'));
+    });
+
 
     $('#btnLogout').on('click', function (e) {
         e.preventDefault();
@@ -744,6 +755,24 @@
         });
     });
 
+    $('#btnSendPassReset').on('click', function (e) {
+        $(e.target).button('loading');
+        $.ajax({
+            url: 'api.php',
+            method: 'POST',
+            data: $('#forgotpass-form').serialize(),
+            dataType: 'json',
+            success: function (response) {
+                $(e.target).button('reset');
+                if (response.success == 1) {
+                    $('#forgotpass-modal .msg').html('<div class="alert alert-success">'+response.msg+'</div>');
+                } else {
+                    $('#forgotpass-modal .msg').html('<div class="alert alert-danger">'+response.msg+'</div>');
+                }
+            }
+        });
+    });
+
     $('#btnSaveCustomer').on('click', function (e) {
         $(e.target).button('loading');
 
@@ -768,7 +797,7 @@
                     $('#add-customer-modal .msg').removeClass('alert alert-danger').addClass('alert alert-success').html(response.msg);
                     setTimeout(function() {
                         $('#add-customer-modal').modal('hide');
-                        $('#btnLogin').click();
+                        $('.btnLogin').click();
                     }, 3000);
 
                     /*
@@ -1134,119 +1163,6 @@
         });
 
         dialog.on("shown.bs.modal", onDateTimeSlotPickerDialogShown);
-        dialog.modal('show');
-    }
-
-    function getTransferDialogHtml() {
-        return '<div> \
-                To:\
-                <select id="customerInDialog"></select> \
-                <input type="text" class="form-control" placeholder="Enter minutes to transfer" id="credit_to_transfer" /> \
-            </div>';
-    }
-
-    function showCreditTransferDialog(e) {
-        e.preventDefault();
-
-        var dialog = bootbox.dialog({
-            title: 'Transfer Credit',
-            show: false,
-            message: getTransferDialogHtml(),
-            buttons: {
-                btn1: {
-                    label: 'Transfer Credit',
-                    className: 'btn-success',
-                    callback: function (result) {
-
-                        if ($('#customerId').val() == '') {
-                            alert('Select customer to transfer credit from');
-                            return;
-                        }
-
-                        $.ajax({
-                            url: 'api.php',
-                            method: 'POST',
-                            data: {
-                                'call': 'transferCredit',
-                                'from_customer_id': $('#customerId').val(),
-                                'to_customer_id': $('#customerInDialog').val(),
-                                'credit_to_transfer': $('#credit_to_transfer').val()
-                            },
-                            dataType: 'json',
-                            success: function (response) {
-                                if (response.success == 1) {
-                                    location.reload(true);
-                                } else {
-                                    alert(response.msg);
-                                }
-                            }
-                        });
-                    }
-                }
-            }
-        });
-
-        dialog.on("shown.bs.modal", onTransferDialogShown);
-        dialog.modal('show');
-    }
-
-    function onTransferDialogShown() {
-        $.ajax({
-            url: 'api.php',
-            method: 'POST',
-            data: {
-                call: 'getCustomerOptions',
-                customerId: $('#customerId').val()
-            },
-            dataType: 'json',
-            success: function (response) {
-                if (response.success == 1) {
-                    $('#customerInDialog').html(response.data);
-                }
-            }
-        });
-    }
-
-    $('body').on('click', '.btnTransferCredit', showCreditTransferDialog);
-
-    function showBalanceTransferDialog(customerId, offerId, offerMinutes, fromFlightPurchaseId) {
-
-        var dialog = bootbox.dialog({
-            title: 'Transfer Balance',
-            show: false,
-            message: getTransferDialogHtml(),
-            buttons: {
-                btn1: {
-                    label: 'Transfer Balance',
-                    className: 'btn-success',
-                    callback: function (result) {
-
-                        $.ajax({
-                            url: 'api.php',
-                            method: 'POST',
-                            data: {
-                                'call': 'transferBalance',
-                                'from_customer_id': customerId,
-                                'to_customer_id': $('#customerInDialog').val(),
-                                'balance_to_transfer': $('#credit_to_transfer').val(),
-                                'flightOfferId': offerId,
-                                'fromFlightPurchaseId': fromFlightPurchaseId
-                            },
-                            dataType: 'json',
-                            success: function (response) {
-                                if (response.success == 1) {
-                                    location.reload(true);
-                                } else {
-                                    alert(response.msg);
-                                }
-                            }
-                        });
-                    }
-                }
-            }
-        });
-
-        dialog.on("shown.bs.modal", onTransferDialogShown);
         dialog.modal('show');
     }
 

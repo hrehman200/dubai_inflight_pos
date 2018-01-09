@@ -7,26 +7,26 @@ function getTimeslotsForFlightDate() {
 
     global $db;
 
-    $duration_required            = (int)$_POST['duration'];
+    $duration_required = (int)$_POST['duration'];
     $show_slots_with_minutes_only = $_POST['show_slots_with_minutes_only'];
-    $office_time_slots            = $_POST['office_time_slots'];
+    $office_time_slots = $_POST['office_time_slots'];
 
     $start = "00:00"/*date('i')>=30 ? date('H:30') : date('H:00')*/
     ;
-    $end   = "23:30";
+    $end = "23:30";
 
     if ($office_time_slots == 1) {
         $start = "09:30";
-        $end   = "19:00";
+        $end = "19:00";
     }
 
     $tStart = strtotime($start);
-    $tEnd   = strtotime($end);
-    $tNow   = $tStart;
+    $tEnd = strtotime($end);
+    $tNow = $tStart;
 
-    $slot_increment         = 30;
-    $counter                = 0;
-    $str                    = '';
+    $slot_increment = 30;
+    $counter = 0;
+    $str = '';
     $previous_loop_duration = 0;
 
     while ($tNow <= $tEnd) {
@@ -44,19 +44,18 @@ function getTimeslotsForFlightDate() {
         // if someone wants to book 40 minutes, then select 30 minutes in this block and 10 minutes in next block
         if ($row['bookedDuration'] > 30) {
             $previous_loop_duration = $row['bookedDuration'] - 30;
-            $row['bookedDuration']  = 30;
+            $row['bookedDuration'] = 30;
 
             // TODO: check here if next 10 minutes are available
 
         } else if ($previous_loop_duration > 0) {
-            $row['bookedDuration']  = $previous_loop_duration;
+            $row['bookedDuration'] = $previous_loop_duration;
             $previous_loop_duration = 0;
         }
 
         $unbooked_duration = 30 - $row['bookedDuration'];
-        $percent_booked    = (int)floor($row['bookedDuration'] / 30 * 100);
-        $percent_unbooked  = 100 - $percent_booked;
-
+        $percent_booked = (int)floor($row['bookedDuration'] / 30 * 100);
+        $percent_unbooked = 100 - $percent_booked;
 
 
         /*if ($percent_unbooked >= 100) {
@@ -77,11 +76,11 @@ function getTimeslotsForFlightDate() {
 
             $query = $db->prepare('SELECT * FROM flight_slots WHERE slot_time = :slotTime AND unlocked = 1');
             $query->execute(array(
-                ':slotTime'=>$slot_time
+                ':slotTime' => $slot_time
             ));
-            if($query->rowCount() > 0) {
+            if ($query->rowCount() > 0) {
                 $unlocked = 1;
-                if($duration_required <= $unbooked_duration) {
+                if ($duration_required <= $unbooked_duration) {
                     $background = "#51a351";
                 } else {
                     $background = "#ee5f5b";
@@ -92,7 +91,7 @@ function getTimeslotsForFlightDate() {
             }
         } else {
             // only show 1 color, no gradient
-            if($duration_required <= $unbooked_duration) {
+            if ($duration_required <= $unbooked_duration) {
                 $background = "#51a351";
             } else {
                 $background = "#ee5f5b";
@@ -137,12 +136,12 @@ function sendEmail($email, $subject, $body) {
     $mailin = new Mailin('https://api.sendinblue.com/v2.0', MAILIN_API_KEY);
 
     $data = array(
-        "to" => array($email=>"to whom!"),
-        "bcc" =>array("hrehman200@gmail.com"=>"bcc whom!"),
-        "from" => array("info@inflightdubai.com"=>'Inflight Dubai'),
+        "to" => array($email => "to whom!"),
+        "bcc" => array("hrehman200@gmail.com" => "bcc whom!"),
+        "from" => array("info@inflightdubai.com"),
         "subject" => $subject,
         "html" => $body,
-        "headers" => array("Content-Type"=> "text/html; charset=iso-8859-1")
+        "headers" => array("Content-Type" => "text/html; charset=iso-8859-1")
     );
 
     $response = $mailin->send_email($data);
@@ -155,8 +154,8 @@ function saveCustomer() {
 
     $post = $_POST;
 
-    foreach($post as $key=>$value) {
-        if(empty($post[$key])) {
+    foreach ($post as $key => $value) {
+        if (empty($post[$key])) {
             echo json_encode(array('success' => 0, 'msg' => 'Please fill all fields'));
             return;
         }
@@ -169,7 +168,7 @@ function saveCustomer() {
 
     $query = $db->prepare('SELECT customer_id FROM customer WHERE email = ?');
     $query->execute(array($post['email']));
-    if(count($query->fetchAll(PDO::FETCH_ASSOC)) > 0) {
+    if (count($query->fetchAll(PDO::FETCH_ASSOC)) > 0) {
         echo json_encode(array('success' => 0, 'msg' => 'The given email already exists in the system. Please login with that email'));
         return;
     }
@@ -181,7 +180,7 @@ function saveCustomer() {
         return;
     }
 
-    $time = date("YmdHis-").rand(1, 100);
+    $time = date("YmdHis-") . rand(1, 100);
     $new_image = $time . "." . $extension;
     $destination = "uploads/" . $new_image;
     $action = move_uploaded_file($_FILES['customer_img']['tmp_name'], $destination);
@@ -192,41 +191,45 @@ function saveCustomer() {
 
     $sql = "INSERT INTO customer
       (customer_name, address, gender, phone, email, password, nationality, resident_of, dob, 
-      image)
+      image, 
+      activate_token)
       VALUES
       (:customer_name, :address, :gender, :phone, :email, :password, :nationality, :resident_of, :dob, 
-      :image)";
+      :image,
+      :activate_token)";
 
     $query = $db->prepare($sql);
 
+    $link_token = sha1(uniqid('t-'));
+    $link = sprintf('<a href="%smain/activate.php?lt=%s">Activate</a>', BASE_URL, $link_token);
+
     $query->execute(array(
         ':customer_name' => $post['customer_name'],
-        ':address'       => $post['address'],
-        ':gender'        => $post['gender'],
-        ':phone'         => $post['phone'],
-        ':email'         => $post['email'],
-        ':password'      => md5($post['password']),
-        ':nationality'   => $post['nationality'],
-        ':resident_of'   => $post['resident_of'],
-        ':dob'           => $post['dob'],
-        ':image'         => $new_image
+        ':address' => $post['address'],
+        ':gender' => $post['gender'],
+        ':phone' => $post['phone'],
+        ':email' => $post['email'],
+        ':password' => sha1($post['password']),
+        ':nationality' => $post['nationality'],
+        ':resident_of' => $post['resident_of'],
+        ':dob' => $post['dob'],
+        ':image' => $new_image,
+        ':activate_token' => $link_token
     ));
 
     $customer_id = $db->lastInsertId();
 
-    $link_token = sha1(uniqid('t-'));
-    $link = sprintf('<a href="%smain/activate.php?lt=%s">Activate</a>', BASE_URL, $link_token);
     $body = '<div>
-        <img src="'.BASE_URL.'main/img/inflight_logo.png" width="200" />
+        <img src="' . BASE_URL . 'main/img/inflight_logo.png" width="200" />
         <p>Click on the following link to activate your account: </p>
-        <p>'.$link.'</p>
+        <p>' . $link . '</p>
     </div>';
-    sendEmail($post['email'], 'InflightDubai Account Activation', $body);
+    $response = sendEmail($post['email'], 'InflightDubai Account Activation', $body);
 
     echo json_encode(array(
         'success' => 1,
         'msg' => 'Customer profile created successfully.',
-        'data' => array('customer_id' => $customer_id, 'customer_name' => $post['customer_name'])
+        'data' => array('customer_id' => $customer_id, 'customer_name' => $post['customer_name'], 'mail' => $response)
     ));
 }
 
@@ -244,8 +247,8 @@ function searchCustomers() {
 
     echo json_encode(array(
         'success' => 1,
-        'msg'     => '',
-        'data'    => $result
+        'msg' => '',
+        'data' => $result
     ));
 }
 
@@ -257,8 +260,8 @@ function getCustomerOptions() {
     $result = $query->fetchAll(PDO::FETCH_ASSOC);
 
     $str = '';
-    foreach($result as $row) {
-        if($row['customer_id'] == $_POST['customerId']) {
+    foreach ($result as $row) {
+        if ($row['customer_id'] == $_POST['customerId']) {
             continue;
         }
         $str .= sprintf('<option value="%s">%s</option>', $row['customer_id'], $row['customer_name']);
@@ -266,15 +269,15 @@ function getCustomerOptions() {
 
     echo json_encode(array(
         'success' => 1,
-        'msg'     => '',
-        'data'    => $str
+        'msg' => '',
+        'data' => $str
     ));
 }
 
 
 function getDetailsForNewBookingModal() {
     global $db;
-    $post              = $_POST;
+    $post = $_POST;
     $unbooked_duration = 0;
 
     // if making another booking from same purchase
@@ -285,15 +288,15 @@ function getDetailsForNewBookingModal() {
         $query->execute(array(
             ':flightPurchaseId' => $post['flightPurchaseId']
         ));
-        $row            = $query->fetch();
+        $row = $query->fetch();
         $total_duration = $row['duration'];
 
         $query = $db->prepare("SELECT SUM(duration) AS booked_duration FROM flight_bookings WHERE flight_purchase_id=:flightPurchaseId");
         $query->execute(array(
             ':flightPurchaseId' => $post['flightPurchaseId']
         ));
-        $row               = $query->fetch();
-        $booked_duration   = $row['booked_duration'];
+        $row = $query->fetch();
+        $booked_duration = $row['booked_duration'];
         $unbooked_duration = $total_duration - $booked_duration;
     }
 
@@ -304,7 +307,7 @@ function getDetailsForNewBookingModal() {
                            AND fp.status = 1
                            AND fp.flight_offer_id = :flightOfferId ");
     $query->execute(array(
-        ':customerId'    => $post['customerId'],
+        ':customerId' => $post['customerId'],
         ':flightOfferId' => $post['flightOfferId']
     ));
 
@@ -313,19 +316,19 @@ function getDetailsForNewBookingModal() {
 
     // get balance only from paid invoices
     $result = $db->prepare("SELECT * FROM customer WHERE customer_id = :customer_id");
-    $result->execute(array('customer_id'=>$post['customerId']));
+    $result->execute(array('customer_id' => $post['customerId']));
     $row12 = $result->fetch();
 
     $data = array(
         'unbooked_duration' => (int)$unbooked_duration,
-        'balance'           => (int)$row['balance'],
-        'credit_time'       => (int)$row12['credit_time'],
+        'balance' => (int)$row['balance'],
+        'credit_time' => (int)$row12['credit_time'],
     );
 
     echo json_encode(array(
         'success' => 1,
-        'msg'     => '',
-        'data'    => $data
+        'msg' => '',
+        'data' => $data
     ));
 }
 
@@ -335,7 +338,7 @@ function getCustomerBookings() {
     $post = $_POST;
 
     // new query
-    if($post['date'] != '') {
+    if ($post['date'] != '') {
 
         $sql = "SELECT fo.offer_name, customer.customer_name, fb.flight_time, fb.duration AS booking_duration
                            FROM flight_purchases fp
@@ -348,7 +351,7 @@ function getCustomerBookings() {
             ':flightDate' => $post['date']
         );
 
-        if(isset($_SESSION['CUSTOMER_ID'])) {
+        if (isset($_SESSION['CUSTOMER_ID'])) {
             $sql .= " AND fp.customer_id = :customer_id";
             $arr_params[':customer_id'] = $_SESSION['CUSTOMER_ID'];
         }
@@ -382,7 +385,7 @@ function getCustomerBookings() {
         $table .= '</table>';
     }
 
-    if($post['customerId'] != '') {
+    if ($post['customerId'] != '') {
 
         $query2 = $db->prepare(" SELECT fo.offer_name, 
                            DATE_FORMAT(fp.created, '%D %M %Y') AS created, 
@@ -419,7 +422,7 @@ function getCustomerBookings() {
         </tr>';
     }
 
-    if($post['customerId'] != '') {
+    if ($post['customerId'] != '') {
 
         if ($query2->rowCount() > 0) {
             while ($row = $query2->fetch()) {
@@ -432,7 +435,7 @@ function getCustomerBookings() {
                         <td>%s</td>
                         <td>%d</td>
                         <td>%d <br/>' . ($row['minutes'] > 0 ? '<a href="javascript:;" onclick="deductFromBalance(' . $row['duration'] . ',' . $row['minutes'] . ',' . $row['id'] . ',' . $row['flight_purchase_id'] . ');" class="btn btn-small">Deduct</a>' : '') .
-                    ($row['minutes'] > 0 ? '<a href="javascript:;" onclick="showBalanceTransferDialog(' . $row['customer_id'] . ',' . $row['id'] . ',' . $row['minutes'] . ',' . $row['flight_purchase_id'] . ');" class="btn btn-small">Transfer</a>' : '')
+                    ($row['minutes'] > 0 ? '<a href="javascript:;" onclick="showBalanceTransferDialog(' . $row['customer_id'] . ',' . $row['id'] . ',' . $row['minutes'] . ',' . $row['flight_purchase_id'] . ');" class="btn btn-small btn-transfer">Transfer</a>' : '')
                     . '</td>
                         <td>%d <br/>' . ($row['credit_time'] > 0 ? '<a href="javascript:;" onclick="deductFromCreditTime(' . $row['customer_id'] . ',' . $row['credit_time'] . ',' . $row['id'] . ',' . $row['duration'] . ');" class="btn btn-small">Deduct</a>' : '') .
                     ($row['credit_time'] > 0 ? '<a href="javascript:;" class="btn btn-small btnTransferCredit">Transfer</a>' : '')
@@ -446,22 +449,22 @@ function getCustomerBookings() {
                     $row['minutes'], $row['credit_time']);
             }
         }
-    }else {
+    } else {
         $table2 .= '<tr><td colspan="8">No previous bookings found</td></tr>';
     }
     $table2 .= '</table>';
 
     $data = array(
         'success' => 1,
-        'msg'     => '',
-        'data'    => array('table'=>$table, 'table2'=>$table2)
+        'msg' => '',
+        'data' => array('table' => $table, 'table2' => $table2)
     );
 
-    if($post['date'] != '') {
+    if ($post['date'] != '') {
         $data['bookings'] = $query->rowCount();
     }
 
-    if($post['customerId'] > 0) {
+    if ($post['customerId'] > 0) {
         $query = $db->prepare(" SELECT credit_time FROM customer WHERE customer_id =:customerId");
         $query->execute(array(
             ':customerId' => $post['customerId']
@@ -478,7 +481,7 @@ function verifyPassword() {
 
     if (sha1($_POST['password']) == '17874598808386e981a2bc4723c9bd38c5de4982') {
 
-        $sql   = "INSERT INTO flight_slots VALUES (:slotTime, 1)";
+        $sql = "INSERT INTO flight_slots VALUES (:slotTime, 1)";
         $query = $db->prepare($sql);
         $query->execute(array(
             'slotTime' => $_POST['slotTime']
@@ -501,8 +504,8 @@ function getPONo() {
 
     echo json_encode(array(
         'success' => 1,
-        'msg'     => '',
-        'data'    => $result
+        'msg' => '',
+        'data' => $result
     ));
 }
 
@@ -518,8 +521,8 @@ function saveBusinessPlanRow() {
 
     $form_data = array(
         ':entityId' => $post['entityId'],
-        ':month'    => $post['month'],
-        ':year'     => $post['year']
+        ':month' => $post['month'],
+        ':year' => $post['year']
     );
     $query->execute($form_data);
     $result = $query->fetchAll(PDO::FETCH_ASSOC);
@@ -527,22 +530,22 @@ function saveBusinessPlanRow() {
     $form_data[':value'] = $post['value'];
 
     if (count($result) > 0) {
-        $sql   = "UPDATE business_plan_yearly SET value = :value
+        $sql = "UPDATE business_plan_yearly SET value = :value
           WHERE business_plan_entity_id = :entityId
             AND month = :month
             AND year = :year";
         $query = $db->prepare($sql);
         $query->execute($form_data);
     } else {
-        $sql   = "INSERT INTO business_plan_yearly VALUES (NULL, :entityId, :month, :year, :value)";
+        $sql = "INSERT INTO business_plan_yearly VALUES (NULL, :entityId, :month, :year, :value)";
         $query = $db->prepare($sql);
         $query->execute($form_data);
     }
 
     echo json_encode(array(
         'success' => 1,
-        'msg'     => '',
-        'data'    => $result
+        'msg' => '',
+        'data' => $result
     ));
 }
 
@@ -550,7 +553,7 @@ function rescheduleFlightTime() {
     global $db;
     $post = $_POST;
 
-    $sql   = "UPDATE flight_bookings SET flight_time = :flightTime
+    $sql = "UPDATE flight_bookings SET flight_time = :flightTime
           WHERE id = :flightBookingId";
     $query = $db->prepare($sql);
     $query->execute(array(
@@ -560,7 +563,7 @@ function rescheduleFlightTime() {
 
     echo json_encode(array(
         'success' => 1,
-        'msg'     => ''
+        'msg' => ''
     ));
 }
 
@@ -571,7 +574,7 @@ function cancelFlight() {
 
     echo json_encode(array(
         'success' => 1,
-        'msg'     => ''
+        'msg' => ''
     ));
 }
 
@@ -581,18 +584,18 @@ function transferCredit() {
 
     $query = $db->prepare('SELECT credit_time FROM customer WHERE customer_id = :customerId');
     $query->execute(array(
-       'customerId' => $post['customer_id']
+        'customerId' => $post['customer_id']
     ));
     $row = $query->fetch();
-    if($row['credit_time'] < $post['credit_to_transfer']) {
+    if ($row['credit_time'] < $post['credit_to_transfer']) {
         echo json_encode(array(
-           'success' => 0,
-           'msg' => 'Selected customer does not have mentioned credit'
+            'success' => 0,
+            'msg' => 'Selected customer does not have mentioned credit'
         ));
         return;
     }
 
-    $sql   = "UPDATE customer SET credit_time = credit_time + :creditToTransfer
+    $sql = "UPDATE customer SET credit_time = credit_time + :creditToTransfer
           WHERE customer_id = :toCustomerId";
     $query = $db->prepare($sql);
     $query->execute(array(
@@ -600,7 +603,7 @@ function transferCredit() {
         'toCustomerId' => $post['to_customer_id']
     ));
 
-    $sql   = "UPDATE customer SET credit_time = credit_time - :creditToTransfer
+    $sql = "UPDATE customer SET credit_time = credit_time - :creditToTransfer
           WHERE customer_id = :customerId";
     $query = $db->prepare($sql);
     $query->execute(array(
@@ -610,7 +613,7 @@ function transferCredit() {
 
     echo json_encode(array(
         'success' => 1,
-        'msg'     => ''
+        'msg' => ''
     ));
 }
 
@@ -622,7 +625,7 @@ function transferBalance() {
 
     echo json_encode(array(
         'success' => 1,
-        'msg'     => ''
+        'msg' => ''
     ));
 }
 
@@ -640,8 +643,8 @@ function getProductSubCategories() {
 
     echo json_encode(array(
         'success' => 1,
-        'msg'     => '',
-        'data'    => $result
+        'msg' => '',
+        'data' => $result
     ));
 }
 
@@ -652,7 +655,7 @@ function getProducts() {
     $result->execute();
 
     $arr = array();
-    while($row = $result->fetch()) {
+    while ($row = $result->fetch()) {
         $arr[] = array(
             'name' => $row['common_name']
         );
@@ -660,8 +663,8 @@ function getProducts() {
 
     echo json_encode(array(
         'success' => 1,
-        'msg'     => '',
-        'data'    => $arr
+        'msg' => '',
+        'data' => $arr
     ));
 }
 
@@ -676,8 +679,8 @@ function getGenders() {
     $genders = $result2->fetchAll(PDO::FETCH_ASSOC);
     echo json_encode(array(
         'success' => 1,
-        'msg'     => '',
-        'data'    => $genders
+        'msg' => '',
+        'data' => $genders
     ));
 }
 
@@ -695,8 +698,8 @@ function getSizes() {
     $sizes = $result2->fetchAll(PDO::FETCH_ASSOC);
     echo json_encode(array(
         'success' => 1,
-        'msg'     => '',
-        'data'    => $sizes
+        'msg' => '',
+        'data' => $sizes
     ));
 }
 
@@ -714,8 +717,8 @@ function getColors() {
     $colors = $result2->fetchAll(PDO::FETCH_ASSOC);
     echo json_encode(array(
         'success' => 1,
-        'msg'     => '',
-        'data'    => $colors
+        'msg' => '',
+        'data' => $colors
     ));
 }
 
@@ -732,18 +735,18 @@ function getProductId() {
         ':gender' => $_POST['gender'],
     ));
 
-    if($result->rowCount() > 0) {
+    if ($result->rowCount() > 0) {
         $row = $result->fetch();
         echo json_encode(array(
             'success' => 1,
-            'msg'     => '',
-            'data'    => $row['product_id']
+            'msg' => '',
+            'data' => $row['product_id']
         ));
     } else {
         echo json_encode(array(
             'success' => 0,
-            'msg'     => '',
-            'data'    => null
+            'msg' => '',
+            'data' => null
         ));
     }
 }
@@ -760,7 +763,7 @@ function saveDiscount() {
 
     global $db;
 
-    if(@$_POST['saving_flight'] == 1) {
+    if (@$_POST['saving_flight'] == 1) {
         $query = $db->prepare("UPDATE flight_purchases SET discount = ?, discount_id = ?
           WHERE id = ?");
 
@@ -772,7 +775,7 @@ function saveDiscount() {
 
     echo json_encode(array(
         'success' => 1,
-        'msg'     => ''
+        'msg' => ''
     ));
 }
 
@@ -781,25 +784,27 @@ function loginCustomer() {
 
     $query = $db->prepare('SELECT * FROM customer WHERE email = ? AND password = ? AND status = 1 LIMIT 1');
     $query->execute([
-        $_POST['email'], md5($_POST['pass'])
+        $_POST['email'], sha1($_POST['pass'])
     ]);
 
-    if($query->rowCount() > 0) {
+    if ($query->rowCount() > 0) {
 
         $row = $query->fetch();
 
+        session_destroy();
+        session_start();
         $_SESSION['CUSTOMER_FIRST_NAME'] = $row['customer_name'];
         $_SESSION['CUSTOMER_ID'] = $row['customer_id'];
 
         echo json_encode(array(
             'success' => 1,
-            'msg'     => ''
+            'msg' => ''
         ));
 
     } else {
         echo json_encode(array(
             'success' => 0,
-            'msg'     => 'Invalid credentials. Please try again.'
+            'msg' => 'Invalid credentials. Please try again.'
         ));
     }
 }
@@ -815,21 +820,60 @@ function logoutCustomer() {
     ));
 }
 
+function sendPassReset() {
+    global $db;
+
+    $query = $db->prepare('SELECT customer_id FROM customer WHERE email = ? LIMIT 1');
+    $query->execute([
+        $_POST['email']
+    ]);
+
+    if ($query->rowCount() > 0) {
+        $row = $query->fetch();
+
+        $token = uniqid('fpt-');
+        $hashed_token = sha1($token);
+
+        $query = $db->prepare('UPDATE customer SET forgot_pass_token = ? WHERE customer_id = ?');
+        $query->execute(array($hashed_token, $row['customer_id']));
+
+        $link = sprintf('<a href="%smain/forgotpass.php?fpt=%s">Reset Password</a>', BASE_URL, $token);
+        $body = '<div>
+            <img src="' . BASE_URL . 'main/img/inflight_logo.png" width="200" />
+            <p>Click on the following link to reset your password: </p>
+            <p>' . $link . '</p>
+        </div>';
+        $response = sendEmail($_POST['email'], 'Password Reset Instructions', $body);
+
+        echo json_encode(array(
+            'success' => 1,
+            'msg' => 'Password reset instruction sent to your email.',
+            'data' => $response
+        ));
+
+    } else {
+        echo json_encode(array(
+            'success' => 0,
+            'msg' => 'No record found of given email. Please register first.'
+        ));
+    }
+}
+
 function getSignature() {
 
     $params = [];
-    foreach($_REQUEST['data'] as $value) {
+    foreach ($_REQUEST['data'] as $value) {
         $params[$value['name']] = $value['value'];
     }
 
     $signature = sign($params);
-    echo json_encode(array('success'=>1, 'data'=>$signature));
+    echo json_encode(array('success' => 1, 'data' => $signature));
 }
 
 function getFlightOffers() {
     global $db;
 
-    if($_POST['packageId'] > 0) {
+    if ($_POST['packageId'] > 0) {
         $result = $db->prepare("SELECT * FROM flight_offers WHERE package_id = :package_id AND status = 1");
         $result->execute(array('package_id' => $_POST['packageId']));
 

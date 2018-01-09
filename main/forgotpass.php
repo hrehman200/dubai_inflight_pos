@@ -42,32 +42,60 @@
     <div class="row-fluid">
         <div class="span10 offset1">
             <div class="contentheader">
-                <i class="icon-certificate"></i>
-                Account Activation
+                <h3>Reset Password</h3>
             </div>
 
-            <div align="center">
-            <?php
-            if($_GET['lt'] != '') {
-                $sql = "SELECT customer_id FROM customer 
-                  WHERE activate_token IS NOT NULL AND activate_token = ? 
-                  LIMIT 1 ";
-                $query = $db->prepare($sql);
-                $query->execute(array($_GET['lt']));
-                $row = $query->fetch();
-                if($row) {
-                    $sql = 'UPDATE customer SET activate_token = NULL, status = 1 WHERE customer_id = ? ';
-                    $query = $db->prepare($sql);
-                    $query->execute(array($row['customer_id']));
+            <div>
+                <?php
+                if(isset($_POST['fpt'])) {
 
-                    echo '<h3>Your account is activated. You can now login to the site.</h3>';
-                } else {
-                    echo '<h3>Invalid link. Please make sure you came to this page via link we emailed you.</h3>';
+                    $response = [];
+                    if(strlen($_POST['password']) >= 6) {
+                        if($_POST['password'] == $_POST['new_password']) {
+
+                            $sql = "SELECT customer_id FROM customer 
+                                WHERE forgot_pass_token IS NOT NULL AND forgot_pass_token = ? 
+                                LIMIT 1 ";
+                            $query = $db->prepare($sql);
+                            $query->execute(array(sha1($_POST['fpt'])));
+                            $row = $query->fetch();
+
+                            if($row) {
+                                $query = $db->prepare('UPDATE customer SET password = ?, forgot_pass_token = ?, status=1 WHERE customer_id = ?');
+                                $query->execute(sha1($_POST['password']), '', $row['customer_id']);
+
+                                $response = array('success'=>1, 'msg'=>'Password reset successfully. You can now login.');
+
+                            } else {
+                                $response = array('success'=>0, 'msg'=>'Invalid token. Make sure you came to this page via link we sent to your email');
+                            }
+                        } else {
+                            $response = array('success'=>0, 'msg'=>'Password and Confirm Password does not match');
+                        }
+                    } else {
+                        $response = array('success'=>0, 'msg'=>'Please enter password of atleast 6 characters');
+                    }
                 }
-            } else {
-                echo '<h3>Invalid link</h3>';
-            }
-            ?>
+                ?>
+                <form action="<?= $_SERVER['PHP_SELF'] ?>" method="post">
+
+                    <?php
+                    if(array_key_exists('success', $response)) {
+                        echo sprintf('<div class="alert alert-%s">%s</div>', $response['success']==1?'success':'danger', $response['msg']);
+                    }
+                    ?>
+
+                    <input type="hidden" name="fpt" value="<?= $_REQUEST['fpt'] ?>"/>
+                    <div class="form-group">
+                        <label for="password">New Password:</label>
+                        <input type="password" class="form-control" id="password" name="password">
+                    </div>
+                    <div class="form-group">
+                        <label for="password">Confirm Password:</label>
+                        <input type="password" class="form-control" id="new_password" name="new_password">
+                    </div>
+                    <button type="submit" class="btn btn-default">Submit</button>
+                </form>
             </div>
 
         </div>
@@ -107,7 +135,8 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
-                <button type="button" id="btnLoginCustomer" class="btn btn-primary" data-loading-text="<i>Saving...</i>">
+                <button type="button" id="btnLoginCustomer" class="btn btn-primary"
+                        data-loading-text="<i>Saving...</i>">
                     Login
                 </button>
             </div>
@@ -124,7 +153,7 @@
         $('#add-customer-modal').modal('show').find('.modal-body').load($(this).data('link'));
     });
 
-    $('#btnLogin').on('click', function (e) {
+    $('.btnLogin').on('click', function (e) {
         e.preventDefault();
         $('#login-customer-modal').modal('show').find('.modal-body').load($(this).data('link'));
     });
@@ -134,7 +163,7 @@
         $.ajax({
             url: 'api.php',
             method: 'POST',
-            data: {call:'logoutCustomer'},
+            data: {call: 'logoutCustomer'},
             dataType: 'json',
             success: function (response) {
                 window.location.href = window.location.href;
@@ -155,7 +184,7 @@
                     window.location.href = 'store.php' + '<?='?invoice=RS-' . createRandomPassword()?>';
 
                 } else {
-                    $('#login-customer-modal .msg').html('<div class="alert alert-danger">'+response.msg+'</div>');
+                    $('#login-customer-modal .msg').html('<div class="alert alert-danger">' + response.msg + '</div>');
                 }
             }
         });
@@ -183,9 +212,9 @@
                 if (response.success == 1) {
 
                     $('#add-customer-modal .msg').removeClass('alert alert-danger').addClass('alert alert-success').html(response.msg);
-                    setTimeout(function() {
+                    setTimeout(function () {
                         $('#add-customer-modal').modal('hide');
-                        $('#btnLogin').click();
+                        $('.btnLogin').click();
                     }, 3000);
 
                     /*
