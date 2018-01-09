@@ -117,7 +117,7 @@ $secondPaymentOption = $_GET['paysecond'];
             ?>
 
             <center>
-                <div style="font:bold 15px 'Aleo';">Tax Invoice <br> Inflight Dubai LLC <br>TRN:100225068400003</div>
+                  <div style="font:bold 15px 'Aleo';">Tax Invoice <br> Inflight Dubai LLC <br>Al Ain Road E66, Margham Desert<br>Next to skydive, Dubai, AE<BR>TRN:100225068400003</div>
                 <br>
             </center>
 
@@ -171,7 +171,7 @@ $secondPaymentOption = $_GET['paysecond'];
                             $total_discount += $discount_amount;
 
                             $vat_percent = $row['percent'];
-                            $vat_amount  = $vat_percent * $current_price_w_discount / 100;
+                            $vat_amount  = $vat_percent * $current_price_w_discount / 105;
                             $total_vat_amount += $vat_amount;
 
                             if ($row['deduct_from_balance'] == 1) {
@@ -187,25 +187,17 @@ $secondPaymentOption = $_GET['paysecond'];
                 ?>
 
                 <tr>
-                    <td style="text-align: left;">Discount:</td>
-                    <td><?php
-                        echo "-" . number_format($discount_amount, 2);
-                    ?></td>
-                </tr>
-                <tr>
                     <td style="text-align: left;"><b>Total:</b></td>
                     <td><b><?php
                             echo number_format($total_cost - $discount_amount, 2);
                             ?></b></td>
                 </tr>
+
                 <tr>
-                    <td>VAT:
-                    </td>
-                    <td>
-                        <?php
-                        echo sprintf("%.2f", $total_vat_amount);
-                        ?>
-                    </td>
+                    <td style="text-align: left;">Discount:</td>
+                    <td><?php
+                        echo "-" . number_format($total_discount, 2);
+                    ?></td>
                 </tr>
 
                 <?php
@@ -249,6 +241,16 @@ $secondPaymentOption = $_GET['paysecond'];
                     <td><?php echo number_format($sales_row['changeVal']); ?></td>
                 </tr>
 
+                <tr>
+                    <td>VAT:
+                    </td>
+                    <td>
+                        <?php
+                        echo sprintf("%.2f", $total_vat_amount);
+                        ?>
+                    </td>
+                </tr>
+
                 </tbody>
             </table>
 
@@ -258,7 +260,8 @@ $secondPaymentOption = $_GET['paysecond'];
 
 <div id="footer">
     THANKS FOR YOUR PURCHASES<br>
-    WWW.INFLIGHTDUBAI.COM
+    WWW.INFLIGHTDUBAI.COM<br>
+    800-INFLIGHT (46354448)
 </div>
 
 </body>

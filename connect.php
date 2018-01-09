@@ -3,7 +3,7 @@
 error_reporting(E_ERROR | E_CORE_ERROR | E_COMPILE_ERROR);
 session_start();
 
-define('CLASS_SESSION_COST', 100);
+require_once (__DIR__. '/config.php');
 
 /* Database config */
 $db_host     = 'localhost';
@@ -21,7 +21,7 @@ require('flight_func.php');
 
 $called_from = basename($_SERVER['PHP_SELF']);
 
-if (!in_array($called_from, [
+/*if (!in_array($called_from, [
         'api.php',
         'connect.php',
         'flight_picker.php',
@@ -55,6 +55,6 @@ if (!in_array($called_from, [
         }
     }
 
-}
+}*/
 
 ?>

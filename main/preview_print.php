@@ -20,10 +20,14 @@
         body, section {
             padding: 0;
             margin: 0;
-            width: 76.2mm;
-            height: 152mm;
+            /*width: 76.2mm;
+            height: 152mm;*/
             page-break-after: avoid;
             page-break-before: avoid;
+        }
+
+        table {
+            position: relative;
         }
 
         #footer {
@@ -91,12 +95,12 @@
     <table cellpadding="3" cellspacing="0"
            style="font-family: arial; font-size: 12px;	text-align:left; width:100%;">
         <center>
-            <div style="font:bold 15px 'Aleo';">Tax Invoice <br> Inflight Dubai LLC <br> Margham-AlAin Road, Dubai,AE <br>TRN:100225068400003</div>
+            <div style="font:bold 15px 'Aleo';">Tax Invoice <br> Inflight Dubai LLC <br>Al Ain Road E66, Margham Desert<br>Next to skydive, Dubai, AE<BR>TRN:100225068400003</div>
         </center>
         <tbody>
         <Br>
         <tr>
-            <td colspan="3">Date :<?= date("M j, Y") ?></td>
+            <Br><td colspan="3">Date :<?= date("M j, Y") ?></td>
         </tr>
         <tr>
             <td colspan="3" style="padding-bottom:5px;"> Doc# :<?= $invoice ?></td>
@@ -129,11 +133,11 @@
 
 
             ?>
-            <tr>
-            <td colspan="3"><u>Discrption_________________________Qty__AED </u></td>
-             <!--<td align="left">Qty</td>
-             <td align="right">AED<td>-->
-        </tr>
+            <!--<tr>
+            <td colspan="3"><u>Description </u></td>
+             <td align="left">Qty</td>
+             <td align="right">Amount<td>
+        </tr>-->
             <tr class="record">
                 <td><br><?php echo $row['name']; ?></td>
                 <td align="left"><br>x<?php echo $row['qty']; ?></td>
@@ -156,12 +160,12 @@
         </tr>
         <tr>
             <td colspan="2"><strong
-                >Total:</strong> &nbsp;
+                >Amount Payable(AED):</strong> &nbsp;
             </td>
             <td align="right"><b>
                     <?php
                     $total_amount -= $discount_amount;
-                    echo number_format($firstPaymentOption, 2);
+                    echo number_format($total_amount, 2);
                     ?></b>
             </td>
         </tr>
@@ -221,6 +225,7 @@
     <div id="footer">
         THANKS FOR YOUR PURCHASES<br>
         WWW.INFLIGHTDUBAI.COM
+        800-INFLIGHT (46354448)
     </div>
 
 </section>

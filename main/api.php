@@ -1,5 +1,7 @@
 <?php
 include_once('../connect.php');
+include_once('include/security.php');
+include_once('include/Mailin.php');
 
 function getTimeslotsForFlightDate() {
 
@@ -130,15 +132,70 @@ function getTimeslotsForFlightDate() {
     echo json_encode(array('success' => 1, 'msg' => '', 'data' => $str));
 }
 
+function sendEmail($email, $subject, $body) {
+
+    $mailin = new Mailin('https://api.sendinblue.com/v2.0', MAILIN_API_KEY);
+
+    $data = array(
+        "to" => array($email=>"to whom!"),
+        "bcc" =>array("hrehman200@gmail.com"=>"bcc whom!"),
+        "from" => array("info@inflightdubai.com"=>'Inflight Dubai'),
+        "subject" => $subject,
+        "html" => $body,
+        "headers" => array("Content-Type"=> "text/html; charset=iso-8859-1")
+    );
+
+    $response = $mailin->send_email($data);
+    return $response;
+}
+
 function saveCustomer() {
+
     global $db;
 
     $post = $_POST;
 
+    foreach($post as $key=>$value) {
+        if(empty($post[$key])) {
+            echo json_encode(array('success' => 0, 'msg' => 'Please fill all fields'));
+            return;
+        }
+    }
+
+    if (!filter_var($post['email'], FILTER_VALIDATE_EMAIL)) {
+        echo json_encode(array('success' => 0, 'msg' => 'Please enter valid email'));
+        return;
+    }
+
+    $query = $db->prepare('SELECT customer_id FROM customer WHERE email = ?');
+    $query->execute(array($post['email']));
+    if(count($query->fetchAll(PDO::FETCH_ASSOC)) > 0) {
+        echo json_encode(array('success' => 0, 'msg' => 'The given email already exists in the system. Please login with that email'));
+        return;
+    }
+
+    $current_image = $_FILES['customer_img']['name'];
+    $extension = substr(strrchr($current_image, '.'), 1);
+    if (($extension != "jpg") && ($extension != "jpeg") && ($extension != "gif") && ($extension != "png") && ($extension != "bmp")) {
+        echo json_encode(array('success' => 0, 'msg' => 'Please upload image file'));
+        return;
+    }
+
+    $time = date("YmdHis-").rand(1, 100);
+    $new_image = $time . "." . $extension;
+    $destination = "uploads/" . $new_image;
+    $action = move_uploaded_file($_FILES['customer_img']['tmp_name'], $destination);
+    if (!$action) {
+        echo json_encode(array('success' => 0, 'msg' => 'Failed in uploading image'));
+        return;
+    }
+
     $sql = "INSERT INTO customer
-      (customer_name, address, gender, phone, email, password, nationality, resident_of, dob)
+      (customer_name, address, gender, phone, email, password, nationality, resident_of, dob, 
+      image)
       VALUES
-      (:customer_name, :address, :gender, :phone, :email, :password, :nationality, :resident_of, :dob)";
+      (:customer_name, :address, :gender, :phone, :email, :password, :nationality, :resident_of, :dob, 
+      :image)";
 
     $query = $db->prepare($sql);
 
@@ -148,15 +205,29 @@ function saveCustomer() {
         ':gender'        => $post['gender'],
         ':phone'         => $post['phone'],
         ':email'         => $post['email'],
-        ':password'      => $post['password'],
+        ':password'      => md5($post['password']),
         ':nationality'   => $post['nationality'],
         ':resident_of'   => $post['resident_of'],
-        ':dob'           => $post['dob']
+        ':dob'           => $post['dob'],
+        ':image'         => $new_image
     ));
 
     $customer_id = $db->lastInsertId();
 
-    echo json_encode(array('success' => 1, 'msg' => '', 'data' => array('customer_id' => $customer_id, 'customer_name' => $post['customer_name'])));
+    $link_token = sha1(uniqid('t-'));
+    $link = sprintf('<a href="%smain/activate.php?lt=%s">Activate</a>', BASE_URL, $link_token);
+    $body = '<div>
+        <img src="'.BASE_URL.'main/img/inflight_logo.png" width="200" />
+        <p>Click on the following link to activate your account: </p>
+        <p>'.$link.'</p>
+    </div>';
+    sendEmail($post['email'], 'InflightDubai Account Activation', $body);
+
+    echo json_encode(array(
+        'success' => 1,
+        'msg' => 'Customer profile created successfully.',
+        'data' => array('customer_id' => $customer_id, 'customer_name' => $post['customer_name'])
+    ));
 }
 
 function searchCustomers() {
@@ -265,16 +336,25 @@ function getCustomerBookings() {
 
     // new query
     if($post['date'] != '') {
-        $query = $db->prepare(" SELECT fo.offer_name, customer.customer_name, fb.flight_time, fb.duration AS booking_duration
+
+        $sql = "SELECT fo.offer_name, customer.customer_name, fb.flight_time, fb.duration AS booking_duration
                            FROM flight_purchases fp
                            INNER JOIN flight_offers fo ON fp.flight_offer_id = fo.id
                            INNER JOIN customer ON customer.customer_id = fp.customer_id
                            INNER JOIN flight_bookings fb ON fb.flight_purchase_id = fp.id
-                           WHERE fp.status = 1 AND date(fb.flight_time) = :flightDate");
+                           WHERE fp.status = 1 AND date(fb.flight_time) = :flightDate";
 
-        $query->execute(array(
+        $arr_params = array(
             ':flightDate' => $post['date']
-        ));
+        );
+
+        if(isset($_SESSION['CUSTOMER_ID'])) {
+            $sql .= " AND fp.customer_id = :customer_id";
+            $arr_params[':customer_id'] = $_SESSION['CUSTOMER_ID'];
+        }
+
+        $query = $db->prepare($sql);
+        $query->execute($arr_params);
 
         $table = '<table class="table table-striped table-bordered">
         <tr>
@@ -693,6 +773,74 @@ function saveDiscount() {
     echo json_encode(array(
         'success' => 1,
         'msg'     => ''
+    ));
+}
+
+function loginCustomer() {
+    global $db;
+
+    $query = $db->prepare('SELECT * FROM customer WHERE email = ? AND password = ? AND status = 1 LIMIT 1');
+    $query->execute([
+        $_POST['email'], md5($_POST['pass'])
+    ]);
+
+    if($query->rowCount() > 0) {
+
+        $row = $query->fetch();
+
+        $_SESSION['CUSTOMER_FIRST_NAME'] = $row['customer_name'];
+        $_SESSION['CUSTOMER_ID'] = $row['customer_id'];
+
+        echo json_encode(array(
+            'success' => 1,
+            'msg'     => ''
+        ));
+
+    } else {
+        echo json_encode(array(
+            'success' => 0,
+            'msg'     => 'Invalid credentials. Please try again.'
+        ));
+    }
+}
+
+function logoutCustomer() {
+    global $db;
+
+    session_destroy();
+    unset($_GET);
+
+    echo json_encode(array(
+        'success' => 1
+    ));
+}
+
+function getSignature() {
+
+    $params = [];
+    foreach($_REQUEST['data'] as $value) {
+        $params[$value['name']] = $value['value'];
+    }
+
+    $signature = sign($params);
+    echo json_encode(array('success'=>1, 'data'=>$signature));
+}
+
+function getFlightOffers() {
+    global $db;
+
+    if($_POST['packageId'] > 0) {
+        $result = $db->prepare("SELECT * FROM flight_offers WHERE package_id = :package_id AND status = 1");
+        $result->execute(array('package_id' => $_POST['packageId']));
+
+        $rows = $result->fetchAll(PDO::FETCH_ASSOC);
+    } else {
+        $rows = [];
+    }
+
+    echo json_encode(array(
+        'success' => 1,
+        'data' => $rows
     ));
 }
 

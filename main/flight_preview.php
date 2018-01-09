@@ -10,7 +10,6 @@ $secondPaymentOption = $_GET['paysecond'];
 <!DOCTYPE html>
 <html>
 <head>
-    <?php require_once('auth.php'); ?>
     <title>
         POS
     </title>
@@ -72,25 +71,6 @@ $secondPaymentOption = $_GET['paysecond'];
     }
 
     ?>
-    <?php
-    function formatMoney($number, $fractional = false) {
-        if ($fractional) {
-            $number = sprintf('%.2f', $number);
-        }
-        while (true) {
-            $replaced = preg_replace('/(-?\d+)(\d\d\d)/', '$1,$2', $number);
-            if ($replaced != $number) {
-                $number = $replaced;
-            } else {
-                break;
-            }
-        }
-
-        return $number;
-    }
-
-    ?>
-
 
     <script language="javascript" type="text/javascript">
         var timerID = null;
@@ -122,33 +102,46 @@ $secondPaymentOption = $_GET['paysecond'];
     </SCRIPT>
 <body>
 
-<?php include('navfixed.php'); ?>
+<?php
+if(!isset($_SESSION['CUSTOMER_FIRST_NAME'])) {
+    include('navfixed.php');
+} else {
+    include('store_top_nav.php');
+}
+?>
 
 <div class="container-fluid">
     <div class="row-fluid">
-        <div class="span2">
-            <div class="well sidebar-nav">
-                <ul class="nav nav-list">
-                    <?php
-                    include('side-menu.php');
-                    ?>
-                    <br><br><br><br><br><br>
-                    <li>
-                        <div class="hero-unit-clock">
 
-                            <form name="clock">
-                                <font color="white">Time: <br></font>&nbsp;<input style="width:150px;" type="submit"
-                                                                                  class="trans" name="face" value="">
-                            </form>
-                        </div>
-                    </li>
+        <?php
+        if(!isset($_SESSION['CUSTOMER_FIRST_NAME'])) {
+            ?>
+            <div class="span2">
+                <div class="well sidebar-nav">
+                    <ul class="nav nav-list">
+                        <?php
+                        include('side-menu.php');
+                        ?>
+                        <br><br><br><br><br><br>
+                        <li>
+                            <div class="hero-unit-clock">
 
-                </ul>
-            </div><!--/.well -->
-        </div><!--/span-->
+                                <form name="clock">
+                                    <font color="white">Time: <br></font>&nbsp;<input style="width:150px;" type="submit"
+                                                                                      class="trans" name="face"
+                                                                                      value="">
+                                </form>
+                            </div>
+                        </li>
 
-        <div class="span10">
+                    </ul>
+                </div><!--/.well -->
+            </div><!--/span-->
+            <?php
+        }
+        ?>
 
+        <div class="<?=(isset($_SESSION['CUSTOMER_ID']) ? 'span12' : 'span10')?>">
             <div class="content" id="content">
                 <div style="margin: 0 auto; padding: 20px; width: 900px; font-weight: normal;">
                     <div style="width: 100%; height: 190px;">
@@ -295,7 +288,7 @@ $secondPaymentOption = $_GET['paysecond'];
                                 <tr>
                                     <td colspan="4" style="text-align: right;"><?php
                                         echo $modeOfPayment;
-                                        ?></td>
+                                        ?>:</td>
                                     <td><?php
                                         echo number_format($firstPaymentOption, 2);
                                         ?></td>
@@ -306,7 +299,7 @@ $secondPaymentOption = $_GET['paysecond'];
                             ?>
 
                             <?php
-                            if ($modeOfPayment1 != -1) {
+                            if ($modeOfPayment1 != -1 && $modeOfPayment1 != '') {
                                 ?>
                                 <tr>
                                     <td colspan="4" style="text-align: right;"><?php
@@ -339,12 +332,27 @@ $secondPaymentOption = $_GET['paysecond'];
                     </div>
                 </div>
             </div>
+
+            <div align="center">
+
+                <?php
+                if(isset($_SESSION['CUSTOMER_ID'])) {
+                    ?>
+                    <a href="store.php" style="font-size:20px;">
+                        <button class="btn btn-primary btn-large"><i class="icon-backward"></i> Return to Store</button>
+                    </a>
+                    <?php
+                }
+                ?>
+
+                <a href="javascript:Clickheretoprint()" style="font-size:20px;">
+                    <button class="btn btn-success btn-large"><i class="icon-print"></i> Print</button>
+                </a>
+
+            </div>
         </div>
-        <div class="pull-right" style="margin-right:100px;">
-            <a href="javascript:Clickheretoprint()" style="font-size:20px;">
-                <button class="btn btn-success btn-large"><i class="icon-print"></i> Print</button>
-            </a>
-        </div>
+
+
     </div>
 </div>
 
