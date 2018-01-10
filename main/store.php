@@ -349,67 +349,6 @@
     </div>
 </div>
 
-<div id="add-customer-modal" class="modal fade" style="width: 350px; left:58%;">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
-                <h4 class="modal-title">Register</h4>
-            </div>
-            <div class="modal-body">
-                <p>Loading...</p>
-            </div>
-            <div class="modal-footer">
-                <div class="msg"></div>
-                <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
-                <button type="button" id="btnSaveCustomer" class="btn btn-primary" data-loading-text="<i>Saving...</i>">
-                    Save
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<div id="login-customer-modal" class="modal fade" style="width: 350px; left:58%;">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
-                <h4 class="modal-title">Login</h4>
-            </div>
-            <div class="modal-body">
-                <p>Loading...</p>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
-                <button type="button" id="btnLoginCustomer" class="btn btn-primary" data-loading-text="<i>Saving...</i>">
-                    Login
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<div id="forgotpass-modal" class="modal fade" style="width: 350px; left:58%;">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
-                <h4 class="modal-title">Forgot Password</h4>
-            </div>
-            <div class="modal-body">
-                <p>Loading...</p>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
-                <button type="button" id="btnSendPassReset" class="btn btn-primary" data-loading-text="<i>Submitting...</i>">
-                    Submit
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
-
 <form id="payment_form" action="https://testsecureacceptance.cybersource.com/pay" method="post">
     <input type="hidden" name="access_key" value="3eb56338e7c33eeb80e937d4c10421fc">
     <input type="hidden" name="profile_id" value="INFDU01"><!--Your Profile Id-->
@@ -607,7 +546,8 @@
                     $('#spBookings').html(response.bookings);
                     $('#divCustomerDetails').html(response.data.table2);
                     $('#spCreditTime').html(response.credit_time);
-                    $('.btn-transfer').remove();
+                    $('.btn-transfer, .btn-reschedule, .btn-cancel').remove();
+                    $('#divCustomerDetails table tr').find('th:eq(7), td:eq(7)').hide();
                 }
             }
         });
@@ -701,120 +641,10 @@
 
     $('#btnFlightHistory').on('click', function (e) {
         e.preventDefault();
-        var location = 'flight_history.php';
+        var location = 'store_flight_history.php';
         if ($('#customer').val() != '') {
-            location += '?customerId=' + $('#customerId').val() + '&customerName=' + $('#customer').val();
             window.location = location;
         }
-    });
-
-    $('.btnRegister').on('click', function (e) {
-        e.preventDefault();
-        $('#add-customer-modal').modal('show').find('.modal-body').load($(this).data('link'));
-    });
-
-    $('.btnLogin').on('click', function (e) {
-        e.preventDefault();
-        $('#login-customer-modal').modal('show').find('.modal-body').load($(this).data('link'));
-    });
-
-    $('.btnForgotPass').on('click', function (e) {
-        e.preventDefault();
-        $('#forgotpass-modal').modal('show').find('.modal-body').load($(this).data('link'));
-    });
-
-
-    $('#btnLogout').on('click', function (e) {
-        e.preventDefault();
-        $.ajax({
-            url: 'api.php',
-            method: 'POST',
-            data: {call:'logoutCustomer'},
-            dataType: 'json',
-            success: function (response) {
-                window.location.href = window.location.href;
-            }
-        });
-    });
-
-    $('#btnLoginCustomer').on('click', function (e) {
-        $(e.target).button('loading');
-        $.ajax({
-            url: 'api.php',
-            method: 'POST',
-            data: $('#login-form').serialize(),
-            dataType: 'json',
-            success: function (response) {
-                $(e.target).button('reset');
-                if (response.success == 1) {
-                    window.location.href = window.location.href + '<?='?invoice=RS-'.createRandomPassword()?>';
-                } else {
-                    $('#login-customer-modal .msg').html('<div class="alert alert-danger">'+response.msg+'</div>');
-                }
-            }
-        });
-    });
-
-    $('#btnSendPassReset').on('click', function (e) {
-        $(e.target).button('loading');
-        $.ajax({
-            url: 'api.php',
-            method: 'POST',
-            data: $('#forgotpass-form').serialize(),
-            dataType: 'json',
-            success: function (response) {
-                $(e.target).button('reset');
-                if (response.success == 1) {
-                    $('#forgotpass-modal .msg').html('<div class="alert alert-success">'+response.msg+'</div>');
-                } else {
-                    $('#forgotpass-modal .msg').html('<div class="alert alert-danger">'+response.msg+'</div>');
-                }
-            }
-        });
-    });
-
-    $('#btnSaveCustomer').on('click', function (e) {
-        $(e.target).button('loading');
-
-        var data = new FormData($('#register-form')[0]);
-
-        $.ajax({
-            url: 'api.php',
-            method: 'POST',
-            dataType: 'json',
-            type: "POST",
-            enctype: 'multipart/form-data',
-            data: data,
-            processData: false,
-            contentType: false,
-            cache: false,
-            timeout: 600000,
-
-            success: function (response) {
-                $(e.target).button('reset');
-                if (response.success == 1) {
-
-                    $('#add-customer-modal .msg').removeClass('alert alert-danger').addClass('alert alert-success').html(response.msg);
-                    setTimeout(function() {
-                        $('#add-customer-modal').modal('hide');
-                        $('.btnLogin').click();
-                    }, 3000);
-
-                    /*
-                    var _customer = response.data;
-                    $('#customer').append('<option value="' + _customer.customer_id + '" selected>' + _customer.customer_name + '</option>');*/
-
-                } else {
-                    $('#add-customer-modal .msg').removeClass('alert alert-success').addClass('alert alert-danger').html(response.msg);
-                }
-            }
-        });
-    });
-
-    $('#add-customer-modal').on('shown.bs.modal', function () {
-        $('#dob').datepicker({
-            format: 'yyyy-mm-dd'
-        });
     });
 
     $('#timeslots').on('click', '.label', function (e) {

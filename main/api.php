@@ -105,6 +105,12 @@ function getTimeslotsForFlightDate() {
             continue;
         }
 
+        // don't show online customers beyond office timings
+        if(isset($_SESSION['CUSTOMER_ID']) && ($tNow <= strtotime("09:30") || $tNow >= strtotime("19:00")) ) {
+            $tNow = strtotime("+{$slot_increment} minutes", $tNow);
+            continue;
+        }
+
         $temp_str = sprintf('<span class="label lb-lg"
             data-remaining-minutes="%d"
             data-unlocked="%d"
@@ -173,20 +179,22 @@ function saveCustomer() {
         return;
     }
 
-    $current_image = $_FILES['customer_img']['name'];
-    $extension = substr(strrchr($current_image, '.'), 1);
-    if (($extension != "jpg") && ($extension != "jpeg") && ($extension != "gif") && ($extension != "png") && ($extension != "bmp")) {
-        echo json_encode(array('success' => 0, 'msg' => 'Please upload image file'));
-        return;
-    }
+    if(strlen($_FILES['customer_img']['name']) > 0) {
+        $current_image = $_FILES['customer_img']['name'];
+        $extension = substr(strrchr($current_image, '.'), 1);
+        if (($extension != "jpg") && ($extension != "jpeg") && ($extension != "gif") && ($extension != "png") && ($extension != "bmp")) {
+            echo json_encode(array('success' => 0, 'msg' => 'Please upload image file'));
+            return;
+        }
 
-    $time = date("YmdHis-") . rand(1, 100);
-    $new_image = $time . "." . $extension;
-    $destination = "uploads/" . $new_image;
-    $action = move_uploaded_file($_FILES['customer_img']['tmp_name'], $destination);
-    if (!$action) {
-        echo json_encode(array('success' => 0, 'msg' => 'Failed in uploading image'));
-        return;
+        $time = date("YmdHis-") . rand(1, 100);
+        $new_image = $time . "." . $extension;
+        $destination = "uploads/" . $new_image;
+        $action = move_uploaded_file($_FILES['customer_img']['tmp_name'], $destination);
+        if (!$action) {
+            echo json_encode(array('success' => 0, 'msg' => 'Failed in uploading image'));
+            return;
+        }
     }
 
     $sql = "INSERT INTO customer
@@ -230,6 +238,99 @@ function saveCustomer() {
         'success' => 1,
         'msg' => 'Customer profile created successfully.',
         'data' => array('customer_id' => $customer_id, 'customer_name' => $post['customer_name'], 'mail' => $response)
+    ));
+}
+
+function saveProfile() {
+
+    global $db;
+
+    $post = $_POST;
+
+    foreach ($post as $key => $value) {
+        if(strpos($key, 'password') !== false) {
+            continue;
+        }
+
+        if (empty($post[$key])) {
+            echo json_encode(array('success' => 0, 'msg' => 'Please fill all fields'));
+            return;
+        }
+    }
+
+    if(strlen($_FILES['customer_img']['name']) > 0) {
+        $current_image = $_FILES['customer_img']['name'];
+        $extension = substr(strrchr($current_image, '.'), 1);
+        if (($extension != "jpg") && ($extension != "jpeg") && ($extension != "gif") && ($extension != "png") && ($extension != "bmp")) {
+            echo json_encode(array('success' => 0, 'msg' => 'Please upload image file'));
+            return;
+        }
+
+        $time = date("YmdHis-") . rand(1, 100);
+        $new_image = $time . "." . $extension;
+        $destination = "uploads/" . $new_image;
+        $action = move_uploaded_file($_FILES['customer_img']['tmp_name'], $destination);
+        if (!$action) {
+            echo json_encode(array('success' => 0, 'msg' => 'Failed in uploading image'));
+            return;
+        }
+    }
+
+    if($post['new_password'] != '') {
+
+        $query = $db->prepare('SELECT * FROM customer WHERE email = ? AND password = ? AND status = 1 LIMIT 1');
+        $query->execute([
+            $post['email'], sha1($post['password'])
+        ]);
+
+        if ($query->rowCount() > 0) {
+            if (strlen($post['new_password']) >= 6 && $post['new_password'] == $post['confirm_password']) {
+                $new_password = sha1($post['new_password']);
+            } else {
+                echo json_encode(array('success' => 0, 'msg' => 'Make sure new password contains atleast 6 characters && it matches confirm password'));
+                return;
+            }
+        } else {
+            echo json_encode(array('success' => 0, 'msg' => 'Invalid old password'));
+            return;
+        }
+    }
+
+    $sql = "UPDATE customer 
+        SET
+        customer_name=?, address=?, gender=?, phone=?, email=?, nationality=?, resident_of=?, dob=?";
+
+    $arr_params = array(
+        $post['customer_name'],
+        $post['address'],
+        $post['gender'],
+        $post['phone'],
+        $post['email'],
+        $post['nationality'],
+        $post['resident_of'],
+        $post['dob']
+    );
+
+    if($new_image) {
+        $sql .= ', image=?';
+        $arr_params[] = $new_image;
+    }
+
+    if($new_password) {
+        $sql .= ', password=?';
+        $arr_params[] = $new_password;
+    }
+
+    $sql .= ' WHERE customer_id = ? LIMIT 1';
+    $arr_params[] = $_SESSION['CUSTOMER_ID'];
+
+    $query = $db->prepare($sql);
+    $query->execute($arr_params);
+
+    echo json_encode(array(
+        'success' => 1,
+        'msg' => 'Customer profile updated successfully.',
+        'data' => array('')
     ));
 }
 
@@ -441,8 +542,8 @@ function getCustomerBookings() {
                     ($row['credit_time'] > 0 ? '<a href="javascript:;" class="btn btn-small btnTransferCredit">Transfer</a>' : '')
                     . '</td>
                         <td>
-                            <a href="javascript:;" onclick="reschedule(' . $row['flight_booking_id'] . ')" class="btn btn-small">Reschedule</a>
-                            <a href="javascript:;" onclick="cancelFlight(\'' . $row['flight_booking_id'] . '\', this)" class="btn btn-small">Cancel</a>
+                            <a href="javascript:;" onclick="reschedule(' . $row['flight_booking_id'] . ')" class="btn btn-small btn-reschedule">Reschedule</a>
+                            <a href="javascript:;" onclick="cancelFlight(\'' . $row['flight_booking_id'] . '\', this)" class="btn btn-small btn-cancel">Cancel</a>
                         </td>
                     </tr>', $row['customer_name'], $row['offer_name'], $row['created'], $row['flight_time'],
                     ($row['deduct_from_balance'] > 0) ? $row['booking_duration'] : $row['duration'],

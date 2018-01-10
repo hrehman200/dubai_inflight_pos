@@ -13,7 +13,7 @@ $secondPaymentOption = $_GET['paysecond'];
     <title>
         POS
     </title>
-    <link href="css/bootstrap.css" rel="stylesheet">
+    <link href="css/bootstrap<?=(isset($_SESSION['CUSTOMER_ID'])?'_dark.min':'')?>.css" rel="stylesheet">
 
     <link rel="stylesheet" type="text/css" href="css/DT_bootstrap.css">
 
@@ -144,25 +144,19 @@ if(!isset($_SESSION['CUSTOMER_FIRST_NAME'])) {
         <div class="<?=(isset($_SESSION['CUSTOMER_ID']) ? 'span12' : 'span10')?>">
             <div class="content" id="content">
                 <div style="margin: 0 auto; padding: 20px; width: 900px; font-weight: normal;">
-                    <div style="width: 100%; height: 190px;">
-                        <div style="width: 900px; float: left;">
-                            <center>
-                                <div style="font:bold 25px 'Aleo';">Sales Receipt</div>
-                                Inflight Dubai <br>
-                                Indoor SkyDiving <br> <br>
-                            </center>
-                            <div>
-                                <?php
-                                $resulta = $db->prepare("SELECT * FROM customer WHERE customer_name= :a");
-                                $resulta->bindParam(':a', $cname);
-                                $resulta->execute();
-                                for ($i = 0; $rowa = $resulta->fetch(); $i++) {
-                                    $address = $rowa['address'];
-                                    $contact = $rowa['contact'];
-                                }
-                                ?>
-                            </div>
+                    <div >
+                        <div align="center" style="margin-top:50px;">
+                            <img src="<?=BASE_URL?>main/img/inflight_logo.png" width="250" />
                         </div>
+                        <?php
+                        $resulta = $db->prepare("SELECT * FROM customer WHERE customer_name= :a");
+                        $resulta->bindParam(':a', $cname);
+                        $resulta->execute();
+                        for ($i = 0; $rowa = $resulta->fetch(); $i++) {
+                            $address = $rowa['address'];
+                            $contact = $rowa['contact'];
+                        }
+                        ?>
                         <div style="width: 136px; float: left; height: 70px;">
                             <table cellpadding="3" cellspacing="0"
                                    style="font-family: arial; font-size: 12px;text-align:left;width : 100%;">
