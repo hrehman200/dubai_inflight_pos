@@ -187,6 +187,11 @@ function saveCustomer() {
             return;
         }
 
+        if (round(($_FILES["customer_img"]["size"]/1024)/1024, 0) > 2) {
+            echo json_encode(array('success' => 0, 'msg' => "Image file size should not be greater than 2mb"));
+            return;
+        }
+
         $time = date("YmdHis-") . rand(1, 100);
         $new_image = $time . "." . $extension;
         $destination = "uploads/" . $new_image;
@@ -265,6 +270,12 @@ function saveProfile() {
             echo json_encode(array('success' => 0, 'msg' => 'Please upload image file'));
             return;
         }
+
+        if (round(($_FILES["customer_img"]["size"]/1024)/1024, 0) > 2) {
+            echo json_encode(array('success' => 0, 'msg' => "Image file size should not be greater than 2mb"));
+            return;
+        }
+
 
         $time = date("YmdHis-") . rand(1, 100);
         $new_image = $time . "." . $extension;
