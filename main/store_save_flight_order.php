@@ -15,7 +15,7 @@ $useCredit      = $_POST['useCredit'];
 
 $from_flight_purchase_id = $_POST['fromFlightPurchaseId'];
 $is_class_session        = $_POST['chkClassSession'] == 1;
-$class_people            = $_POST['txtClassPeople'];
+$class_people            = isset($_POST['txtClassPeople']) ? $_POST['txtClassPeople'] : 0;
 
 if ($_POST['useBalance'] == 1 && $_POST['useCredit'] == 0) {
     // insert balance use

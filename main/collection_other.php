@@ -123,7 +123,7 @@ include('navfixed.php');
                             <th>Minutes Liability</th>
                         </tr>
                         <?php
-                        $sql = "SELECT 
+                        $sql = "SELECT
                                 'FTF' AS package_name,
                                 SUM(s1.mop_amount+s1.mop1_amount) AS paid,
                                 SUM(fb1.duration) AS minutes_used,
@@ -241,7 +241,7 @@ include('navfixed.php');
                               s.mode_of_payment_1,
                               s.mop1_amount,
                               s.amount,
-                              s.discount,
+                              so.discount,
                               s.after_dis,
                               c.customer_name,
                               so.product_code,
@@ -250,7 +250,8 @@ include('navfixed.php');
                               so.qty,
                               0 AS units_remaining,
                               0 AS amount_liability,
-                              d.category AS discount_reason
+                              d.category AS discount_reason,
+                              0 AS class_people
                             FROM
                               sales s
                             INNER JOIN
@@ -280,7 +281,7 @@ include('navfixed.php');
                             s1.mode_of_payment_1,
                             s1.mop1_amount,
                             s1.amount,
-                            s1.discount,
+                            d.percent AS discount,
                             s1.after_dis,
                             c1.customer_name,
                             fo1.code AS product_code,
@@ -289,7 +290,8 @@ include('navfixed.php');
                             fo1.duration AS qty,
                             fo1.duration - fb1.duration AS units_remaining,
                             0 AS amount_liability,
-                            d.category AS discount_reason
+                            d.category AS discount_reason,
+                            fp1.class_people
                           FROM
                             sales s1
                           INNER JOIN
@@ -330,11 +332,13 @@ include('navfixed.php');
                             <th>Item Description</th>
                             <th>CURRENCY</th>
                             <th>Total</th>
+                            <th>Line Item Amount</th>
                             <th>1st Mode of Payment</th>
                             <th>Paid by 1st MOP</th>
                             <th>2nd Mode of Payment</th>
                             <th>Paid By 2nd MOP</th>
-                            <th>QUANTITY</th>
+                            <th>Quantity Total</th>
+                            <th>Quantity Line Item</th>
                             <th>UNIT_PRICE_Sold</th>
                             <th>Discount</th>
                             <th>DiscountReason</th>
@@ -366,6 +370,14 @@ include('navfixed.php');
                                 $remaining_units = $row['total_quantity'] - $row['quantity'];
                             }
 
+                            $unit_price = round($row['unit_price'], 2);
+                            $unit_discount = round($unit_price * $row['discount'] / 100, 2);
+                            $unit_price_after_discount = $unit_price - $unit_discount;
+
+                            if($row['class_people'] > 0) {
+                                $row['quantity'] = $row['class_people'];
+                            }
+
                             ?>
                             <tr>
                                 <td><?= $row['transaction_date'] ?></td>
@@ -384,21 +396,26 @@ include('navfixed.php');
                                 <td><?= $row['product_name'] ?></td>
                                 <td>AED</td>
                                 <td><?=$price_paid?></td>
+                                <td><?php
+                                    // line item cost
+                                    echo floor(($row['quantity']+$remaining_units) * $unit_price_after_discount);
+                                ?></td>
                                 <td><?= $row['mode_of_payment'] ?></td>
                                 <td><?= $row['mop_amount'] ?></td>
                                 <td><?= $row['mode_of_payment_1'] ?></td>
                                 <td><?= $row['mop1_amount'] ?></td>
+                                <td><?= $row['qty'] ?></td>
                                 <td><?= $row['quantity'] ?></td>
                                 <td><?php
-                                    $unit_price = round($row['unit_price'], 2);
-                                    $discount_value = round($unit_price * $row['discount'] / 100, 2);
-                                    $unit_price_after_discount = $unit_price - $discount_value;
                                     echo $unit_price_after_discount;
                                     ?></td>
 
                                 <td><?php
-                                    $line_item_discount = $discount_value * ($row['quantity'] + $row['units_remaining']) ;
-                                    echo $line_item_discount;
+                                    /*$line_item_discount = $unit_discount * ($row['quantity'] + $row['units_remaining']) ;
+                                    echo $line_item_discount;*/
+
+                                    echo $unit_discount;
+
                                     /*$discount_value = round($row['amount'] * $row['discount'] / 100, 2);
                                     echo $row['discount'].'%';*/
                                     ?></td>

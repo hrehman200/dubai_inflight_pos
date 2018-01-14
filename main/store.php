@@ -49,6 +49,20 @@
             width: 300px;
             display: block;
         }
+
+        .legend {
+            list-style: none;
+        }
+        .legend .legend-item {
+            float: left;
+            margin-left: 10px;
+        }
+        .legend-colorBox {
+            width: 1rem;
+            height: 1rem;
+            display: inline-block;
+            background-color: blue;
+        }
     </style>
     <link href="css/bootstrap-responsive.css" rel="stylesheet">
 
@@ -101,7 +115,7 @@
                     <select class="span6" name="pkg_id" id="pkg_id">
                         <option value="0">Select a Flight Package</option>
                         <?php
-                        $result = $db->prepare("SELECT * FROM flight_packages WHERE id IN (1,3,6)");
+                        $result = $db->prepare("SELECT * FROM flight_packages WHERE id IN (1,3)");
                         $result->execute();
                         for ($i = 0; $row = $result->fetch(); $i++) {
                             ?>
@@ -118,7 +132,8 @@
                     <select class="span6" name="flightOffer" id="flightOffer">
                         <option value="0">Select a Flight Offer</option>
                         <?php
-                        $result = $db->prepare("SELECT * FROM flight_offers WHERE package_id = :package_id AND status = 1");
+                        $result = $db->prepare("SELECT * FROM flight_offers WHERE package_id = :package_id AND status = 1 
+                            AND offer_name NOT LIKE '%Upsale%'");
                         $result->execute(array('package_id' => $_GET['pkg_id']));
                         for ($i = 0; $row = $result->fetch(); $i++) {
                             ?>
@@ -142,7 +157,7 @@
                     <br/><br/>
 
                     <div class="row">
-                        <div class="span3" style="margin-left:25px;">
+                        <div class="span3 divCalendar" style="margin-left:25px;">
                             <div id="datePicker"></div>
                             <button class="btn" id="btnBookings">Bookings (<span id="spBookings">0</span>)</button>
                         </div>
@@ -157,7 +172,7 @@
                                 minutes</label>
                             <br/>
 
-                            <input type="checkbox" id="chkClassSession" name="chkClassSession" class="class-session"
+                            <!--<input type="checkbox" id="chkClassSession" name="chkClassSession" class="class-session"
                                    value="1"/>
                             <label style="display: inline;" for="chkClassSession" class="class-session">Class Session
                                 <span id="spClassPeople" style="padding-left:25px;">
@@ -166,7 +181,7 @@
                                 <button id="btnAddClassSession" class="btn btn-small">Add</button>
                             </span>
                             </label>
-                            <br/>
+                            <br/>-->
 
                             <input type="checkbox" id="chkOnlyOfficeTimeSlots" name="chkOnlyOfficeTimeSlots" value="1"
                                    unchecked style='display : none;'/>
@@ -176,6 +191,18 @@
 
                             <div id="timeslots">
                             </div>
+
+                            <ul class="legend">
+                                <li class="legend-item">
+                                    <span class="legend-colorBox" style="background-color: green;"></span>
+                                    <span class="Legend-label">Unbooked</span>
+                                </li>
+                                <li class="legend-item">
+                                    <span class="legend-colorBox" style="background-color: red;"></span>
+                                    <span class="Legend-label">Booked</span>
+                                </li>
+                            </ul>
+
                         </div>
 
                         <h4>Customer's booking preview/balance</h4>
@@ -715,12 +742,17 @@
 
     var _bookSlot = function (flightTime) {
 
+        if($('#flightOffer').val() == 0) {
+            bootbox.alert('Please select Flight Package and Offer first');
+            return;
+        }
+
         $('#flightTime').val(flightTime);
 
         var duration = $('#flightOffer option:selected').data('duration');
         $('#offerDuration').val(duration);
 
-        if ($('#flightOffer option:selected').text().indexOf('FTF') != -1) {
+        if ($('#flightOffer option:selected').text().indexOf('FTF') != -1 ) {
             var minutes = $('#flightOffer option:selected').data('duration');
             $('#flightPurchaseId').val('');
             $('#flightDuration').val(minutes);

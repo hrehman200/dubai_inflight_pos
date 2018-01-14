@@ -986,7 +986,8 @@ function getFlightOffers() {
     global $db;
 
     if ($_POST['packageId'] > 0) {
-        $result = $db->prepare("SELECT * FROM flight_offers WHERE package_id = :package_id AND status = 1");
+        $result = $db->prepare("SELECT * FROM flight_offers WHERE package_id = :package_id AND status = 1
+        AND offer_name NOT LIKE '%Upsale%'");
         $result->execute(array('package_id' => $_POST['packageId']));
 
         $rows = $result->fetchAll(PDO::FETCH_ASSOC);

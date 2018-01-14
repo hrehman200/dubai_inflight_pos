@@ -162,7 +162,7 @@ $row = $query->fetch();
                 data: {call:'logoutCustomer'},
                 dataType: 'json',
                 success: function (response) {
-                    window.location.href = window.location.href;
+                    window.location.href = 'store.php';
                 }
             });
         });
@@ -177,7 +177,7 @@ $row = $query->fetch();
                 success: function (response) {
                     $(e.target).button('reset');
                     if (response.success == 1) {
-                        window.location.href = window.location.href + '<?='?invoice=RS-'.createRandomPassword()?>';
+                        window.location.href = 'store.php<?='?invoice=RS-'.createRandomPassword()?>';
                     } else {
                         $('#login-customer-modal .msg').html('<div class="alert alert-danger">'+response.msg+'</div>');
                     }
