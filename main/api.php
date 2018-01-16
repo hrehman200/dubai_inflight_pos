@@ -11,8 +11,7 @@ function getTimeslotsForFlightDate() {
     $show_slots_with_minutes_only = $_POST['show_slots_with_minutes_only'];
     $office_time_slots = $_POST['office_time_slots'];
 
-    $start = "00:00"/*date('i')>=30 ? date('H:30') : date('H:00')*/
-    ;
+    $start = "00:00"/*date('i')>=30 ? date('H:30') : date('H:00')*/;
     $end = "23:30";
 
     if ($office_time_slots == 1) {
@@ -29,9 +28,19 @@ function getTimeslotsForFlightDate() {
     $str = '';
     $previous_loop_duration = 0;
 
+    $current_timestamp = strtotime(date("Y-m-d H:i:s"));
+
     while ($tNow <= $tEnd) {
 
         $slot_time = $_POST['flight_date'] . ' ' . date("H:i:00", $tNow);
+
+        if(isset($_SESSION['CUSTOMER_ID'])) {
+            $slot_timestamp = strtotime($slot_time);
+            if ($current_timestamp > $slot_timestamp) {
+                $tNow = strtotime("+{$slot_increment} minutes", $tNow);
+                continue;
+            }
+        }
 
         $query = $db->prepare("SELECT SUM(duration) AS bookedDuration FROM flight_bookings
               WHERE flight_time = :flight_time");
@@ -154,6 +163,26 @@ function sendEmail($email, $subject, $body) {
     return $response;
 }
 
+function validPhone($phone_no) {
+
+    $isPhoneNum = false;
+
+    //eliminate every char except 0-9
+    $justNums = preg_replace("/[^0-9]/", '', $phone_no);
+
+    //eliminate leading 0 if its there
+    if (strlen($justNums) == 11) {
+        $justNums = preg_replace("/^0/", '',$justNums);
+    }
+
+    //if we have 10 digits left, it's probably valid.
+    if (strlen($justNums) == 10) {
+        $isPhoneNum = true;
+    }
+
+    return $isPhoneNum;
+}
+
 function saveCustomer() {
 
     global $db;
@@ -169,6 +198,11 @@ function saveCustomer() {
 
     if (!filter_var($post['email'], FILTER_VALIDATE_EMAIL)) {
         echo json_encode(array('success' => 0, 'msg' => 'Please enter valid email'));
+        return;
+    }
+
+    if (!validPhone($post['phone'])) {
+        echo json_encode(array('success' => 0, 'msg' => 'Please enter valid phone number of 10 digits'));
         return;
     }
 
@@ -217,7 +251,7 @@ function saveCustomer() {
     $link = sprintf('<a href="%smain/activate.php?lt=%s">Activate</a>', BASE_URL, $link_token);
 
     $query->execute(array(
-        ':customer_name' => $post['customer_name'],
+        ':customer_name' => $post['first_name'].' '.$post['last_name'],
         ':address' => $post['address'],
         ':gender' => $post['gender'],
         ':phone' => $post['phone'],
@@ -225,7 +259,7 @@ function saveCustomer() {
         ':password' => sha1($post['password']),
         ':nationality' => $post['nationality'],
         ':resident_of' => $post['resident_of'],
-        ':dob' => $post['dob'],
+        ':dob' => $post['dob-year'].'-'.$post['dob-month'].'-'.$post['dob-day'],
         ':image' => $new_image,
         ':activate_token' => $link_token
     ));
@@ -241,7 +275,7 @@ function saveCustomer() {
 
     echo json_encode(array(
         'success' => 1,
-        'msg' => 'Customer profile created successfully.',
+        'msg' => 'Thank you for registration, please check your email to activate your account.',
         'data' => array('customer_id' => $customer_id, 'customer_name' => $post['customer_name'], 'mail' => $response)
     ));
 }
@@ -261,6 +295,11 @@ function saveProfile() {
             echo json_encode(array('success' => 0, 'msg' => 'Please fill all fields'));
             return;
         }
+    }
+
+    if (!validPhone($post['phone'])) {
+        echo json_encode(array('success' => 0, 'msg' => 'Please enter valid phone number of 10 digits'));
+        return;
     }
 
     if(strlen($_FILES['customer_img']['name']) > 0) {
@@ -312,14 +351,14 @@ function saveProfile() {
         customer_name=?, address=?, gender=?, phone=?, email=?, nationality=?, resident_of=?, dob=?";
 
     $arr_params = array(
-        $post['customer_name'],
+        $post['first_name'].' '.$post['last_name'],
         $post['address'],
         $post['gender'],
         $post['phone'],
         $post['email'],
         $post['nationality'],
         $post['resident_of'],
-        $post['dob']
+        $post['dob-year'].'-'.$post['dob-month'].'-'.$post['dob-day']
     );
 
     if($new_image) {

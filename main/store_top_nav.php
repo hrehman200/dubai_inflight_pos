@@ -225,10 +225,6 @@ $row = $query->fetch();
                     if (response.success == 1) {
 
                         $('#add-customer-modal .msg').removeClass('alert alert-danger').addClass('alert alert-success').html(response.msg);
-                        setTimeout(function() {
-                            $('#add-customer-modal').modal('hide');
-                            $('.btnLogin').click();
-                        }, 3000);
 
                     } else {
                         $('#add-customer-modal .msg').removeClass('alert alert-success').addClass('alert alert-danger').html(response.msg);

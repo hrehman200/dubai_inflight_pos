@@ -105,13 +105,6 @@
                     <input type="hidden" name="creditDuration" id="creditDuration" value=""/>
                     <input type="hidden" name="useCredit" id="useCredit" value="0"/>
 
-                    <?php
-                    $result = $db->prepare("SELECT * FROM flight_packages WHERE id = :package_id AND status = 1");
-                    $result->execute(array('package_id' => $_GET['pkg_id']));
-                    $row = $result->fetch();
-                    ?>
-                    <h4 id="pkgName"><?php echo $row['package_name']; ?></h4>
-
                     <select class="span6" name="pkg_id" id="pkg_id">
                         <option value="0">Select a Flight Package</option>
                         <?php
@@ -119,7 +112,7 @@
                         $result->execute();
                         for ($i = 0; $row = $result->fetch(); $i++) {
                             ?>
-                            <option value="<?php echo $row['id']; ?>" <?php echo $_GET['pkg_id'] == $row['id'] ? 'selected' : '' ?> >
+                            <option value="<?php echo $row['id']; ?>" <?php /*echo $_GET['pkg_id'] == $row['id'] ? 'selected' : ''*/ ?> >
                                 <?php echo $row['package_name']; ?>
                             </option>
                             <?php
@@ -138,9 +131,9 @@
                         for ($i = 0; $row = $result->fetch(); $i++) {
                             ?>
                             <option value="<?php echo $row['id']; ?>"
-                                    data-duration="<?php echo $row['duration']; ?>" <?php echo $_GET['offer_id'] == $row['id'] ? 'selected' : '' ?> >
+                                    data-duration="<?php echo $row['duration']; ?>" <?php /*echo $_GET['offer_id'] == $row['id'] ? 'selected' : ''*/ ?> >
                                 <?php echo $row['offer_name']; ?> - <?php echo $row['code']; ?>
-                                - <?php echo $row['duration']; ?> Minutes - AED<?php echo $row['price']; ?>
+                                - AED<?php echo $row['price']; ?>
                             </option>
                             <?php
                         }
@@ -157,56 +150,60 @@
                     <br/><br/>
 
                     <div class="row">
-                        <div class="span3 divCalendar" style="margin-left:25px;">
-                            <div id="datePicker"></div>
-                            <button class="btn" id="btnBookings">Bookings (<span id="spBookings">0</span>)</button>
+                        <div class="span3" style="margin-left:25px;">
+                            <div class="divCalendar">
+                                <div id="datePicker"></div>
+                                <button class="btn" id="btnBookings">Bookings (<span id="spBookings">0</span>)</button>
+                            </div>
                         </div>
 
                         <div class="span5">
-                            <input type="checkbox" id="chkOnlySlotsWithDuration" name="chkOnlySlotsWithDuration"
-                                   value="1"
-                                   checked/>
-                            <label style="display: inline;" for="chkOnlySlotsWithDuration"><input type="text"
-                                                                                                  class="input-mini"
-                                                                                                  id="txtOfferMinutes"/>
-                                minutes</label>
-                            <br/>
+                            <div class="divCalendar">
+                                <input type="checkbox" id="chkOnlySlotsWithDuration" name="chkOnlySlotsWithDuration"
+                                       value="1"
+                                       checked class="hidden"/>
+                                <label style="display: inline;" for="chkOnlySlotsWithDuration">
+                                    <input type="text" class="input-mini" id="txtOfferMinutes" disabled />
+                                    minutes</label>
+                                <br/>
 
-                            <!--<input type="checkbox" id="chkClassSession" name="chkClassSession" class="class-session"
-                                   value="1"/>
-                            <label style="display: inline;" for="chkClassSession" class="class-session">Class Session
-                                <span id="spClassPeople" style="padding-left:25px;">
-                                <input type="text" class="input-mini" id="txtClassPeople" name="txtClassPeople"
-                                       value="0"/> people
-                                <button id="btnAddClassSession" class="btn btn-small">Add</button>
-                            </span>
-                            </label>
-                            <br/>-->
+                                <!--<input type="checkbox" id="chkClassSession" name="chkClassSession" class="class-session"
+                                       value="1"/>
+                                <label style="display: inline;" for="chkClassSession" class="class-session">Class Session
+                                    <span id="spClassPeople" style="padding-left:25px;">
+                                    <input type="text" class="input-mini" id="txtClassPeople" name="txtClassPeople"
+                                           value="0"/> people
+                                    <button id="btnAddClassSession" class="btn btn-small">Add</button>
+                                </span>
+                                </label>
+                                <br/>-->
 
-                            <input type="checkbox" id="chkOnlyOfficeTimeSlots" name="chkOnlyOfficeTimeSlots" value="1"
-                                   unchecked style='display : none;'/>
-                            <label style="display: none;" for="chkOnlyOfficeTimeSlots">Show office time slots
-                                only</label>
-                            <br/>
+                                <input type="checkbox" id="chkOnlyOfficeTimeSlots" name="chkOnlyOfficeTimeSlots" value="1"
+                                       unchecked style='display : none;'/>
+                                <label style="display: none;" for="chkOnlyOfficeTimeSlots">Show office time slots
+                                    only</label>
+                                <br/>
 
-                            <div id="timeslots">
+                                <div id="timeslots">
+                                </div>
+
+                                <ul class="legend">
+                                    <li class="legend-item">
+                                        <span class="legend-colorBox" style="background-color: green;"></span>
+                                        <span class="Legend-label">Unbooked</span>
+                                    </li>
+                                    <li class="legend-item">
+                                        <span class="legend-colorBox" style="background-color: red;"></span>
+                                        <span class="Legend-label">Booked</span>
+                                    </li>
+                                </ul>
+
                             </div>
-
-                            <ul class="legend">
-                                <li class="legend-item">
-                                    <span class="legend-colorBox" style="background-color: green;"></span>
-                                    <span class="Legend-label">Unbooked</span>
-                                </li>
-                                <li class="legend-item">
-                                    <span class="legend-colorBox" style="background-color: red;"></span>
-                                    <span class="Legend-label">Booked</span>
-                                </li>
-                            </ul>
 
                         </div>
 
-                        <h4>Customer's booking preview/balance</h4>
                         <div class="span3" id="divCustomerDetails">
+                            <h4>Returns and Experience Flyer’s rates, please call 800Inflight or send email at (info@inflightdubai.com)</h4>
                         </div>
                     </div>
 
@@ -324,11 +321,11 @@
                                     <td></td>
                                     <td><?= $row2['duration'] ?></td>
                                     <td>
-                                        <a href="delete_flight_order.php?booking_id=<?php echo $row2['id'] . "&" . $str_query; ?>">
+                                        <!--<a href="delete_flight_order.php?booking_id=<?php /*echo $row2['id'] . "&" . $str_query; */?>">
                                             <button class="btn btn-mini btn-warning"><i class="icon icon-remove"></i>
                                                 Cancel
                                             </button>
-                                        </a></td>
+                                        </a>--></td>
                                 </tr>
                                 <?php
                             }
@@ -459,8 +456,7 @@
                     for(var i in offers) {
                         $('#flightOffer').append('<option value="'+offers[i].id+'" \
                         data-duration="'+offers[i].duration+'" '+(offers[i].id == "<?=$_GET["offer_id"]?>" ? "selected":"")+' > \
-                            '+offers[i].offer_name+' - '+offers[i].code+' - ' + offers[i].duration +
-                            ' Minutes - AED'+offers[i].price+'\
+                            '+offers[i].offer_name+' - '+offers[i].code+' - AED'+offers[i].price+'\
                             </option>');
                     }
                 }
@@ -482,6 +478,9 @@
         _setMinutes();
         if ($(this).val() == 0) {
             $('#timeslots').html('');
+            $('.divCalendar').hide();
+        } else {
+            $('.divCalendar').show();
         }
 
         if ($('#flightOffer option:selected').text().indexOf('FTF') != -1) {
@@ -526,7 +525,7 @@
     $("#customer").typeahead({
         onSelect: function (item) {
             $('#customerId').val(item.value);
-            _getCustomerBookings(item.value);
+            //_getCustomerBookings(item.value);
         },
         ajax: {
             url: "api.php",
@@ -553,7 +552,7 @@
         .on('change', function (e) {
             if ($(this).val() == '') {
                 $('#customerId').val('');
-                $('#divCustomerDetails').html('');
+                //$('#divCustomerDetails').html('');
                 $('#timeslots').html('');
             }
         });
@@ -635,7 +634,7 @@
         var pickedDate = $("#datePicker").data('datepicker').getFormattedDate('yyyy-mm-dd');
         $('#flightDate').val(pickedDate);
         _getTimeslots(pickedDate, $('#flightOffer').val(), $('#txtOfferMinutes').val(), '#timeslots');
-        _getCustomerBookings($('#customerId').val(), pickedDate);
+        //_getCustomerBookings($('#customerId').val(), pickedDate);
 
     }).datepicker('update', '<?php echo $_GET['date']?>')
         .trigger('changeDate');
@@ -1045,7 +1044,7 @@
             success: function (response) {
                 if (response.success == 1) {
                     var pickedDate = $("#datePicker").data('datepicker').getFormattedDate('yyyy-mm-dd');
-                    _getCustomerBookings($('#customerId').val(), pickedDate);
+                    //_getCustomerBookings($('#customerId').val(), pickedDate);
                 } else {
                     alert(response.msg);
                 }

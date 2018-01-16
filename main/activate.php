@@ -41,12 +41,8 @@
 <div class="container-fluid">
     <div class="row-fluid">
         <div class="span10 offset1">
-            <div class="contentheader">
-                <i class="icon-certificate"></i>
-                Account Activation
-            </div>
 
-            <div align="center">
+            <div align="center" style="margin-top: 100px;">
             <?php
             if($_GET['lt'] != '') {
                 $sql = "SELECT customer_id FROM customer 
@@ -60,7 +56,9 @@
                     $query = $db->prepare($sql);
                     $query->execute(array($row['customer_id']));
 
-                    echo '<h3>Your account is activated. You can now login to the site.</h3>';
+                    echo '<h3>Your account is activated. You can now login to the site.</h3>
+                    <br/>
+                    <a class="btn btn-primary btn-large btnLogin" href="javascript:;" data-link="customer_login.php">Login</a>';
                 } else {
                     echo '<h3>Invalid link. Please make sure you came to this page via link we emailed you.</h3>';
                 }
