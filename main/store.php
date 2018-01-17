@@ -151,7 +151,7 @@
 
                     <div class="row">
                         <div class="span3" style="margin-left:25px;">
-                            <div class="divCalendar">
+                            <div class="">
                                 <div id="datePicker"></div>
                                 <button class="btn" id="btnBookings">Bookings (<span id="spBookings">0</span>)</button>
                             </div>

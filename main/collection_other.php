@@ -285,7 +285,7 @@ include('navfixed.php');
                             s1.after_dis,
                             c1.customer_name,
                             fo1.code AS product_code,
-                            fo1.price / fo1.duration AS unit_price,
+                            fo1.price AS unit_price,
                             fo1.offer_name,
                             fo1.duration AS qty,
                             fo1.duration - fb1.duration AS units_remaining,
@@ -360,23 +360,40 @@ include('navfixed.php');
                         <?php
                         $prev_invoice_no = '';
                         $arr = $result->fetchAll();
+                        $units_consumed = 0;
                         foreach ($arr as $row) {
 
+                            if($prev_invoice_no != $row['invoice_number']) {
+                                $units_consumed = 0;
+                            }
+                            $prev_invoice_no = $row['invoice_number'];
                             $price_paid = $row['amount'];
+                            $booking_duration = $row['quantity'];
 
                             if($row['deduct_from_balance'] == 1 && $row['from_flight_purchase_id'] > 0) {
                                 $remaining_units = getRemainingMinutesOfFlightPurchase($row['from_flight_purchase_id']);
+
+                            } else if($row['class_people'] > 0) {
+                                if($row['quantity'] == 0) {
+                                    $row['quantity'] = $row['class_people'];
+                                } else {
+                                    $remaining_units = $row['total_quantity'] - $row['quantity'];
+                                }
+
                             } else {
-                                $remaining_units = $row['total_quantity'] - $row['quantity'];
+                                $units_consumed += $row['quantity'];
+                                $remaining_units = $row['total_quantity'] - $units_consumed;
                             }
 
-                            $unit_price = round($row['unit_price'], 2);
+                            if($row['sale_type'] == 'Merchandise') {
+                                $unit_price = round($row['unit_price'], 2);
+                            } else if($row['class_people'] > 0 && $booking_duration == 0) {
+                                $unit_price = CLASS_SESSION_COST;
+                            } else {
+                                $unit_price = round($row['unit_price']/$row['total_quantity'], 2);
+                            }
                             $unit_discount = round($unit_price * $row['discount'] / 100, 2);
                             $unit_price_after_discount = $unit_price - $unit_discount;
-
-                            if($row['class_people'] > 0) {
-                                $row['quantity'] = $row['class_people'];
-                            }
 
                             ?>
                             <tr>
@@ -398,7 +415,7 @@ include('navfixed.php');
                                 <td><?=$price_paid?></td>
                                 <td><?php
                                     // line item cost
-                                    echo floor(($row['quantity']+$remaining_units) * $unit_price_after_discount);
+                                    echo round($row['quantity'] * $unit_price_after_discount, 2);
                                 ?></td>
                                 <td><?= $row['mode_of_payment'] ?></td>
                                 <td><?= $row['mop_amount'] ?></td>
@@ -431,7 +448,7 @@ include('navfixed.php');
 
                                     echo $row['discount_reason'];
                                     ?></td>
-                                <td><?=round($row['unit_price'], 2)?></td>
+                                <td><?=$unit_price?></td>
                                 <td><?= $row['vat_percent'].'%' ?></td>
                                 <td><?
                                     $line_price = ($row['quantity'] + $row['units_remaining']) * $unit_price_after_discount;
