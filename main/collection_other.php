@@ -368,6 +368,12 @@ include('navfixed.php');
                             }
                             $prev_invoice_no = $row['invoice_number'];
                             $price_paid = $row['amount'];
+
+                            // for cases where user purchased flight, but didn't book time to fly
+                            if($row['quantity'] === null) {
+                                $row['quantity'] = $row['total_quantity'];
+                            }
+
                             $booking_duration = $row['quantity'];
 
                             if($row['deduct_from_balance'] == 1 && $row['from_flight_purchase_id'] > 0) {

@@ -15,7 +15,15 @@ $useCredit      = $_POST['useCredit'];
 
 $from_flight_purchase_id = $_POST['fromFlightPurchaseId'];
 $is_class_session        = $_POST['chkClassSession'] == 1;
-$class_people            = $_POST['txtClassPeople'];
+$class_people            = (int)$_POST['txtClassPeople'];
+
+// make sure class-people set to at least 1
+$query = $db->prepare('SELECT offer_name FROM flight_offers WHERE id = ? LIMIT 1');
+$query->execute(array($flight_offer_id));
+$row = $query->fetch();
+if(stripos($row['offer_name'], 'class session') !== false && $class_people == 0) {
+    $class_people = 1;
+}
 
 if ($_POST['useBalance'] == 1 && $_POST['useCredit'] == 0) {
     // insert balance use

@@ -136,22 +136,22 @@ $row = $query->fetch();
     $(function() {
         $('.btnRegister').on('click', function (e) {
             e.preventDefault();
-            $('#add-customer-modal').modal('show').find('.modal-body').load($(this).data('link'));
+            $('#add-customer-modal').modal({backdrop: 'static',keyboard: false}).find('.modal-body').load($(this).data('link'));
         });
 
         $('.btnLogin').on('click', function (e) {
             e.preventDefault();
-            $('#login-customer-modal').modal('show').find('.modal-body').load($(this).data('link'));
+            $('#login-customer-modal').modal({backdrop: 'static',keyboard: false}).find('.modal-body').load($(this).data('link'));
         });
 
         $('.btnForgotPass').on('click', function (e) {
             e.preventDefault();
-            $('#forgotpass-modal').modal('show').find('.modal-body').load($(this).data('link'));
+            $('#forgotpass-modal').modal({backdrop: 'static',keyboard: false}).find('.modal-body').load($(this).data('link'));
         });
 
         $('.btnProfile').on('click', function (e) {
             e.preventDefault();
-            $('#profile-modal').modal('show').find('.modal-body').load($(this).data('link'));
+            $('#profile-modal').modal({backdrop: 'static',keyboard: false}).find('.modal-body').load($(this).data('link'));
         });
 
         $('#btnLogout').on('click', function (e) {

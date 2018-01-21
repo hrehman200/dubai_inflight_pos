@@ -175,8 +175,7 @@ function validPhone($phone_no) {
         $justNums = preg_replace("/^0/", '',$justNums);
     }
 
-    //if we have 10 digits left, it's probably valid.
-    if (strlen($justNums) == 10) {
+    if (strlen($justNums) >= 6 && strlen($justNums) <= 13) {
         $isPhoneNum = true;
     }
 
@@ -202,7 +201,7 @@ function saveCustomer() {
     }
 
     if (!validPhone($post['phone'])) {
-        echo json_encode(array('success' => 0, 'msg' => 'Please enter valid phone number of 10 digits'));
+        echo json_encode(array('success' => 0, 'msg' => 'Please enter valid phone number of 6 to 13 digits'));
         return;
     }
 
@@ -298,7 +297,7 @@ function saveProfile() {
     }
 
     if (!validPhone($post['phone'])) {
-        echo json_encode(array('success' => 0, 'msg' => 'Please enter valid phone number of 10 digits'));
+        echo json_encode(array('success' => 0, 'msg' => 'Please enter valid phone number of 6 to 13 digits'));
         return;
     }
 
