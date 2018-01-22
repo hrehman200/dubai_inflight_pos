@@ -1,10 +1,9 @@
 <?php
 
 define('HMAC_SHA256', 'sha256');
-define('SECRET_KEY', ''); //Your Secret Key
 
 function sign($params) {
-    return signData(buildDataToSign($params), SECRET_KEY);
+    return signData(buildDataToSign($params), CYBER_SECRET_KEY);
 }
 
 function signData($data, $secretKey) {

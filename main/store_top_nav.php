@@ -21,6 +21,7 @@ $row = $query->fetch();
                     <?php
                     if (isset($_SESSION['CUSTOMER_FIRST_NAME'])) {
                     ?>
+                    <button class="btn" id="btnBookings">My Bookings (<span id="spBookings">0</span>)</button>
                     <li><a class="btnProfile" href="javascript:;" data-link="customer_update.php">
                             <?php
                             if($row['image'] != '') {

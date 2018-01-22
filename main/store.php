@@ -153,7 +153,7 @@
                         <div class="span3" style="margin-left:25px;">
                             <div class="">
                                 <div id="datePicker"></div>
-                                <button class="btn" id="btnBookings">Bookings (<span id="spBookings">0</span>)</button>
+                                <!--<button class="btn" id="btnBookings">Bookings (<span id="spBookings">0</span>)</button>-->
                             </div>
                         </div>
 
@@ -189,12 +189,12 @@
 
                                 <ul class="legend">
                                     <li class="legend-item">
-                                        <span class="legend-colorBox" style="background-color: green;"></span>
-                                        <span class="Legend-label">Unbooked</span>
+                                       <!-- <span class="legend-colorBox" style="background-color: green;"></span>
+                                        <span class="Legend-label">Unbooked</span>-->
                                     </li>
                                     <li class="legend-item">
-                                        <span class="legend-colorBox" style="background-color: red;"></span>
-                                        <span class="Legend-label">Booked</span>
+                                        <!-- <span class="legend-colorBox" style="background-color: red;"></span>
+                                       <span class="Legend-label">Booked</span>-->
                                     </li>
                                 </ul>
 
@@ -203,7 +203,7 @@
                         </div>
 
                         <div class="span3" id="divCustomerDetails">
-                            <h4>Returns and Experience Flyer’s rates, please call 800Inflight or send email at (info@inflightdubai.com)</h4>
+                            <h4 align="center" style=color:whitee> For Return & Experience Flyer's Rates, </h4><h4 align="center" > Call at <b>800-<i>Inflight</b> </i>(46354448) or send us email at, <i><u>info@inflightdubai.com</i></u></h4>
                         </div>
                     </div>
 
@@ -373,9 +373,9 @@
     </div>
 </div>
 
-<form id="payment_form" action="https://testsecureacceptance.cybersource.com/pay" method="post">
-    <input type="hidden" name="access_key" value="3eb56338e7c33eeb80e937d4c10421fc">
-    <input type="hidden" name="profile_id" value="INFDU01"><!--Your Profile Id-->
+<form id="payment_form" action="https://secureacceptance.cybersource.com/pay" method="post">
+    <input type="hidden" name="access_key" value="<?=CYBER_ACCESS_KEY?>">
+    <input type="hidden" name="profile_id" value="<?=CYBER_PROFILE_ID?>"><!--Your Profile Id-->
     <input type="hidden" name="transaction_uuid" value="<?php echo uniqid() ?>">
     <input type="hidden" name="signed_field_names" value="access_key,profile_id,transaction_uuid,signed_field_names,unsigned_field_names,signed_date_time,locale,transaction_type,reference_number,amount,currency">
 
@@ -481,6 +481,7 @@
             $('.divCalendar').hide();
         } else {
             $('.divCalendar').show();
+            $('#datePicker').trigger('changeDate');
         }
 
         if ($('#flightOffer option:selected').text().indexOf('FTF') != -1) {
