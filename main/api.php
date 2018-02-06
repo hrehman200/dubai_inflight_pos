@@ -800,7 +800,9 @@ function getProductSubCategories() {
 
 function getProducts() {
     global $db;
-    $result = $db->prepare("SELECT common_name FROM products WHERE category_id = :categoryId GROUP BY common_name");
+    $result = $db->prepare("SELECT common_name FROM products 
+      WHERE category_id = :categoryId AND status = 1 
+      GROUP BY common_name");
     $result->bindParam(':categoryId', $_POST['categoryId']);
     $result->execute();
 
@@ -822,7 +824,7 @@ function getGenders() {
     global $db;
     $result2 = $db->prepare("SELECT gender, product_id
           FROM products
-          WHERE common_name = :commonName
+          WHERE common_name = :commonName AND status = 1
           GROUP BY gender");
     $result2->bindParam(':commonName', $_POST['commonName']);
     $result2->execute();
@@ -838,7 +840,7 @@ function getSizes() {
     global $db;
     $result2 = $db->prepare("SELECT size, product_id
           FROM products
-          WHERE common_name = :commonName AND gender = :gender
+          WHERE common_name = :commonName AND gender = :gender AND status = 1
           GROUP BY size
           ORDER BY size ASC");
     $result2->execute(array(
@@ -857,7 +859,7 @@ function getColors() {
     global $db;
     $result2 = $db->prepare("SELECT Attribute, product_id, image, qty
           FROM products
-          WHERE common_name = :commonName AND gender = :gender AND size = :size
+          WHERE common_name = :commonName AND gender = :gender AND size = :size AND status = 1
           GROUP BY Attribute");
     $result2->execute(array(
         ':commonName' => $_POST['commonName'],
@@ -877,7 +879,8 @@ function getProductId() {
     $result = $db->prepare("SELECT product_id FROM products WHERE common_name = :commonName
       AND size = :size
       AND Attribute = :color
-      AND gender = :gender");
+      AND gender = :gender
+      AND status = 1");
     $result->execute(array(
         ':commonName' => $_POST['commonName'],
         ':size' => $_POST['size'],
