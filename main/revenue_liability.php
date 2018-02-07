@@ -79,6 +79,130 @@ include('header.php');
                     }
                     return $arr;
                 }
+
+                /**
+                 * @param array $arr
+                 * @param callable $key_selector
+                 * @return array
+                 */
+                function array_group_by(array $arr, callable $key_selector) {
+                    $result = array();
+                    foreach ($arr as $i) {
+                        $key = call_user_func($key_selector, $i);
+                        $result[$key][] = $i;
+                    }
+                    return $result;
+                }
+
+                function getDataAndAggregate($package_name) {
+                    global $db;
+
+                    if($package_name == 'Skydivers') {
+                        $join_with_discount = 'LEFT JOIN discounts d ON fp1.discount_id = d.id OR fp1.discount_id = 0';
+                    } else {
+                        $join_with_discount = 'INNER JOIN discounts d ON fp1.discount_id = d.id';
+                    }
+
+                    $sql = sprintf("SELECT
+                            fb1.flight_purchase_id,
+                            fb1.id,
+                            s1.invoice_number,
+                            s1.amount AS paid,
+                            CASE WHEN(
+                                s1.mode_of_payment != 'credit_time' AND s1.mode_of_payment_1 != 'credit_time'
+                            ) THEN fb1.duration ELSE 0
+                            END AS minutes_used,
+                            CASE WHEN(
+                                s1.mode_of_payment != 'credit_time' AND s1.mode_of_payment_1 != 'credit_time'
+                            ) THEN fo1.duration ELSE 0
+                            END AS total_minutes,
+                            CASE WHEN(
+                                s1.mode_of_payment = 'credit_time' OR s1.mode_of_payment_1 = 'credit_time'
+                            ) THEN fb1.duration ELSE 0
+                            END AS credit_used
+                        FROM
+                            sales s1
+                        INNER JOIN flight_purchases fp1 ON
+                            s1.invoice_number = fp1.invoice_id
+                        INNER JOIN flight_offers fo1 ON
+                            fp1.flight_offer_id = fo1.id
+                        INNER JOIN flight_packages fpkg ON
+                            fo1.package_id = fpkg.id
+                        LEFT JOIN flight_bookings fb1 ON
+                            fb1.flight_purchase_id = fp1.id
+                        INNER JOIN customer c ON
+                            fp1.customer_id = c.customer_id
+                        %s
+                        WHERE
+                            fpkg.id IN(6, 8) AND(
+                                s1.mode_of_payment IN(
+                                    'Cash',
+                                    'Card',
+                                    'Online',
+                                    'Account',
+                                    'credit_time',
+                                    'credit_cash'
+                                ) OR s1.mode_of_payment_1 IN(
+                                    'Cash',
+                                    'Card',
+                                    'Online',
+                                    'Account',
+                                    'credit_time',
+                                    'credit_cash'
+                                )
+                            ) AND(
+                                s1.date >= :startDate AND s1.date <= :endDate
+                            ) AND(
+                                c.customer_name != 'FDR' OR c.customer_name IS NULL
+                            ) AND d.category ", $join_with_discount);
+
+                    if($package_name == 'Skydivers') {
+                        $sql .= "NOT IN ('Presidential Guard', 'Navy Seal', 'Military')";
+                    } else {
+                        $sql .= "IN ('".$package_name."')";
+                    }
+
+                    $result = $db->prepare($sql);
+                    $result->execute(array(
+                        ':startDate' => $_GET['d1'],
+                        ':endDate'   => $_GET['d2']
+                    ));
+
+                    $arr2 = $result->fetchAll();
+
+                    $arr_paid = array_group_by($arr2, function($v) { return $v['invoice_number']; });
+                    $paid = array_reduce($arr_paid, function($carry, $item) {
+                        $carry += $item[0]['paid'];
+                        return $carry;
+                    });
+
+                    $arr_total_minutes = array_group_by($arr2, function($v) { return $v['flight_purchase_id']; });
+                    $total_minutes = array_reduce($arr_total_minutes, function($carry, $item) {
+                        $carry += $item[0]['total_minutes'];
+                        return $carry;
+                    });
+
+                    $arr_minutes_used = array_group_by($arr2, function($v) { return $v['id']; });
+                    $minutes_used = array_reduce($arr_minutes_used, function($carry, $item) {
+                        $carry += $item[0]['minutes_used'];
+                        return $carry;
+                    });
+
+                    $credit_used = array_reduce($arr_minutes_used, function($carry, $item) {
+                        $carry += $item[0]['credit_used'];
+                        return $carry;
+                    });
+
+                    $arr2 = [[
+                        'package_name' => $package_name,
+                        'paid' => $paid,
+                        'total_minutes' => $total_minutes,
+                        'minutes_used' => $minutes_used,
+                        'credit_used' => $credit_used
+                    ]];
+
+                    return $arr2;
+                }
                 ?>
 
                 <div class="content" id="content">
@@ -93,6 +217,7 @@ include('header.php');
                             <th>Total Minutes</th>
                             <th>Minutes Used</th>
                             <th>Minutes Liability</th>
+                            <th>Credit Used</th>
                         </tr>
                         <?php
                         $sql = "SELECT
@@ -130,292 +255,19 @@ include('header.php');
                         $arr = sumTwoRows($arr);
 
                         /** SKYDIVERS */
-                        $sql = "SELECT
-                            'Skydivers' AS package_name,
-                            SUM(paid) AS paid,
-                            SUM(minutes_used) AS minutes_used,
-                            SUM(total_minutes) AS total_minutes
-                        FROM
-                            (
-                            SELECT
-                                s1.amount AS paid,
-                                SUM(CASE WHEN(
-                                        s1.mode_of_payment != 'credit_time' AND s1.mode_of_payment_1 != 'credit_time'
-                                    ) THEN fb1.duration ELSE 0
-                                  END) AS minutes_used,
-                                SUM(
-                                    CASE WHEN(
-                                        s1.mode_of_payment != 'credit_time' AND s1.mode_of_payment_1 != 'credit_time'
-                                    ) THEN fo1.duration ELSE 0
-                                  END) AS total_minutes
-                        FROM
-                            sales s1
-                        INNER JOIN flight_purchases fp1 ON
-                            s1.invoice_number = fp1.invoice_id
-                        INNER JOIN flight_offers fo1 ON
-                            fp1.flight_offer_id = fo1.id
-                        INNER JOIN flight_packages fpkg ON
-                            fo1.package_id = fpkg.id
-                        LEFT JOIN flight_bookings fb1 ON
-                            fb1.flight_purchase_id = fp1.id
-                        INNER JOIN customer c ON
-                            fp1.customer_id = c.customer_id
-                        LEFT JOIN discounts d ON
-                            (fp1.discount_id = d.id OR d.id IS NULL)
-                        WHERE
-                            fpkg.id IN(6, 8) AND(
-                                s1.mode_of_payment IN(
-                                    'Cash',
-                                    'Card',
-                                    'Online',
-                                    'Account',
-                                    'credit_time',
-                                    'credit_cash'
-                                ) OR s1.mode_of_payment_1 IN(
-                                    'Cash',
-                                    'Card',
-                                    'Online',
-                                    'Account',
-                                    'credit_time',
-                                    'credit_cash'
-                                )
-                            ) AND(
-                                s1.date >= :startDate AND s1.date <= :endDate
-                            ) AND(
-                                c.customer_name != 'FDR' OR c.customer_name IS NULL
-                            ) AND d.category NOT IN(
-                                'Military',
-                                'Navy Seal',
-                                'Presidential Guard'
-                            )
-                        GROUP BY
-                            s1.invoice_number
-                        ) AS tbl";
-
-                        $result = $db->prepare($sql);
-                        $result->execute(array(
-                            ':startDate' => $_GET['d1'],
-                            ':endDate'   => $_GET['d2']
-                        ));
-
-                        $arr2 = $result->fetchAll();
-                        $arr2 = sumTwoRows($arr2);
+                        $arr2 = getDataAndAggregate('Skydivers');
                         $arr = array_merge($arr, $arr2);
 
                         /** Military */
-                        $sql = "SELECT
-                            'Military' AS package_name,
-                            SUM(paid) AS paid,
-                            SUM(minutes_used) AS minutes_used,
-                            SUM(total_minutes) AS total_minutes
-                        FROM
-                            (
-                            SELECT
-                                s1.amount AS paid,
-                                SUM(CASE WHEN(
-                                        s1.mode_of_payment != 'credit_time' AND s1.mode_of_payment_1 != 'credit_time'
-                                    ) THEN fb1.duration ELSE 0
-                                  END) AS minutes_used,
-                                SUM(
-                                    CASE WHEN(
-                                        s1.mode_of_payment != 'credit_time' AND s1.mode_of_payment_1 != 'credit_time'
-                                    ) THEN fo1.duration ELSE 0
-                                  END
-                                ) AS total_minutes
-                        FROM
-                            sales s1
-                        INNER JOIN flight_purchases fp1 ON
-                            s1.invoice_number = fp1.invoice_id
-                        INNER JOIN flight_offers fo1 ON
-                            fp1.flight_offer_id = fo1.id
-                        INNER JOIN flight_packages fpkg ON
-                            fo1.package_id = fpkg.id
-                        LEFT JOIN flight_bookings fb1 ON
-                            fb1.flight_purchase_id = fp1.id
-                        INNER JOIN customer c ON
-                            fp1.customer_id = c.customer_id
-                        LEFT JOIN discounts d ON
-                            fp1.discount_id = d.id
-                        WHERE
-                            fpkg.id IN(6, 8) AND(
-                                s1.mode_of_payment IN(
-                                    'Cash',
-                                    'Card',
-                                    'Online',
-                                    'Account',
-                                    'credit_time',
-                                    'credit_cash'
-                                ) OR s1.mode_of_payment_1 IN(
-                                    'Cash',
-                                    'Card',
-                                    'Online',
-                                    'Account',
-                                    'credit_time',
-                                    'credit_cash'
-                                )
-                            ) AND(
-                                s1.date >= :startDate AND s1.date <= :endDate
-                            ) AND(
-                                c.customer_name != 'FDR' OR c.customer_name IS NULL
-                            ) AND d.category IN(
-                                'Military'
-                            )
-                        GROUP BY
-                            s1.invoice_number
-                        ) AS tbl";
-
-                        $result = $db->prepare($sql);
-                        $result->execute(array(
-                            ':startDate' => $_GET['d1'],
-                            ':endDate'   => $_GET['d2']
-                        ));
-
-                        $arr2 = $result->fetchAll();
-                        $arr2 = sumTwoRows($arr2);
+                        $arr2 = getDataAndAggregate('Military');
                         $arr = array_merge($arr, $arr2);
 
                         /** Navy Seal */
-                        $sql = "SELECT
-                            'Navy Seal' AS package_name,
-                            SUM(paid) AS paid,
-                            SUM(minutes_used) AS minutes_used,
-                            SUM(total_minutes) AS total_minutes
-                        FROM
-                            (
-                            SELECT
-                                s1.amount AS paid,
-                                SUM(CASE WHEN(
-                                        s1.mode_of_payment != 'credit_time' AND s1.mode_of_payment_1 != 'credit_time'
-                                    ) THEN fb1.duration ELSE 0
-                                  END) AS minutes_used,
-                                SUM(
-                                    CASE WHEN(
-                                        s1.mode_of_payment != 'credit_time' AND s1.mode_of_payment_1 != 'credit_time'
-                                    ) THEN fo1.duration ELSE 0
-                                  END
-                                ) AS total_minutes
-                        FROM
-                            sales s1
-                        INNER JOIN flight_purchases fp1 ON
-                            s1.invoice_number = fp1.invoice_id
-                        INNER JOIN flight_offers fo1 ON
-                            fp1.flight_offer_id = fo1.id
-                        INNER JOIN flight_packages fpkg ON
-                            fo1.package_id = fpkg.id
-                        LEFT JOIN flight_bookings fb1 ON
-                            fb1.flight_purchase_id = fp1.id
-                        INNER JOIN customer c ON
-                            fp1.customer_id = c.customer_id
-                        LEFT JOIN discounts d ON
-                            fp1.discount_id = d.id
-                        WHERE
-                            fpkg.id IN(6, 8) AND(
-                                s1.mode_of_payment IN(
-                                    'Cash',
-                                    'Card',
-                                    'Online',
-                                    'Account',
-                                    'credit_time',
-                                    'credit_cash'
-                                ) OR s1.mode_of_payment_1 IN(
-                                    'Cash',
-                                    'Card',
-                                    'Online',
-                                    'Account',
-                                    'credit_time',
-                                    'credit_cash'
-                                )
-                            ) AND(
-                                s1.date >= :startDate AND s1.date <= :endDate
-                            ) AND(
-                                c.customer_name != 'FDR' OR c.customer_name IS NULL
-                            ) AND d.category IN(
-                                'Navy Seal'
-                            )
-                        GROUP BY
-                            s1.invoice_number
-                        ) AS tbl";
-
-                        $result = $db->prepare($sql);
-                        $result->execute(array(
-                            ':startDate' => $_GET['d1'],
-                            ':endDate'   => $_GET['d2']
-                        ));
-
-                        $arr2 = $result->fetchAll();
-                        $arr2 = sumTwoRows($arr2);
+                        $arr2 = getDataAndAggregate('Navy Seal');
                         $arr = array_merge($arr, $arr2);
 
                         /** Presidential Guard */
-                        $sql = "SELECT
-                            'Presidential Guard' AS package_name,
-                            SUM(paid) AS paid,
-                            SUM(minutes_used) AS minutes_used,
-                            SUM(total_minutes) AS total_minutes
-                        FROM
-                            (
-                            SELECT
-                                s1.amount AS paid,
-                                SUM(CASE WHEN(
-                                        s1.mode_of_payment != 'credit_time' AND s1.mode_of_payment_1 != 'credit_time'
-                                    ) THEN fb1.duration ELSE 0
-                                  END) AS minutes_used,
-                                SUM(
-                                    CASE WHEN(
-                                        s1.mode_of_payment != 'credit_time' AND s1.mode_of_payment_1 != 'credit_time'
-                                    ) THEN fo1.duration ELSE 0
-                                  END
-                                ) AS total_minutes
-                        FROM
-                            sales s1
-                        INNER JOIN flight_purchases fp1 ON
-                            s1.invoice_number = fp1.invoice_id
-                        INNER JOIN flight_offers fo1 ON
-                            fp1.flight_offer_id = fo1.id
-                        INNER JOIN flight_packages fpkg ON
-                            fo1.package_id = fpkg.id
-                        LEFT JOIN flight_bookings fb1 ON
-                            fb1.flight_purchase_id = fp1.id
-                        INNER JOIN customer c ON
-                            fp1.customer_id = c.customer_id
-                        LEFT JOIN discounts d ON
-                            fp1.discount_id = d.id
-                        WHERE
-                            fpkg.id IN(6, 8) AND(
-                                s1.mode_of_payment IN(
-                                    'Cash',
-                                    'Card',
-                                    'Online',
-                                    'Account',
-                                    'credit_time',
-                                    'credit_cash'
-                                ) OR s1.mode_of_payment_1 IN(
-                                    'Cash',
-                                    'Card',
-                                    'Online',
-                                    'Account',
-                                    'credit_time',
-                                    'credit_cash'
-                                )
-                            ) AND(
-                                s1.date >= :startDate AND s1.date <= :endDate
-                            ) AND(
-                                c.customer_name != 'FDR' OR c.customer_name IS NULL
-                            ) AND d.category IN(
-                                'Presidential Guard'
-                            )
-                        GROUP BY
-                            s1.invoice_number
-                        ) AS tbl";
-
-                        $result = $db->prepare($sql);
-                        $result->execute(array(
-                            ':startDate' => $_GET['d1'],
-                            ':endDate'   => $_GET['d2']
-                        ));
-
-                        $arr2 = $result->fetchAll();
-                        $arr2 = sumTwoRows($arr2);
+                        $arr2 = getDataAndAggregate('Presidential Guard');
                         $arr = array_merge($arr, $arr2);
 
                         foreach ($arr as $row) {
@@ -433,6 +285,7 @@ include('header.php');
                                 <td><?= number_format($row['total_minutes']) ?></td>
                                 <td><?= number_format($row['minutes_used']) ?></td>
                                 <td><?= number_format($row['total_minutes'] - $row['minutes_used']) ?></td>
+                                <td><?=$row['credit_used']?></td>
                             </tr>
                             <?php
                         }
