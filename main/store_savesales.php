@@ -3,6 +3,25 @@ include_once('../connect.php');
 
 $invoice = $_POST['req_reference_number'];
 
+if(empty($invoice) || is_null($invoice)) {
+
+    // cleanup if customer cancelled the purchase
+    $query = $db->prepare('SELECT id
+      FROM flight_purchases fp
+      WHERE status = 0 AND customer_id = ?');
+    $query->execute([$_SESSION['CUSTOMER_ID']]);
+    $result = $query->fetchAll();
+
+    if (count($result) > 0) {
+
+        foreach($result as $row) {
+            deleteFlightPurchase($row['id']);
+        }
+    }
+
+    header("location: store.php");
+}
+
 $query = $db->prepare('SELECT SUM(discount) AS total_discount FROM flight_purchases WHERE invoice_id=?');
 $query->execute([$invoice]);
 $row = $query->fetch();

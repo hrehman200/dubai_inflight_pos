@@ -232,9 +232,9 @@ if(!isset($_SESSION['CUSTOMER_FIRST_NAME'])) {
                                         <?php
                                         $discount_percent = $row['discount'];
                                         $discount_amount = $discount_percent * $current_price / 100;
-                                        $current_price -= $discount_amount;
+                                        $current_price_w_discount = $current_price - $discount_amount;
                                         echo sprintf("-%.2f (%.1f%%)", $discount_amount, $discount_percent);
-                                        $total_cost += $current_price;
+                                        $total_cost += $current_price_w_discount;
                                         ?>
                                     </td>
                                     <td>

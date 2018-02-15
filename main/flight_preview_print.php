@@ -171,7 +171,7 @@ $secondPaymentOption = $_GET['paysecond'];
                             $total_discount += $discount_amount;
 
                             $vat_percent = $row['percent'];
-                            $vat_amount  = $vat_percent * $current_price_w_discount / 105;
+                            $vat_amount  = $vat_percent * $current_price / 100;
                             $total_vat_amount += $vat_amount;
 
                             if ($row['deduct_from_balance'] == 1) {
@@ -189,7 +189,7 @@ $secondPaymentOption = $_GET['paysecond'];
                 <tr>
                     <td style="text-align: left;"><b>Total:</b></td>
                     <td><b><?php
-                            echo number_format($total_cost - $discount_amount, 2);
+                            echo number_format($total_cost, 2);
                             ?></b></td>
                 </tr>
 
