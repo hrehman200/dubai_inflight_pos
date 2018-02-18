@@ -110,21 +110,21 @@ include('header.php');
                     }
 
                     $sql = sprintf("SELECT
-                            fb1.flight_purchase_id,
+                            fp1.id AS flight_purchase_id,
                             fb1.id,
                             IFNULL(fb1.flight_time, NOW()+10) <= NOW() AS flight_taken,
                             s1.invoice_number,
                             s1.amount AS paid,
                             CASE WHEN(
-                                s1.mode_of_payment != 'credit_time' AND s1.mode_of_payment_1 != 'credit_time'
+                                s1.mode_of_payment != 'credit_time' AND s1.mode_of_payment_1 != 'credit_time' AND fp1.deduct_from_balance = 0
                             ) THEN fb1.duration ELSE 0
                             END AS minutes_used,
                             CASE WHEN(
-                                s1.mode_of_payment != 'credit_time' AND s1.mode_of_payment_1 != 'credit_time'
+                                s1.mode_of_payment != 'credit_time' AND s1.mode_of_payment_1 != 'credit_time' AND fp1.deduct_from_balance = 0 
                             ) THEN fo1.duration ELSE 0
                             END AS total_minutes,
                             CASE WHEN(
-                                s1.mode_of_payment = 'credit_time' OR s1.mode_of_payment_1 = 'credit_time'
+                                s1.mode_of_payment = 'credit_time' OR s1.mode_of_payment_1 = 'credit_time' OR fp1.deduct_from_balance > 0
                             ) THEN fb1.duration ELSE 0
                             END AS credit_used
                         FROM
