@@ -224,7 +224,7 @@ include('header.php');
                         Revenue & Liability from&nbsp;<?php echo $_GET['d1'] ?>&nbsp;to&nbsp;<?php echo $_GET['d2'] ?>
                     </div>
 
-                    <table class="table table-striped">
+                    <table class="table table-striped" id="tblRnLSummary">
                         <tr>
                             <th>Package</th>
                             <th>Paid</th>
@@ -390,7 +390,7 @@ include('header.php');
         });
 
     function convertToCSV() {
-        exportTableToCSV($('#tblCollection'), 'collection.csv');
+        exportTableToCSV($('#tblRnLSummary'), 'rnl.csv');
     }
 
     function exportTableToCSV($table, filename) {
