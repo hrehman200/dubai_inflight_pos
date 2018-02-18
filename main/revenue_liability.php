@@ -97,15 +97,22 @@ include('header.php');
                 function getDataAndAggregate($package_name) {
                     global $db;
 
-                    if($package_name == 'Skydivers') {
+                    if($package_name == 'Skydivers' || $package_name == 'FTF') {
                         $join_with_discount = 'LEFT JOIN discounts d ON fp1.discount_id = d.id OR fp1.discount_id = 0';
                     } else {
                         $join_with_discount = 'INNER JOIN discounts d ON fp1.discount_id = d.id';
                     }
 
+                    if($package_name == 'FTF') {
+                        $package_check = " fpkg.package_name LIKE 'FTF%'";
+                    } else {
+                        $package_check = " fpkg.id IN (6, 8)";
+                    }
+
                     $sql = sprintf("SELECT
                             fb1.flight_purchase_id,
                             fb1.id,
+                            IFNULL(fb1.flight_time, NOW()+10) <= NOW() AS flight_taken,
                             s1.invoice_number,
                             s1.amount AS paid,
                             CASE WHEN(
@@ -134,7 +141,8 @@ include('header.php');
                             fp1.customer_id = c.customer_id
                         %s
                         WHERE
-                            fpkg.id IN(6, 8) AND(
+                            %s 
+                            AND(
                                 s1.mode_of_payment IN(
                                     'Cash',
                                     'Card',
@@ -153,13 +161,17 @@ include('header.php');
                             ) AND(
                                 s1.date >= :startDate AND s1.date <= :endDate
                             ) AND(
-                                c.customer_name != 'FDR' OR c.customer_name IS NULL
-                            ) AND d.category ", $join_with_discount);
+                                (customer_name != 'FDR' AND customer_name != 'MAINTENANCE') OR customer_name IS NULL
+                            ) AND d.category ", $join_with_discount, $package_check);
 
-                    if($package_name == 'Skydivers') {
+                    if($package_name == 'Skydivers' || $package_name == 'FTF') {
                         $sql .= "NOT IN ('Presidential Guard', 'Navy Seal', 'Military')";
                     } else {
                         $sql .= "IN ('".$package_name."')";
+                    }
+
+                    if($package_name == 'FTF') {
+                        $sql .= " AND fpkg.package_name LIKE 'FTF%'";
                     }
 
                     $result = $db->prepare($sql);
@@ -184,7 +196,9 @@ include('header.php');
 
                     $arr_minutes_used = array_group_by($arr2, function($v) { return $v['id']; });
                     $minutes_used = array_reduce($arr_minutes_used, function($carry, $item) {
-                        $carry += $item[0]['minutes_used'];
+                        if($item[0]['flight_taken'] == 1) {
+                            $carry += $item[0]['minutes_used'];
+                        }
                         return $carry;
                     });
 
@@ -220,39 +234,8 @@ include('header.php');
                             <th>Credit Used</th>
                         </tr>
                         <?php
-                        $sql = "SELECT
-                                'FTF' AS package_name,
-                                SUM(s1.mop_amount+s1.mop1_amount) AS paid,
-                                SUM(fb1.duration) AS minutes_used,
-                                SUM(fo1.duration) AS total_minutes
-                                  FROM
-                                    sales s1
-                                  INNER JOIN
-                                    flight_purchases fp1 ON s1.invoice_number = fp1.invoice_id
-                                  INNER JOIN
-                                    flight_offers fo1 ON fp1.flight_offer_id = fo1.id
-                                  INNER JOIN 
-                                    flight_packages fpkg ON fo1.package_id = fpkg.id
-                                  LEFT JOIN
-                                    flight_bookings fb1 ON fb1.flight_purchase_id = fp1.id
-                                  INNER JOIN 
-                                    customer c ON fp1.customer_id = c.customer_id  
-                                WHERE fpkg.package_name LIKE 'FTF%'
-                                  AND (s1.mode_of_payment IN ('Cash', 'Card', 'Online', 'Account', 'credit_time', 'credit_cash') 
-                                       OR 
-                                       s1.mode_of_payment_1 IN ('Cash', 'Card', 'Online', 'Account', 'credit_time', 'credit_cash'))
-                                  AND (s1.date >= :startDate AND s1.date <= :endDate)  
-                                  AND (c.customer_name != 'FDR' OR c.customer_name IS NULL)
-                                GROUP BY package_name";
-
-                        $result = $db->prepare($sql);
-                        $result->execute(array(
-                            ':startDate' => $_GET['d1'],
-                            ':endDate'   => $_GET['d2']
-                        ));
-
-                        $arr = $result->fetchAll();
-                        $arr = sumTwoRows($arr);
+                        /** FTF */
+                        $arr = getDataAndAggregate('FTF');
 
                         /** SKYDIVERS */
                         $arr2 = getDataAndAggregate('Skydivers');
@@ -274,7 +257,7 @@ include('header.php');
                             if($row['package_name'] == 'Skydivers') {
                                 ?>
                                 <tr>
-                                    <td colspan="5"><b>Experienced Return Flyers</b></td>
+                                    <td colspan="6"><b>Experienced Return Flyers</b></td>
                                 </tr>
                                 <?php
                             }
@@ -322,7 +305,7 @@ include('header.php');
                               INNER JOIN
                                 customer c1 ON s1.customer_id = c1.customer_id
                             WHERE s1.date <= :endDate
-                            AND (customer_name != 'FDR' OR customer_name IS NULL)
+                            AND (customer_name != 'FDR' OR customer_name != 'MAINTENANCE' OR customer_name IS NULL)
                             AND s1.customer_id = :customerId
                             AND fp1.status = 1
                             GROUP BY c1.customer_id
