@@ -112,6 +112,7 @@ include('header.php');
                     $sql = sprintf("SELECT
                             fp1.id AS flight_purchase_id,
                             fb1.id,
+                            fb1.from_flight_purchase_id,
                             IFNULL(fb1.flight_time, NOW()+10) <= NOW() AS flight_taken,
                             s1.invoice_number,
                             s1.amount AS paid,
@@ -198,6 +199,11 @@ include('header.php');
                     $minutes_used = array_reduce($arr_minutes_used, function($carry, $item) {
                         if($item[0]['flight_taken'] == 1) {
                             $carry += $item[0]['minutes_used'];
+
+                            if ($item[0]['from_flight_purchase_id'] > 0) {
+                                // if minutes from this purchase are used in another booking
+                                $carry += $item[0]['credit_used'];
+                            }
                         }
                         return $carry;
                     });
