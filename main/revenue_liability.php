@@ -250,25 +250,25 @@ include('header.php');
                         </tr>
                         <?php
                         /** FTF */
-                        $arr = getDataAndAggregate('FTF');
+                        $arr_revenue = getDataAndAggregate('FTF');
 
                         /** SKYDIVERS */
                         $arr2 = getDataAndAggregate('Skydivers');
-                        $arr = array_merge($arr, $arr2);
+                        $arr_revenue = array_merge($arr_revenue, $arr2);
 
                         /** Military */
                         $arr2 = getDataAndAggregate('Military');
-                        $arr = array_merge($arr, $arr2);
+                        $arr_revenue = array_merge($arr_revenue, $arr2);
 
                         /** Navy Seal */
                         $arr2 = getDataAndAggregate('Navy Seal');
-                        $arr = array_merge($arr, $arr2);
+                        $arr_revenue = array_merge($arr_revenue, $arr2);
 
                         /** Presidential Guard */
                         $arr2 = getDataAndAggregate('Presidential Guard');
-                        $arr = array_merge($arr, $arr2);
+                        $arr_revenue = array_merge($arr_revenue, $arr2);
 
-                        foreach ($arr as $row) {
+                        foreach ($arr_revenue as $row) {
                             if($row['package_name'] == 'Skydivers') {
                                 ?>
                                 <tr>
@@ -287,8 +287,16 @@ include('header.php');
                             </tr>
                             <?php
                         }
+
+                        $arr_packages = json_encode(array_map(function($v) { return $v['package_name']; }, $arr_revenue));
+                        $arr_paid = json_encode(array_map(function($v) { return round($v['paid'], 1); }, $arr_revenue));
+
                         ?>
                     </table>
+
+                    <div class="app">
+                        <pie-chart></pie-chart>
+                    </div>
 
                     <hr/>
 
@@ -341,8 +349,8 @@ include('header.php');
                                 <th>Amount Laibility</th>
                             </tr>
                             <?php
-                            $arr = $result->fetchAll();
-                            foreach ($arr as $row) {
+                            $arr_revenue = $result->fetchAll();
+                            foreach ($arr_revenue as $row) {
 
                                 ?>
                                 <tr>
@@ -465,5 +473,36 @@ include('header.php');
     }
 </script>
 
+<script type="text/javascript" src="js/chart.min.js"></script>
+<script type="text/javascript" src="js/vue.min.js"></script>
+<script type="text/javascript" src="js/vue-chartjs.min.js"></script>
+<script type="text/javascript">
+
+    Vue.component('pie-chart', {
+        extends: VueChartJs.Pie,
+        mounted () {
+            this.renderChart({
+                labels: JSON.parse('<?=$arr_packages?>'),
+                datasets: [
+                    {
+                        label: 'Data One',
+                        data: JSON.parse('<?=$arr_paid?>'),
+                        backgroundColor: ['#F7DF00', '#FCB100', '#FC8200', '#FA4F00', '#F7501E', '#ca0813']
+                    }
+                ]
+            }, {responsive: true, maintainAspectRatio: false})
+        }
+
+    });
+
+    var vm = new Vue({
+        el: '.app',
+        data: {
+
+        }
+    })
+</script>
+
 <?php include('footer.php'); ?>
 </html>
+
