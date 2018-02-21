@@ -181,7 +181,10 @@ include('header.php');
                         ':endDate'   => $_GET['d2']
                     ));
 
-                    $arr2 = $result->fetchAll();
+                    $arr2 = $result->fetchAll(PDO::FETCH_ASSOC);
+
+                    $arr_flight_purchase_ids = array_map(function($v) { return $v['flight_purchase_id'];}, $arr2);
+                    $arr_flight_purchase_ids = array_unique($arr_flight_purchase_ids);
 
                     $arr_paid = array_group_by($arr2, function($v) { return $v['invoice_number']; });
                     $paid = array_reduce($arr_paid, function($carry, $item) {
@@ -196,13 +199,18 @@ include('header.php');
                     });
 
                     $arr_minutes_used = array_group_by($arr2, function($v) { return $v['id']; });
-                    $minutes_used = array_reduce($arr_minutes_used, function($carry, $item) {
+                    $purchased_minutes_used = 0;
+                    $minutes_used = array_reduce($arr_minutes_used, function($carry, $item) use (&$purchased_minutes_used, $arr_flight_purchase_ids) {
                         if($item[0]['flight_taken'] == 1) {
-                            $carry += $item[0]['minutes_used'];
-
                             if ($item[0]['from_flight_purchase_id'] > 0) {
-                                // if minutes from this purchase are used in another booking
                                 $carry += $item[0]['credit_used'];
+                                // if credit used is from the same purchase in selected time range
+                                if(in_array($item[0]['from_flight_purchase_id'], $arr_flight_purchase_ids)) {
+                                    $purchased_minutes_used += $item[0]['credit_used'];
+                                }
+                            } else {
+                                $carry += $item[0]['minutes_used'];
+                                $purchased_minutes_used += $item[0]['minutes_used'];
                             }
                         }
                         return $carry;
@@ -218,7 +226,8 @@ include('header.php');
                         'paid' => $paid,
                         'total_minutes' => $total_minutes,
                         'minutes_used' => $minutes_used,
-                        'credit_used' => $credit_used
+                        'credit_used' => $credit_used,
+                        'purchased_minutes_used' => $purchased_minutes_used
                     ]];
 
                     return $arr2;
@@ -273,7 +282,7 @@ include('header.php');
                                 <td><?= number_format($row['paid'], 1) ?></td>
                                 <td><?= number_format($row['total_minutes']) ?></td>
                                 <td><?= number_format($row['minutes_used']) ?></td>
-                                <td><?= number_format($row['total_minutes'] - $row['minutes_used']) ?></td>
+                                <td><?= number_format($row['total_minutes'] - $row['purchased_minutes_used']) ?></td>
                                 <td><?=$row['credit_used']?></td>
                             </tr>
                             <?php
