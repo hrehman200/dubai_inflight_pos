@@ -20,8 +20,19 @@ require_once('auth.php');
         .sidebar-nav {
             padding: 9px 0;
         }
+
+        @media print {
+            .sidebar-nav, .navbar, .span2, .breadcrumb, .contentheader, .btns, form {
+                display: none;
+            }
+            .span10, #tblSalesReport {
+                display: block;
+                width: 120%;
+                margin-left: -20%;
+            }
+        }
     </style>
-    <link href="css/bootstrap-responsive.css" rel="stylesheet">
+    <link href="css/bootstrap-responsive.css" rel="stylesheet" media="all">
 
 
     <link href="../style.css" media="screen" rel="stylesheet" type="text/css"/>
@@ -29,16 +40,7 @@ require_once('auth.php');
     <script type="text/javascript" src="tcal.js"></script>
     <script language="javascript">
         function Clickheretoprint() {
-            var disp_setting = "toolbar=yes,location=no,directories=yes,menubar=yes,";
-            disp_setting += "scrollbars=yes,width=700, height=400, left=100, top=25";
-            var content_vlue = document.getElementById("content").innerHTML;
-
-            var docprint = window.open("", "", disp_setting);
-            docprint.document.open();
-            docprint.document.write('</head><body onLoad="self.print()" style="width: 700px; font-size:11px; font-family:arial; font-weight:normal;">');
-            docprint.document.write(content_vlue);
-            docprint.document.close();
-            docprint.focus();
+            $('#tblSalesReport').closest('.span10').removeClass()
         }
     </script>
 
@@ -46,8 +48,6 @@ require_once('auth.php');
     <script language="javascript" type="text/javascript">
         /* Visit http://www.yaldex.com/ for full source code
          and get more free JavaScript, CSS and DHTML scripts! */
-        <
-        !--Begin
         var timerID = null;
         var timerRunning = false;
         function stopclock() {
@@ -74,8 +74,11 @@ require_once('auth.php');
             showtime();
         }
         window.onload = startclock;
-        // End -->
     </SCRIPT>
+
+    <style>
+        tr:nth-child(even) {background: #FFF}
+    </style>
 </head>
 <body>
 <?php include('navfixed.php'); ?>
@@ -103,7 +106,7 @@ require_once('auth.php');
             </div><!--/.well -->
         </div><!--/span-->
         <div class="span10">
-            <div class="contentheader">
+            <div class="contentheader hidden-print">
                 <i class="icon-bar-chart"></i> Sales Report
             </div>
             <ul class="breadcrumb">
@@ -112,13 +115,13 @@ require_once('auth.php');
                 <li class="active">Sales Report</li>
             </ul>
 
-            <div style="margin-top: -19px; margin-bottom: 21px;">
+            <div style="margin-top: -19px; margin-bottom: 21px;" class="btns">
                 <a href="index.php">
                     <button class="btn btn-default btn-large" style="float: none;"><i
                             class="icon icon-circle-arrow-left icon-large"></i> Back
                     </button>
                 </a>
-                <button style="float:right;" class="btn btn-success btn-mini"><a href="javascript:Clickheretoprint()">
+                <button style="float:right;" class="btn btn-success btn-mini"><a href="javascript:window.print()">
                         Print</button>
                 </a> <br><br>
                 <button style="float:right;" class="btn btn-success btn-mini" onclick="convertToCSV()" id="exportCSV"/>
@@ -158,12 +161,13 @@ require_once('auth.php');
                 }
                 $d2 = $dt->format('Y-m-d');
                 ?>
-
-                <div style="font-weight:bold; text-align:center;font-size:14px;margin-bottom: 15px;">
-                    Sales Report from&nbsp;<?php echo $d1 ?>&nbsp;to&nbsp;<?php echo $d2 ?>
-                </div>
-                <table class="table table-bordered" id="resultTable" data-responsive="table" style="text-align: left;">
+                <table class="table table-bordered table-striped" id="tblSalesReport" style="text-align: left;">
                     <thead>
+                    <tr>
+                        <th colspan="10" style="text-align: center;">
+                            <h3>Sales Report from&nbsp;<?php echo date('M j, Y', strtotime($d1)) ?>&nbsp;to&nbsp;<?php echo date('M j, Y', strtotime($d2)) ?></h3>
+                        </th>
+                    </tr>
                     <tr>
                         <th width="16%"> Invoice Number</th>
                         <th width="13%"> Transaction ID</th>
@@ -205,11 +209,12 @@ require_once('auth.php');
                     $result->execute();
                     $total_sale   = 0;
                     $total_profit = 0;
+                    $total_cash   = 0;
+                    $total_card   = 0;
 
-                    for ($i = 0; $row = $result->fetch(); $i++) {
+                    for ($i = 0; $row = $result->fetch(PDO::FETCH_ASSOC); $i++) {
                         $current_cost = $row['amount'];
                         $discount = $current_cost * $row['discount'] / 100.00;
-                        //$current_cost -= $discount;
 
                         if ($row['sale_type'] == 'Service') {
                             $invoiceHref = 'flight_preview.php?invoice=' . $row['invoice_number'] . '&sale_type=' . $row['sale_type'];
@@ -219,10 +224,22 @@ require_once('auth.php');
                         $total_sale += $current_cost;
                         $total_profit += $row['profit'];
 
-                        //$invoiceHref = 'flight_preview.php?invoice='.$row['invoice_number'].'&sale_type='.$row['sale_type'];
+                        if($row['mode_of_payment'] == 'Cash') {
+                            $total_cash += $row['mop_amount'];
+                        }
+                        if($row['mode_of_payment_1'] == 'Cash') {
+                            $total_cash += $row['mop1_amount'];
+                        }
+
+                        if($row['mode_of_payment'] == 'Card') {
+                            $total_card += $row['mop_amount'];
+                        }
+                        if($row['mode_of_payment_1'] == 'Card') {
+                            $total_card += $row['mop1_amount'];
+                        }
 
                         ?>
-                        <tr class="record">
+                        <tr>
                             <td><a href='<?php echo $invoiceHref ?>'> <?php echo $row['invoice_number']; ?></td>
                             <td>STI-00<?php echo $row['transaction_id']; ?></td>
                             <td><?php echo $row['date']; ?></td>
@@ -241,14 +258,36 @@ require_once('auth.php');
                     }
                     ?>
 
-                    </tbody>
-                    <thead>
                     <tr>
-                        <th colspan="6" style="border-top:1px solid #999999"> Total:</th>
-                        <th colspan="1" style="border-top:1px solid #999999"><?= number_format($total_sale) ?></th>
-                        <!--<th colspan="1" style="border-top:1px solid #999999"><?= number_format($total_profit) ?></th>-->
+                        <td colspan="9" style="text-align: right;"> <b>Total:</b></td>
+                        <td colspan="1" style=""><b><?= number_format($total_sale, 1) ?></b></td>
                     </tr>
-                    </thead>
+                    <tr>
+                        <td colspan="9" style="text-align: right;"> <b>Cash:</b></td>
+                        <td colspan="1" style=""><b><?= number_format($total_cash, 1) ?></b></td>
+                    </tr>
+                    <tr>
+                        <td colspan="9" style="text-align: right;"> <b>Card:</b></td>
+                        <td colspan="1" style=""><b><?= number_format($total_card, 1) ?></b></td>
+                    </tr>
+
+                    <?php
+                    if($_SESSION['SESS_LAST_NAME'] == 'Operator') {
+                        ?>
+                        <tr>
+                            <td colspan="9" style="text-align: right;"><b>Operator:</b></td>
+                            <td colspan="1" style=""><b><?= $_SESSION['SESS_FIRST_NAME'] ?></b></td>
+                        </tr>
+                        <tr>
+                            <td colspan="9" style="text-align: right;"><b>Signature:</b></td>
+                            <td colspan="1" style="padding-top:50px;">_______________________</td>
+                        </tr>
+                        <?php
+                    }
+                    ?>
+
+                    </tbody>
+
                 </table>
             </div>
             <div class="clearfix"></div>
@@ -258,40 +297,6 @@ require_once('auth.php');
 
 </body>
 <script src="js/jquery.js"></script>
-<script type="text/javascript">
-    $(function () {
-
-        $(".delbutton").click(function () {
-
-//Save the link in a variable called element
-            var element = $(this);
-
-//Find the id of the link that was clicked
-            var del_id = element.attr("id");
-
-//Built a url to send
-            var info = 'id=' + del_id;
-            if (confirm("Sure you want to delete this update? There is NO undo!")) {
-
-                $.ajax({
-                    type: "GET",
-                    url: "deletesales.php",
-                    data: info,
-                    success: function () {
-
-                    }
-                });
-                $(this).parents(".record").animate({backgroundColor: "#fbc7c7"}, "fast")
-                    .animate({opacity: "hide"}, "slow");
-
-            }
-
-            return false;
-
-        });
-
-    });
-</script>
 <script type="text/javascript">
 
     function convertToCSV() {
@@ -357,13 +362,6 @@ require_once('auth.php');
         } else {
             alert('CSV export only works in Chrome, Firefox, and Opera.');
         }
-
-        // $(this)
-        //     .attr({
-        //     'download': filename,
-        //         'href': csvData,
-        //         'target': '_blank'
-        // });
     }
 </script>
 <?php include('footer.php'); ?>
