@@ -45,7 +45,7 @@
 
         .modalBookings {
             width: 70% !important;
-            margin-left: -34%;
+            margin-left: -42%;
             margin-right: -34%;
             font-size: 14px;
         }
@@ -323,7 +323,7 @@ $position = $_SESSION['SESS_LAST_NAME'];
                                 <?php
                                 $vat_percent = $row['percent'];
                                 $current_price -= $discount_amount;
-                                $vat_amount = $vat_percent * $current_price / 100;
+                                $vat_amount = $vat_percent * $current_price / 105;
                                 ?>
                                 <span id="vatAmount">(<?=$row['percent']?>%)</span>
                                 <span id="vatPercent"><?=$vat_amount?></span>
@@ -391,19 +391,50 @@ $position = $_SESSION['SESS_LAST_NAME'];
 </div>
 
 <div id="add-customer-modal" class="modal fade" style="width: 350px; left:58%;">
-<div class="modal-dialog">
-    <div class="modal-content">
-        <div class="modal-header">
-            <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
-            <h4 class="modal-title">Add Customer</h4>
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+                <h4 class="modal-title">Add Customer</h4>
+            </div>
+            <div class="modal-body">
+                <p>Loading...</p>
+            </div>
+            <div class="modal-footer">
+                <div class="msg"></div>
+                <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                <button type="button" id="btnSaveCustomer" class="btn btn-primary" data-loading-text="<i>Saving...</i>">Save</button>
+            </div>
         </div>
-        <div class="modal-body">
-            <p>Loading...</p>
-        </div>
-        <div class="modal-footer">
-            <div class="msg"></div>
-            <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
-            <button type="button" id="btnSaveCustomer" class="btn btn-primary" data-loading-text="<i>Saving...</i>">Save</button>
+    </div>
+</div>
+
+<div class="modal fade modalBookings" style="width: 350px; left:58%;">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+                <h4 class="modal-title">Bookings</h4>
+            </div>
+            <div class="modal-body">
+                <select id="selCustomer">
+                    <option value="0">-- Select Customer --</option>
+                <?php
+                $query = $db->prepare('SELECT customer_id, TRIM(customer_name) AS customer_name FROM customer ORDER BY TRIM(customer_name) ASC');
+                $query->execute();
+                while($row = $query->fetch(PDO::FETCH_ASSOC)) {
+                    echo sprintf('<option value="%d" %s>%s</option>', $row['customer_id'], '', $row['customer_name']);
+                }
+                ?>
+                </select>
+                <div id="divBookings">
+                    <p>Loading...</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <div class="msg"></div>
+                <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+            </div>
         </div>
     </div>
 </div>
@@ -596,11 +627,29 @@ $position = $_SESSION['SESS_LAST_NAME'];
             dataType: 'json',
             success: function(response) {
                 if(response.success == 1) {
-                    var dialog = bootbox.dialog({
-                        title: 'Bookings',
-                        message: response.data.table,
-                        className: 'modalBookings'
-                    });
+                    $('.modalBookings').modal('show')
+                        .find('#divBookings').html(response.data.table);
+                }
+            }
+        });
+    });
+
+    $('.modalBookings').on('change', '#selCustomer', function(e) {
+        var pickedDate = $("#datePicker").data('datepicker').getFormattedDate('yyyy-mm-dd');
+        $('#divBookings').html('<?=LOADER_GIF?>');
+
+        $.ajax({
+            url:'api.php',
+            method: 'POST',
+            data: {
+                'call': 'getCustomerBookings',
+                'bookingCustomerId': $('#selCustomer').val(),
+                'date': pickedDate
+            },
+            dataType: 'json',
+            success: function(response) {
+                if(response.success == 1) {
+                    $('#divBookings').html(response.data.table);
                 }
             }
         });

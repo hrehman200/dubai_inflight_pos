@@ -497,6 +497,12 @@ function getCustomerBookings() {
                            INNER JOIN flight_bookings fb ON fb.flight_purchase_id = fp.id
                            WHERE fp.status = 1 AND date(fb.flight_time) = :flightDate";
 
+        if($_POST['bookingCustomerId'] > 0) {
+            $sql .= sprintf(' AND fp.customer_id = %d', $_POST['bookingCustomerId']);
+        }
+
+        $sql .= " ORDER BY fb.flight_time ASC";
+
         $arr_params = array(
             ':flightDate' => $post['date']
         );
