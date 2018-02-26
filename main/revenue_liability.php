@@ -476,6 +476,7 @@ include('header.php');
 <script type="text/javascript" src="js/chart.min.js"></script>
 <script type="text/javascript" src="js/vue.min.js"></script>
 <script type="text/javascript" src="js/vue-chartjs.min.js"></script>
+<script type="text/javascript" src="js/chart.piecelabel.js"></script>
 <script type="text/javascript">
 
     Vue.component('pie-chart', {
@@ -487,12 +488,19 @@ include('header.php');
                     {
                         label: 'Data One',
                         data: JSON.parse('<?=$arr_paid?>'),
-                        backgroundColor: ['#F7DF00', '#FCB100', '#FC8200', '#FA4F00', '#F7501E', '#ca0813']
+                        backgroundColor: ['#F7DF00', '#ca0813', '#287AEB', '#89A366', '#9F7371']
                     }
                 ]
-            }, {responsive: true, maintainAspectRatio: false})
-        }
+            }, {
+                responsive: true, maintainAspectRatio: false, pieceLabel: {
+                    mode: 'percentage',
+                    precision: 1,
+                    fontSize: 18,
+                    fontColor: '#fff',
 
+                }
+            })
+        }
     });
 
     var vm = new Vue({
@@ -500,7 +508,7 @@ include('header.php');
         data: {
 
         }
-    })
+    });
 </script>
 
 <?php include('footer.php'); ?>
