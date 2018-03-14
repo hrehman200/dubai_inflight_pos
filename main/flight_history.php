@@ -172,7 +172,7 @@ session_start();
                     <?php
                     if(isset($_GET)) {
 
-                        $sql = "SELECT fp.id AS flight_purchase_id, fp.deduct_from_balance, fo.code, fpkg.package_name, fo.offer_name, fo.price, fo.duration, c.customer_name, DATE_FORMAT(fp.created,'%b %d, %Y') AS created,
+                        $sql = "SELECT fp.id AS flight_purchase_id, fp.deduct_from_balance, fo.code, fpkg.package_name, fo.offer_name, fp.price, fo.duration, c.customer_name, DATE_FORMAT(fp.created,'%b %d, %Y') AS created,
                               fb.duration AS booking_duration,
                               s.after_dis,
                               s.invoice_number

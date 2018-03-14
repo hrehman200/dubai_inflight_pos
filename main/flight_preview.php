@@ -193,7 +193,7 @@ if(!isset($_SESSION['CUSTOMER_FIRST_NAME'])) {
                             <?php
                             $invoice_id = $_GET['invoice'];
 
-                            $result = $db->prepare("SELECT fp.id AS flight_purchase_id, fp.deduct_from_balance, fp.class_people, fo.code, fpkg.package_name, fo.offer_name, fo.price, fo.duration,
+                            $result = $db->prepare("SELECT fp.id AS flight_purchase_id, fp.deduct_from_balance, fp.class_people, fo.code, fpkg.package_name, fo.offer_name, fp.price, fo.duration,
                                       fp.discount, vc.percent
                                       FROM flight_purchases fp
                                       LEFT JOIN flight_offers fo ON fp.flight_offer_id = fo.id
@@ -240,7 +240,7 @@ if(!isset($_SESSION['CUSTOMER_FIRST_NAME'])) {
                                     <td>
                                         <?php
                                         $vat_percent = $row['percent'];
-                                        $vat_amount = $vat_percent * $current_price / 100;
+                                        $vat_amount = $vat_percent * $current_price_w_discount / 105;
                                         echo sprintf("%.2f (%.1f%%)", $vat_amount, $vat_percent);
                                         ?>
                                     </td>

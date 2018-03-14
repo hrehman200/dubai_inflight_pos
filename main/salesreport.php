@@ -150,14 +150,14 @@ require_once('auth.php');
                 if(strlen($d1) > 0 && $d1 != 0) {
                     $dt = DateTime::createFromFormat('m/d/Y', $d1);
                 } else {
-                    $dt = new DateTime('first day of this month');
+                    $dt = new DateTime('today');
                 }
                 $d1 = $dt->format('Y-m-d');
 
                 if(strlen($d2) > 0 && $d2 != 0) {
                     $dt = DateTime::createFromFormat('m/d/Y', $d2);
                 } else {
-                    $dt = new DateTime('last day of this month');
+                    $dt = new DateTime('today');
                 }
                 $d2 = $dt->format('Y-m-d');
                 ?>
@@ -211,6 +211,8 @@ require_once('auth.php');
                     $total_profit = 0;
                     $total_cash   = 0;
                     $total_card   = 0;
+                    $total_account = 0;
+                    $total_online = 0;
 
                     for ($i = 0; $row = $result->fetch(PDO::FETCH_ASSOC); $i++) {
                         $current_cost = $row['amount'];
@@ -236,6 +238,20 @@ require_once('auth.php');
                         }
                         if($row['mode_of_payment_1'] == 'Card') {
                             $total_card += $row['mop1_amount'];
+                        }
+
+                        if($row['mode_of_payment'] == 'Account') {
+                            $total_account += $row['mop_amount'];
+                        }
+                        if($row['mode_of_payment_1'] == 'Account') {
+                            $total_account += $row['mop1_amount'];
+                        }
+
+                        if($row['mode_of_payment'] == 'Online') {
+                            $total_online += $row['mop_amount'];
+                        }
+                        if($row['mode_of_payment_1'] == 'Online') {
+                            $total_online += $row['mop1_amount'];
                         }
 
                         ?>
@@ -270,6 +286,25 @@ require_once('auth.php');
                         <td colspan="9" style="text-align: right;"> <b>Card:</b></td>
                         <td colspan="1" style=""><b><?= number_format($total_card, 1) ?></b></td>
                     </tr>
+                    <tr>
+                        <td colspan="9" style="text-align: right;"> <b>Account:</b></td>
+                        <td colspan="1" style=""><b><?= number_format($total_account, 1) ?></b></td>
+                    </tr>
+                    <?php
+                    if(strtolower($_SESSION['SESS_LAST_NAME']) == 'admin' || strtolower($_SESSION['SESS_LAST_NAME']) == 'account') {
+                        ?>
+                        <tr>
+                            <td colspan="9" style="text-align: right;"><b>Online:</b></td>
+                            <td colspan="1" style=""><b><?= number_format($total_online, 1) ?></b></td>
+                        </tr>
+                        <?php
+                    }
+                    ?>
+
+                    <tr>
+                        <td colspan="9" style="text-align: right;"><b>Souq:</b></td>
+                        <td colspan="1" style="padding-top:10px;">__________________</td>
+                    </tr>
 
                     <?php
                     if($_SESSION['SESS_LAST_NAME'] == 'Operator') {
@@ -278,13 +313,13 @@ require_once('auth.php');
                             <td colspan="9" style="text-align: right;"><b>Operator:</b></td>
                             <td colspan="1" style=""><b><?= $_SESSION['SESS_FIRST_NAME'] ?></b></td>
                         </tr>
-                        <tr>
-                            <td colspan="9" style="text-align: right;"><b>Signature:</b></td>
-                            <td colspan="1" style="padding-top:50px;">_______________________</td>
-                        </tr>
                         <?php
                     }
                     ?>
+                    <tr>
+                        <td colspan="9" style="text-align: right;"><b>Signature:</b></td>
+                        <td colspan="1" style="padding-top:50px;">__________________</td>
+                    </tr>
 
                     </tbody>
 

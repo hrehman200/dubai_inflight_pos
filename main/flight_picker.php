@@ -264,7 +264,7 @@ $position = $_SESSION['SESS_LAST_NAME'];
                     $str_query = parse_url($url, PHP_URL_QUERY);
 
                     $result = $db->prepare("SELECT fp.id AS flight_purchase_id, fp.deduct_from_balance, fp.class_people, fp.discount, fp.discount_id, vc.percent,
-                      fo.code, fpkg.package_name, fo.offer_name, fo.price, fo.duration 
+                      fo.code, fpkg.package_name, fo.offer_name, fp.price, fo.duration 
                       FROM flight_purchases fp
                       LEFT JOIN flight_offers fo ON fp.flight_offer_id = fo.id
                       LEFT JOIN flight_packages fpkg ON fo.package_id = fpkg.id

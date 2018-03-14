@@ -1,0 +1,1 @@
+ALTER TABLE `flight_purchases` ADD `price` DECIMAL(11, 2) NULL DEFAULT NULL AFTER `discount_id`;

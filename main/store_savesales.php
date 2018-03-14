@@ -15,11 +15,12 @@ if(empty($invoice) || is_null($invoice)) {
     if (count($result) > 0) {
 
         foreach($result as $row) {
-            deleteFlightPurchase($row['id']);
+            //deleteFlightPurchase($row['id']);
         }
     }
 
     header("location: store.php");
+    exit();
 }
 
 $query = $db->prepare('SELECT SUM(discount) AS total_discount FROM flight_purchases WHERE invoice_id=?');
@@ -41,14 +42,14 @@ $specificyear = date_parse_from_format("Y-m-d", $today_date);
 $salesyear = $specificyear["year"];
 
 $sql = "INSERT INTO sales (invoice_number,cashier,date,type,month,year,amount,profit,due_date, mode_of_payment, discount, customer_id, sale_type, mode_of_payment_1, mop_amount, mop1_amount, after_dis)
-    VALUES (:a,:b,:c,:d,:monh,:year,:e,:z,:due_date, :mode_of_payment, :discount, :customerId, :Service, :mode_of_payment_1, :mop_amount, :mop1_amount, :discountedValue)";
+    VALUES (:a,:b,:c,:d,:month,:year,:e,:z,:due_date, :mode_of_payment, :discount, :customerId, :Service, :mode_of_payment_1, :mop_amount, :mop1_amount, :discountedValue)";
 $q = $db->prepare($sql);
 $q->execute(array(
     ':a' => $invoice,
     ':b' => 'Customer',
     ':c' => $today_date,
     ':d' => 'online',
-    ':monh' => $monthName,
+    ':month' => $monthName,
     ':year' => $salesyear,
     ':e' => $_POST['req_amount'],
     ':z' => $_POST['req_amount'],

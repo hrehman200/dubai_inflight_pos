@@ -285,7 +285,7 @@ include('navfixed.php');
                             s1.after_dis,
                             c1.customer_name,
                             fo1.code AS product_code,
-                            fo1.price AS unit_price,
+                            fp1.price AS unit_price,
                             fo1.offer_name,
                             fo1.duration AS qty,
                             fo1.duration - fb1.duration AS units_remaining,
@@ -310,6 +310,7 @@ include('navfixed.php');
                           ) result
                         WHERE result.transaction_date >= :startDate AND result.transaction_date <= :endDate
                         AND (result.customer_name != 'FDR' OR result.customer_name IS NULL)
+                        AND (result.invoice_number = 'RS-030369' OR result.invoice_number = 'RS-2260223')
                         ORDER BY
                           result.transaction_date DESC, result.invoice_number";
 
@@ -363,6 +364,8 @@ include('navfixed.php');
                         $units_consumed = 0;
                         foreach ($arr as $row) {
 
+                            $mode_of_payment = $row['mode_of_payment'] . (($row['mode_of_payment_1'] != -1)?", ".$row['mode_of_payment_1']:'');
+
                             if($prev_invoice_no != $row['invoice_number']) {
                                 $units_consumed = 0;
                             }
@@ -387,7 +390,7 @@ include('navfixed.php');
                                 }
 
                             } else {
-                                $units_consumed += $row['quantity'];
+                                $units_consumed += $booking_duration;
                                 $remaining_units = $row['total_quantity'] - $units_consumed;
                             }
 
@@ -401,6 +404,14 @@ include('navfixed.php');
                             $unit_discount = round($unit_price * $row['discount'] / 100, 2);
                             $unit_price_after_discount = $unit_price - $unit_discount;
 
+                            $line_item_price_after_discount = round($row['quantity'] * $unit_price_after_discount, 2);
+
+                            if($mode_of_payment == 'credit_time') {
+                                $unit_price = 0;
+                                $unit_price_after_discount = 0;
+                                $line_item_price_after_discount = 0;
+                            }
+
                             ?>
                             <tr>
                                 <td><?= $row['transaction_date'] ?></td>
@@ -408,7 +419,7 @@ include('navfixed.php');
                                 <td><?= $row['invoice_number'] ?></td>
                                 <td><?= $row['sale_type'] ?></td>
                                 <td><?= $row['customer_name'] ?></td>
-                                <td><?= $row['mode_of_payment'] . (($row['mode_of_payment_1'] != -1)?", ".$row['mode_of_payment_1']:'') ?></td>
+                                <td><?= $mode_of_payment ?></td>
                                 <td><?php
                                     $temp = array_filter($arr, function($v) use ($row) {
                                         return $v['invoice_number'] == $row['invoice_number'];
@@ -419,20 +430,14 @@ include('navfixed.php');
                                 <td><?= $row['product_name'] ?></td>
                                 <td>AED</td>
                                 <td><?=$price_paid?></td>
-                                <td><?php
-                                    // line item cost
-                                    echo round($row['quantity'] * $unit_price_after_discount, 2);
-                                ?></td>
+                                <td><?=$line_item_price_after_discount?></td>
                                 <td><?= $row['mode_of_payment'] ?></td>
                                 <td><?= $row['mop_amount'] ?></td>
                                 <td><?= $row['mode_of_payment_1'] ?></td>
                                 <td><?= $row['mop1_amount'] ?></td>
                                 <td><?= $row['qty'] ?></td>
                                 <td><?= $row['quantity'] ?></td>
-                                <td><?php
-                                    echo $unit_price_after_discount;
-                                    ?></td>
-
+                                <td><?=$unit_price_after_discount?></td>
                                 <td><?php
                                     /*$line_item_discount = $unit_discount * ($row['quantity'] + $row['units_remaining']) ;
                                     echo $line_item_discount;*/
@@ -468,7 +473,7 @@ include('navfixed.php');
                                 <td>-</td>
                                 <td><?= $row['product_code'] ?></td>
                                 <td>POS</td>
-                                <td><?=$row['quantity']?></td>
+                                <td><?=$booking_duration?></td>
                                 <td><?=$remaining_units ?></td>
                                 <td><?php
                                     echo $unit_price_after_discount * $row['quantity'];

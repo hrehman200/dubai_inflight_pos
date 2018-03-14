@@ -117,9 +117,10 @@ function insertFlightPurchase($invoice_id, $flight_offer_id, $customer_id, $use_
     global $db;
 
     $vat_code_id = getVatCodeId(TYPE_SERVICE);
+    $flight_offer = getFlightOffer($flight_offer_id);
 
-    $columns = "invoice_id, flight_offer_id, customer_id, deduct_from_balance, status, class_people, discount";
-    $values = ":invoice_id, :flight_offer_id, :customer_id, :use_balance, :status, :class_people, :discount";
+    $columns = "invoice_id, flight_offer_id, customer_id, deduct_from_balance, status, class_people, discount, price";
+    $values = ":invoice_id, :flight_offer_id, :customer_id, :use_balance, :status, :class_people, :discount, :price";
 
     $arr = array(
         ':invoice_id'      => $invoice_id,
@@ -128,7 +129,8 @@ function insertFlightPurchase($invoice_id, $flight_offer_id, $customer_id, $use_
         ':use_balance'     => $use_balance,
         ':status'          => $status,
         ':class_people'    => $class_people,
-        ':discount'        => FLAT_DISCOUNT
+        ':discount'        => FLAT_DISCOUNT,
+        ':price'           => $flight_offer['price']
     );
 
     if($use_balance != 1) {
@@ -412,6 +414,18 @@ function getVatCodeId($type) {
     $row = $query->fetch();
     $vat_code_id = $row['id'];
     return $vat_code_id;
+}
+
+/**
+ * @param $flight_offer_id
+ * @return bool|mixed
+ */
+function getFlightOffer($flight_offer_id) {
+    global $db;
+    $query = $db->prepare('SELECT * FROM flight_offers WHERE id=? AND status=1 LIMIT 1');
+    $query->execute([$flight_offer_id]);
+    $row = $query->fetch(PDO::FETCH_ASSOC);
+    return $row;
 }
 
 /**
