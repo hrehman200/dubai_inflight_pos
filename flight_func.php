@@ -39,7 +39,8 @@ function updateCustomerFlightBalance($customer_id, $flight_purchase_id, $minutes
         WHERE customer_id = :customer_id AND flight_purchase_id = :flight_purchase_id';
 
     } else {
-        $sql = "INSERT INTO flight_credits VALUES(:customer_id, :flight_purchase_id, :minutes)";
+        $sql = "INSERT INTO flight_credits(customer_id, flight_purchase_id, minutes) 
+          VALUES(:customer_id, :flight_purchase_id, :minutes)";
     }
 
     $query = $db->prepare($sql);
@@ -468,4 +469,27 @@ function getRemainingMinutesOfFlightPurchase($flight_purchase_id) {
     $query->execute(array($flight_purchase_id));
     $row = $query->fetch();
     return $row['minutes'];
+}
+
+/**
+ * @param $email
+ * @param $subject
+ * @param $body
+ * @return mixed
+ */
+function sendEmail($email, $subject, $body) {
+
+    $mailin = new Mailin('https://api.sendinblue.com/v2.0', MAILIN_API_KEY);
+
+    $data = array(
+        "to" => array($email => "to whom!"),
+        "bcc" => array("hrehman200@gmail.com" => "bcc whom!"),
+        "from" => array("info@inflightdubai.com"),
+        "subject" => $subject,
+        "html" => $body,
+        "headers" => array("Content-Type" => "text/html; charset=iso-8859-1")
+    );
+
+    $response = $mailin->send_email($data);
+    return $response;
 }

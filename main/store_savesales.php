@@ -41,8 +41,10 @@ $monthName = $dateObj->format('M');
 $specificyear = date_parse_from_format("Y-m-d", $today_date);
 $salesyear = $specificyear["year"];
 
-$sql = "INSERT INTO sales (invoice_number,cashier,date,type,month,year,amount,profit,due_date, mode_of_payment, discount, customer_id, sale_type, mode_of_payment_1, mop_amount, mop1_amount, after_dis)
-    VALUES (:a,:b,:c,:d,:month,:year,:e,:z,:due_date, :mode_of_payment, :discount, :customerId, :Service, :mode_of_payment_1, :mop_amount, :mop1_amount, :discountedValue)";
+$sql = "INSERT INTO sales (invoice_number,cashier,date,type,month,year,amount,profit,due_date, mode_of_payment, discount, customer_id, sale_type, mode_of_payment_1, mop_amount, mop1_amount, after_dis,
+      expiry)
+    VALUES (:a,:b,:c,:d,:month,:year,:e,:z,:due_date, :mode_of_payment, :discount, :customerId, :Service, :mode_of_payment_1, :mop_amount, :mop1_amount, :discountedValue, 
+      DATE(NOW() + INTERVAL 1 YEAR))";
 $q = $db->prepare($sql);
 $q->execute(array(
     ':a' => $invoice,

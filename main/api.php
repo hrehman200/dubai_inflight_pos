@@ -1,7 +1,5 @@
 <?php
 include_once('../connect.php');
-include_once('include/security.php');
-include_once('include/Mailin.php');
 
 function getTimeslotsForFlightDate() {
 
@@ -144,23 +142,6 @@ function getTimeslotsForFlightDate() {
 
 
     echo json_encode(array('success' => 1, 'msg' => '', 'data' => $str));
-}
-
-function sendEmail($email, $subject, $body) {
-
-    $mailin = new Mailin('https://api.sendinblue.com/v2.0', MAILIN_API_KEY);
-
-    $data = array(
-        "to" => array($email => "to whom!"),
-        "bcc" => array("hrehman200@gmail.com" => "bcc whom!"),
-        "from" => array("info@inflightdubai.com"),
-        "subject" => $subject,
-        "html" => $body,
-        "headers" => array("Content-Type" => "text/html; charset=iso-8859-1")
-    );
-
-    $response = $mailin->send_email($data);
-    return $response;
 }
 
 function validPhone($phone_no) {
