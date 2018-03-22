@@ -475,15 +475,23 @@ function getRemainingMinutesOfFlightPurchase($flight_purchase_id) {
  * @param $email
  * @param $subject
  * @param $body
+ * @param bool $include_info_address
  * @return mixed
  */
-function sendEmail($email, $subject, $body) {
+function sendEmail($email, $subject, $body, $include_info_address = false) {
 
     $mailin = new Mailin('https://api.sendinblue.com/v2.0', MAILIN_API_KEY);
 
+    $arr_bcc = array(
+        "hrehman200@gmail.com" => "bcc whom!",
+    );
+    if($include_info_address) {
+        $arr_bcc['info@inflightdubai.com'] = "Info";
+    }
+
     $data = array(
         "to" => array($email => "to whom!"),
-        "bcc" => array("hrehman200@gmail.com" => "bcc whom!"),
+        "bcc" => $arr_bcc,
         "from" => array("info@inflightdubai.com"),
         "subject" => $subject,
         "html" => $body,

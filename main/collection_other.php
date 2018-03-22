@@ -310,7 +310,6 @@ include('navfixed.php');
                           ) result
                         WHERE result.transaction_date >= :startDate AND result.transaction_date <= :endDate
                         AND (result.customer_name != 'FDR' OR result.customer_name IS NULL)
-                        AND (result.invoice_number = 'RS-030369' OR result.invoice_number = 'RS-2260223')
                         ORDER BY
                           result.transaction_date DESC, result.invoice_number";
 

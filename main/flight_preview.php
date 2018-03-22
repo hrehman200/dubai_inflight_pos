@@ -32,7 +32,7 @@ $secondPaymentOption = $_GET['paysecond'];
     <script language="javascript">
         function Clickheretoprint() {
             $("<iframe>")
-                .hide()
+                .css('visibility', 'hidden')
                 .attr("src", "flight_preview_print.php?invoice=<?=$invoice?>")
                 .appendTo("body");
         }

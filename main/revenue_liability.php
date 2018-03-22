@@ -175,6 +175,8 @@ include('header.php');
                         $sql .= " AND fpkg.package_name LIKE 'FTF%'";
                     }
 
+                    $sql .= " GROUP BY fp1.id, fb1.id";
+
                     $result = $db->prepare($sql);
                     $result->execute(array(
                         ':startDate' => $_GET['d1'],

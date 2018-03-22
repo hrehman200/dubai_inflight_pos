@@ -46,7 +46,7 @@ if(php_sapi_name() === 'cli') {
                 </div>', $row['date'], $row['invoice_number'], implode("<br>", $flight_offers));
 
                 echo 'Sending email to '.$row['customer_name'].' for invoice '.$row['invoice_number']."\n";
-                sendEmail($row['email'], 'Expiration of Purchased Offers', $body);
+                sendEmail($row['email'], 'Expiration of Purchased Offers', $body, true);
             }
 
         }
