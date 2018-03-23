@@ -128,6 +128,7 @@
 
             $vat_percent = $row['percent'];
             $current_amount_w_discount = $row['amount'] - $discount_amount;
+            $total_amount += $current_amount_w_discount;
             $vat_amount  = $vat_percent * $current_amount_w_discount / 105;
             $total_vat_amount += $vat_amount;
 
