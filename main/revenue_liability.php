@@ -162,7 +162,7 @@ include('header.php');
                             ) AND(
                                 s1.date >= :startDate AND s1.date <= :endDate
                             ) AND(
-                                (customer_name != 'FDR' AND customer_name != 'MAINTENANCE') OR customer_name IS NULL
+                                (customer_name != 'FDR' AND customer_name != 'MAINTENANCE' AND customer_name != 'inflight staff flying') OR customer_name IS NULL
                             ) AND d.category ", $join_with_discount, $package_check);
 
                     if($package_name == 'Skydivers' || $package_name == 'FTF') {
@@ -330,7 +330,7 @@ include('header.php');
                               INNER JOIN
                                 customer c1 ON s1.customer_id = c1.customer_id
                             WHERE s1.date <= :endDate
-                            AND (customer_name != 'FDR' OR customer_name != 'MAINTENANCE' OR customer_name IS NULL)
+                            AND ((customer_name != 'FDR' AND customer_name != 'MAINTENANCE' AND customer_name != 'inflight staff flying') OR customer_name IS NULL)
                             AND s1.customer_id = :customerId
                             AND fp1.status = 1
                             GROUP BY c1.customer_id
