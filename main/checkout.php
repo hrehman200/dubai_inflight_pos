@@ -113,6 +113,7 @@
         <input type="hidden" name="profit" value="<?php echo $_GET['totalprof']; ?>"/>
         <input type="hidden" name="savingflight" value="<?php echo @$_GET['savingflight']; ?>"/>
         <input type="hidden" name="customerId" value="<?php echo @$_GET['customerId']; ?>"/>
+        <input type="hidden" name="giveaway_token" value="<?php echo @$_GET['giveaway_token']; ?>"/>
 
         <center>
 
@@ -327,8 +328,15 @@
     }
 
     <?php
-    if($customer_name == 'FDR') {
-    ?>
+    $purchased_package = getPurchaseType($_GET['invoice']);
+    if($customer_name == 'FDR' || $purchased_package['type'] == FLIGHT_PACKAGE_TYPE_INTERNAL) {
+        if(in_array($purchased_package['package_name'], ['giveaways', 'marketing'])) {
+        ?>
+            $('#mode_of_payment').append('<option selected><?=$purchased_package['package_name']?></option>');
+        <?php
+        }
+
+        ?>
         $('#cash').val(0);
         $('#saveButton').prop('disabled', false).click();
     <?php

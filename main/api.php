@@ -1029,4 +1029,35 @@ function getFlightOffers() {
     ));
 }
 
+function askForGiveawayApproval() {
+    global $db;
+
+    if($_POST['userId'] > 0) {
+        $result = $db->prepare('SELECT email FROM user WHERE id=?');
+        $result->execute([$_POST['userId']]);
+        $row = $result->fetch();
+
+        $token = sha1(uniqid('g-'));
+        $approve_link = sprintf('<a href="%smain/approve_giveaway.php?t=%s">Approve</a>', LOCAL_URL, $token);
+        $disapprove_link = sprintf('<a href="%smain/approve_giveaway.php?t=%s">Disapprove</a>', LOCAL_URL, $token);
+
+        $sql = "INSERT INTO approval_requests(made_by, approved_by, token, status) 
+                VALUES (?, ?, ?, ?)";
+        $query = $db->prepare($sql);
+        $query->execute([$_SESSION['SESS_MEMBER_ID'], $_POST['userId'], $token, GIVEAWAY_APPROVAL_PENDING]);
+
+        $body = '<div>
+            <img src="' . BASE_URL . 'main/img/inflight_logo.png" width="200" />
+            <p>An approval request for giveaway flight has been made. Please respond: </p>
+            <p>' . $approve_link . '&nbsp;'.$disapprove_link.'</p>
+        </div>';
+        $response = sendEmail('hrehman200@gmail.com'/*$row['email']*/, 'Approval Request for Giveaway', $body);
+    }
+
+    echo json_encode(array(
+        'success' => 1,
+        'msg' => 'Approval request sent to manager. You will receive email when manager responds.'
+    ));
+}
+
 call_user_func($_POST['call']);

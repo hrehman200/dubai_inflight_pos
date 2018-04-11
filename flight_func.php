@@ -7,6 +7,12 @@ define('TYPE_MERCHANDISE', 'Merchandise');
 define('TYPE_SERVICE', 'Service');
 
 define('FLAT_DISCOUNT', 0);    // percent
+define('FLIGHT_PACKAGE_TYPE_INTERNAL', 1);
+
+define('GIVEAWAY_APPROVAL_PENDING', 0);
+define('GIVEAWAY_APPROVAL_APPROVED', 1);
+define('GIVEAWAY_APPROVAL_DISAPPROVED', 2);
+define('GIVEAWAY_APPROVAL_USED', 3);
 
 /**
  * @param $customer_id
@@ -469,6 +475,22 @@ function getRemainingMinutesOfFlightPurchase($flight_purchase_id) {
     $query->execute(array($flight_purchase_id));
     $row = $query->fetch();
     return $row['minutes'];
+}
+
+/**
+ * @param $invoice_id
+ * @return bool
+ */
+function getPurchaseType($invoice_id) {
+    global $db;
+
+    $query = $db->prepare('SELECT LOWER(package_name) AS package_name, type FROM flight_packages fpkg
+      INNER JOIN flight_offers fo ON fo.package_id = fpkg.id
+      INNER JOIN flight_purchases fp ON fp.flight_offer_id = fo.id
+      WHERE fp.invoice_id = ? LIMIT 1');
+    $query->execute([$invoice_id]);
+    $row = $query->fetch();
+    return $row;
 }
 
 /**

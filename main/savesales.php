@@ -62,6 +62,20 @@ if (@$_POST['savingflight'] == 1) {
     $q->execute(array(':a' => $a, ':b' => $b, ':c' => $c, ':d' => $d, ':monh' => $monthName, ':year' => $salesyear, ':e' => $e, ':z' => $z, ':due_date' => $f, ':mode_of_payment' => $mode_of_payment, ':discount' => $discount, ':customerId' => $customer_id, ':Service' => $salesType, ':mode_of_payment_1' => $mode_of_payment_1
         , ':mop_amount' => $cash, ':mop1_amount' => $remaining_cash, ':discountedValue' => $total_cash));
 
+    // expire the token
+    if(strlen($_POST['giveaway_token']) > 0) {
+
+        $query = $db->prepare('SELECT id FROM approval_requests WHERE token = ?');
+        $query->execute([$_POST['giveaway_token']]);
+        $approval_request = $query->fetch();
+
+        $query = $db->prepare('UPDATE approval_requests SET status = ? WHERE token = ?');
+        $query->execute([GIVEAWAY_APPROVAL_USED, $_POST['giveaway_token']]);
+
+        $query = $db->prepare('UPDATE sales SET approval_request_id = ? WHERE invoice_number = ? LIMIT 1');
+        $query->execute([$approval_request['id'], $a]);
+    }
+
     if ($mode_of_payment == 'credit_cash') {
         # code...
         $result = $db->prepare("SELECT * FROM customer WHERE customer_id = :customer_id");

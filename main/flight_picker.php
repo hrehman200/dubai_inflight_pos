@@ -166,6 +166,7 @@ $position = $_SESSION['SESS_LAST_NAME'];
 
                 <input type="hidden" name="creditDuration" id="creditDuration" value="" />
                 <input type="hidden" name="useCredit" id="useCredit" value="0" />
+                <input type="hidden" name="giveaway_token" id="giveaway_token" value="<?=$_GET['t']?>" />
 
                 <?php
                 $result = $db->prepare("SELECT * FROM flight_packages WHERE id = :package_id AND status = 1");
@@ -173,6 +174,18 @@ $position = $_SESSION['SESS_LAST_NAME'];
                 $row = $result->fetch();
                 ?>
                 <h4 id="pkgName"><?php echo $row['package_name']; ?></h4>
+
+                <?php
+                // for giveaways, make sure operator has the valid token
+                if($row['package_name'] == 'Giveaways') {
+                    $query = $db->prepare('SELECT * FROM approval_requests WHERE token = ? AND status = ?');
+                    $query->execute([$_GET['t'], GIVEAWAY_APPROVAL_APPROVED]);
+                    if ($query->rowCount() == 0) {
+                        echo 'Giveaway not allowed';
+                        exit;
+                    }
+                }
+                ?>
 
                 <select class="span6" name="flightOffer" id="flightOffer">
                     <option value="0">Select a Flight Offer</option>
@@ -379,7 +392,8 @@ $position = $_SESSION['SESS_LAST_NAME'];
                    totalprof=<?php echo $asd ?>&
                    cashier=<?php echo $_SESSION['SESS_FIRST_NAME'] ?>&
                    savingflight=1&
-                   customerId=<?=$_GET['customer_id']?>">
+                   customerId=<?=$_GET['customer_id']?>&
+                   giveaway_token=<?=$_GET['t']?>">
                     <button class="btn btn-success btn-large btn-block"><i class="icon icon-save icon-large"></i> PROCEED
                     </button>
                 </a>
