@@ -1051,7 +1051,7 @@ function askForGiveawayApproval() {
             <p>An approval request for giveaway flight has been made. Please respond: </p>
             <p>' . $approve_link . '&nbsp;'.$disapprove_link.'</p>
         </div>';
-        $response = sendEmail('hrehman200@gmail.com'/*$row['email']*/, 'Approval Request for Giveaway', $body);
+        $response = sendEmail($row['email'], 'Approval Request for Giveaway', $body);
     }
 
     echo json_encode(array(

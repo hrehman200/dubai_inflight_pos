@@ -27,7 +27,7 @@ include('header.php');
                 <p>' . $link .'</p>
             </div>';
 
-            sendEmail('hrehman200@gmail.com'/*$user['email']*/, 'Giveaway Approval Granted', $body);
+            sendEmail($user['email'], 'Giveaway Approval Granted', $body);
 
         } else {
             echo 'Invalid request';
