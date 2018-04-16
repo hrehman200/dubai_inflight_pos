@@ -100,7 +100,10 @@ if (@$_POST['savingflight'] == 1) {
 
 } else {
 
-    $salesType ='Merchandise';
+    $query = $db->prepare('SELECT DISTINCT(gen_name) FROM sales_order WHERE invoice = ?');
+    $query->execute([$a]);
+    $row = $query->fetch(PDO::FETCH_ASSOC);
+    $salesType = $row['gen_name'];
 
     $sql = "INSERT INTO sales (invoice_number,cashier,date,type,month,year,amount,profit,due_date, mode_of_payment, discount, customer_id, sale_type, mode_of_payment_1, mop_amount, mop1_amount, after_dis)
         VALUES (:a,:b,:c,:d,:monh,:year,:e,:z,:due_date, :mode_of_payment, :discount, :customerId, :Service, :mode_of_payment_1, :mop_amount, :mop1_amount, :discountedValue)";

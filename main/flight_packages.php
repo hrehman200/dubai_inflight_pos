@@ -108,7 +108,7 @@ $position = $_SESSION['SESS_LAST_NAME'];
                 <div align="center">
                     <h3>Commercial Packages</h3>
                 <?php
-                $packages = $db->prepare("SELECT * FROM flight_packages WHERE status = 1 AND type IS NULL OR type = 0");
+                $packages = $db->prepare("SELECT * FROM flight_packages WHERE status = 1 AND (type IS NULL OR type = 0)");
                 $packages->execute(array());
 
                 while($row = $packages->fetch()) {
