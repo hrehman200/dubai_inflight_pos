@@ -148,14 +148,22 @@ require_once('auth.php');
                 $d2     = $_GET['d2'];
 
                 if(strlen($d1) > 0 && $d1 != 0) {
-                    $dt = DateTime::createFromFormat('m/d/Y', $d1);
+                    if(strpos($d1, '/') !== false) {
+                        $dt = DateTime::createFromFormat('m/d/Y', $d1);
+                    } else {
+                        $dt = DateTime::createFromFormat('Y-m-d', $d1);
+                    }
                 } else {
                     $dt = new DateTime('today');
                 }
                 $d1 = $dt->format('Y-m-d');
 
                 if(strlen($d2) > 0 && $d2 != 0) {
-                    $dt = DateTime::createFromFormat('m/d/Y', $d2);
+                    if(strpos($d1, '/') !== false) {
+                        $dt = DateTime::createFromFormat('m/d/Y', $d2);
+                    } else {
+                        $dt = DateTime::createFromFormat('Y-m-d', $d2);
+                    }
                 } else {
                     $dt = new DateTime('today');
                 }
@@ -218,10 +226,14 @@ require_once('auth.php');
                         $current_cost = $row['amount'];
                         $discount = $current_cost * $row['discount'] / 100.00;
 
-                        if ($row['sale_type'] == 'Service') {
-                            $invoiceHref = 'flight_preview.php?invoice=' . $row['invoice_number'] . '&sale_type=' . $row['sale_type'];
-                        } else {
+                        $query = $db->prepare('SELECT transaction_id FROM sales_order WHERE invoice = ? AND gen_name = "Service" LIMIT 1');
+                        $query->execute([$row['invoice_number']]);
+                        $is_service = ($query->rowCount() > 0);
+
+                        if ($row['sale_type'] == 'Merchandise' || $is_service) {
                             $invoiceHref = 'preview.php?invoice=' . $row['invoice_number'] . '&sale_type=' . $row['sale_type'] . '&payfirst=&paysecond=&d1=' . $d1 . '&d2=' . $d2;
+                        } else {
+                            $invoiceHref = 'flight_preview.php?invoice=' . $row['invoice_number'] . '&sale_type=' . $row['sale_type'];
                         }
                         $total_sale += $current_cost;
                         $total_profit += $row['profit'];
