@@ -209,7 +209,7 @@ if(!isset($_SESSION['CUSTOMER_FIRST_NAME'])) {
                             while ($row = $result->fetch()) {
                                 if ($row['deduct_from_balance'] == 0) {
                                     if ($row['class_people'] > 0) {
-                                        $current_price = /*$row['price'] +*/ (CLASS_SESSION_COST * $row['class_people']);
+                                        $current_price = $row['price'] + (CLASS_SESSION_COST * $row['class_people']);
                                     } else {
                                         $current_price = $row['price'];
                                     }
