@@ -159,7 +159,7 @@ require_once('auth.php');
                 $d1 = $dt->format('Y-m-d');
 
                 if(strlen($d2) > 0 && $d2 != 0) {
-                    if(strpos($d1, '/') !== false) {
+                    if(strpos($d2, '/') !== false) {
                         $dt = DateTime::createFromFormat('m/d/Y', $d2);
                     } else {
                         $dt = DateTime::createFromFormat('Y-m-d', $d2);
