@@ -5,7 +5,7 @@
 //session_start();
 
 $position=$_SESSION['SESS_LAST_NAME'];
-if($position=='cashier' || $position == 'Operator') {
+if($position=='cashier' || $position == 'Operator' || $_SESSION[SESS_MOCK_ROLE] == ROLE_CASHIER) {
     echo '
             <a href="sales.php?id=cash&invoice='.$finalcode.'"><i class="icon-shopping-cart icon-2x"></i><br> Merchandise</a>
 			<a href="products.php"><i class="icon-list-alt icon-2x"></i><br>Products</a>
@@ -30,7 +30,7 @@ else if($position=='admin') {
 			<!--<a href="bookingcalander.php"><i class="icon-bar-chart icon-2x"></i> <br/> Booking Calander</a>-->
 			';}
 
-else if ($position=='account') {
+else if ($position=='account' || $_SESSION[SESS_MOCK_ROLE] == ROLE_ACCOUNT) {
     echo '<!--<a href="index.php"><i class="icon-dashboard icon-2x"></i> <br/> Dashboard </a>-->
 				<a href="salesreport.php?d1=0&d2=0"><i class="icon-bar-chart icon-2x"></i> <br/> Sales Report</a>
 				<a href="collection_other.php?d1=0&d2=0"><i class="icon-bar-chart icon-2x"></i> <br/> Collection Report</a>     
@@ -39,8 +39,7 @@ else if ($position=='account') {
 				<a href="products.php"><i class="icon-table icon-2x"></i> <br/> Products</a>   </li>      
 				<a href="customer.php"><i class="icon-group icon-2x"></i> <br/> Customers</a>        
 				<a href="supplier.php"><i class="icon-group icon-2x"></i> <br/> Suppliers</a>        
-				<a href="purchaseslist.php"><i class="icon-inbox icon-2x"></i> <br/> Purchases</a>
-				<a href="flight_packages.php"><i class="icon-bar-chart icon-2x"></i> <br/> Book Flight</a> ';
+				<a href="purchaseslist.php"><i class="icon-inbox icon-2x"></i> <br/> Purchases</a>';
 
 }
 else if ($position=='Procurement') {

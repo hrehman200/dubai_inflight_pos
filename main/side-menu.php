@@ -5,7 +5,7 @@ require_once '../connect.php';
 //session_start();
 $current_page = basename($_SERVER['PHP_SELF']);
 $position = $_SESSION['SESS_LAST_NAME'];
-if ($position == 'cashier'  || $position == 'Operator') {
+if ($position == 'cashier'  || $position == 'Operator' || $_SESSION[SESS_MOCK_ROLE] == ROLE_CASHIER) {
     $finalcode='RS-'.createRandomPassword();
     echo '
    <li class="'.($current_page=='index.php'?'active':'').'"><a href="index.php"><i class="icon-dashboard icon-2x"></i> Dashboard </a></li>
@@ -32,7 +32,7 @@ if ($position == 'cashier'  || $position == 'Operator') {
 			<li class="'.($current_page=='salesreport.php'?'active':'').'"><a href="salesreport.php?d1=0&d2=0"><i class="icon-bar-chart icon-2x"></i> Sales Report</a></li>
 			<li class="'.(in_array($current_page, array('flight_packages.php','flight_picker.php'))?'active':'').'"><a href="flight_packages.php"><i class="icon-bar-chart icon-2x"></i> Booking Calander</a></li>
 			';
-} else if ($position == 'account') {
+} else if ($position == 'account' || $_SESSION[SESS_MOCK_ROLE] == ROLE_ACCOUNT) {
     echo '<li class="'.($current_page=='index.php'?'active':'').'"><a href="index.php"><i class="icon-dashboard icon-2x"></i> Dashboard </a></li>
 				<li class="'.($current_page=='salesreport.php'?'active':'').'"><a href="salesreport.php?d1=0&d2=0"><i class="icon-bar-chart icon-2x"></i> Sales Report</a></li>
 				<li class="'.($current_page=='collection_other.php'?'active':'').'"><a href="collection_other.php?d1=0&d2=0"><i class="icon-bar-chart icon-2x"></i> Collection Report</a></li>
@@ -53,12 +53,20 @@ if ($position == 'cashier'  || $position == 'Operator') {
 } else if ($position == 'Management') {
     echo '
    <li class="'.($current_page=='index.php'?'active':'').'"><a href="index.php"><i class="icon-dashboard icon-2x"></i> Dashboard </a></li>
-			<li class="'.($current_page=='Businessplan.php'?'active':'').'"><a href="Businessplan.php"><i class="icon-group icon-2x"></i> Business Plan</a></li>
+			<li class="'.($current_page=='Businessplan.php'?'active':'').'"><a href="Businessplan.php"><i class="icon-list icon-2x"></i> Business Plan</a></li>
 			<li class="'.($current_page=='supplier.php'?'active':'').'"><a href="supplier.php"><i class="icon-group icon-2x"></i> Suppliers</a></li>
 			<li class="'.($current_page=='partners.php'?'active':'').'"><a href="partners.php"><i class="icon-group icon-2x"></i> Partners</a></li>';
-
-
 }
+
+if($position == ROLE_MANAGEMENT) {
+    ?>
+    <hr/>
+    <li class=""><a href="mock_role.php?r=<?=ROLE_CASHIER?>"><i class="icon-user icon-2x"></i> Cashier</a></li>
+    <li class=""><a href="mock_role.php?r=<?=ROLE_ACCOUNT?>"><i class="icon-user icon-2x"></i> Account</a></li>
+    <li class=""><a href="mock_role.php?r=<?=ROLE_MANAGEMENT?>"><i class="icon-user icon-2x"></i> Management</a></li>
+    <?php
+}
+
 ?>
 
  

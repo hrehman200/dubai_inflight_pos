@@ -14,6 +14,19 @@ define('GIVEAWAY_APPROVAL_APPROVED', 1);
 define('GIVEAWAY_APPROVAL_DISAPPROVED', 2);
 define('GIVEAWAY_APPROVAL_USED', 3);
 
+define('ROLE_OPERATOR', 'Operator');
+define('ROLE_CASHIER', 'cashier');
+define('ROLE_ACCOUNT', 'account');
+define('ROLE_MANAGEMENT', 'Management');
+
+define('SESS_MOCK_ROLE', 'sess_mock_role');
+
+$_ROLE_ALLOWED_PAGES = [
+    ROLE_MANAGEMENT => ['index', 'Businessplan', 'supplier', 'partners'],
+    ROLE_CASHIER => ['index', 'sales', 'products', 'customer', 'partners', 'salesreport', 'flight_packages', 'flight_picker'],
+    ROLE_ACCOUNT => ['index', 'salesreport', 'collection_other', 'revenue_liability', 'accountreceivables', 'select_customer', 'products', 'customer', 'supplier', 'partners', 'purchaseslist'],
+];
+
 /**
  * @param $customer_id
  * @param $flight_purchase_id
