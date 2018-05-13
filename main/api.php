@@ -232,15 +232,15 @@ function saveCustomer() {
 
     $query->execute(array(
         ':customer_name' => $post['first_name'].' '.$post['last_name'],
-        ':address' => $post['address'],
+        ':address' => ($post['address'] ? $post['address'] : ''),
         ':gender' => $post['gender'],
         ':phone' => $post['phone'],
         ':email' => $post['email'],
         ':password' => sha1($post['password']),
-        ':nationality' => $post['nationality'],
-        ':resident_of' => $post['resident_of'],
+        ':nationality' => ($post['nationality'] ? $post['nationality'] : ''),
+        ':resident_of' => ($post['resident_of'] ? $post['resident_of'] : ''),
         ':dob' => $post['dob-year'].'-'.$post['dob-month'].'-'.$post['dob-day'],
-        ':image' => $new_image,
+        ':image' => ($new_image ? $new_image : ''),
         ':activate_token' => $link_token
     ));
 
