@@ -12,9 +12,9 @@ function getTimeslotsForFlightDate() {
     $start = "00:00"/*date('i')>=30 ? date('H:30') : date('H:00')*/;
     $end = "23:30";
 
-    if ($office_time_slots == 1) {
-        $start = "09:30";
-        $end = "19:00";
+    if ($office_time_slots == 1 || ENV == PRODUCTION) {
+        $start = "10:00";
+        $end = "18:30";
     }
 
     $tStart = strtotime($start);
@@ -228,7 +228,7 @@ function saveCustomer() {
     $query = $db->prepare($sql);
 
     $link_token = sha1(uniqid('t-'));
-    $link = sprintf('<a href="%smain/activate.php?lt=%s">Activate</a>', BASE_URL, $link_token);
+    $link = sprintf('<a href="%smain/activate.php?lt=%s&invoice=%s&p=%s">Activate</a>', BASE_URL, $link_token, $post['invoice'], $post['p']);
 
     $query->execute(array(
         ':customer_name' => $post['first_name'].' '.$post['last_name'],

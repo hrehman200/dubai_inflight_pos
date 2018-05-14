@@ -3,6 +3,8 @@ include_once('../connect.php');
 
 $invoice = $_POST['req_reference_number'];
 
+sendEmail('hrehman200@gmail.com', 'Testing', 'Invoice: '.$invoice . json_encode($_POST));
+
 if(empty($invoice) || is_null($invoice)) {
 
     // cleanup if customer cancelled the purchase

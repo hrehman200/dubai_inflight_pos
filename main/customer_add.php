@@ -1,5 +1,7 @@
 <form id="register-form" action="api.php" method="post" role="form" enctype="multipart/form-data">
     <input type="hidden" name="call" value="saveCustomer" />
+    <input type="hidden" name="invoice" value="" />
+    <input type="hidden" name="p" value="" />
     <div class="form-group">
         <input type="text" name="first_name" id="first_name" class="form-control"
                placeholder="First Name" value="">
@@ -9,7 +11,7 @@
     <div class="form-group">
         <input type="text" name="phone" id="phone" class="form-control" placeholder="Phone No" value="">
     </div>
-    <div class="form-group">
+    <!--<div class="form-group">
         <input type="text" name="address" id="address" class="form-control" placeholder="Address" value="">
     </div>
     <div class="form-group">
@@ -411,17 +413,17 @@
                 <option value="1917">1917</option>
             </select>
         </div>
-    </div>
+    </div>-->
     <div class="form-group">
         <select class="form-control" name="gender" id="gender">
             <option value="M">Male</option>
             <option value="F">Female</option>
         </select>
     </div>
-    <div class="form-group">
+    <!--<div class="form-group">
         <label for="customer_img" style="display: inline; line-height: 20px; vertical-align: top;" >Image (Optional):</label>
         <input type="file" name="customer_img" id="customer_img" class="form-control" placeholder="Profile Image">
-    </div>
+    </div>-->
     <div class="form-group">
         <input type="email" name="email" id="email" class="form-control" placeholder="Email Address"
                value="">

@@ -134,6 +134,17 @@ $row = $query->fetch();
 </div>
 
 <script type="text/javascript">
+
+    function getParameterByName(name, url) {
+        if (!url) url = window.location.href;
+        name = name.replace(/[\[\]]/g, "\\$&");
+        var regex = new RegExp("[?&]" + name + "(=([^&#]*)|&|#|$)"),
+            results = regex.exec(url);
+        if (!results) return null;
+        if (!results[2]) return '';
+        return decodeURIComponent(results[2].replace(/\+/g, " "));
+    }
+
     $(function() {
         $('.btnRegister').on('click', function (e) {
             e.preventDefault();
@@ -178,7 +189,17 @@ $row = $query->fetch();
                 success: function (response) {
                     $(e.target).button('reset');
                     if (response.success == 1) {
-                        window.location.href = 'store.php<?='?invoice=RS-'.createRandomPassword()?>';
+                        var invoice = getParameterByName('invoice');
+                        var p = getParameterByName('p');
+                        console.log(invoice);
+                        console.log(p);
+                        if(!invoice || invoice == 'undefined') {
+                            invoice = 'RS-'+'<?=createRandomPassword()?>';
+                        }
+                        if(p == 1) {
+                            p = 2;
+                        }
+                        window.location.href = 'store.php?invoice='+invoice+'&p='+p;
                     } else {
                         $('#login-customer-modal .msg').html('<div class="alert alert-danger">'+response.msg+'</div>');
                     }
@@ -207,6 +228,12 @@ $row = $query->fetch();
         $('#btnSaveCustomer').on('click', function (e) {
             $(e.target).button('loading');
 
+            var invoice = getParameterByName('invoice');
+            var p = getParameterByName('p');
+
+            $('#register-form')
+                .find('input[name="invoice"]').val(invoice).end()
+                .find('input[name="p"]').val(p).end();
             var data = new FormData($('#register-form')[0]);
 
             $.ajax({

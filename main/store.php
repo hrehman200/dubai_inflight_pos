@@ -8,7 +8,7 @@
     <?php
     include_once('../connect.php');
 
-    if(isset($_SESSION['CUSTOMER_FIRST_NAME']) && $_GET['invoice'] == '') {
+    if(/*isset($_SESSION['CUSTOMER_FIRST_NAME']) &&*/ $_GET['invoice'] == '') {
         $page = $_SERVER['PHP_SELF'];
         header("Refresh:0; url=$page?invoice=RS-".createRandomPassword());
     }
@@ -86,7 +86,7 @@
     <div class="row-fluid">
         <div class="span10 offset1">
             <?php
-            if(isset($_SESSION['CUSTOMER_FIRST_NAME'])) {
+            if(!isset($_GET['p']) || $_GET['p'] == 2 || isset($_SESSION['CUSTOMER_ID'])) {
                 ?>
                 <form action="store_save_flight_order.php" id="formFlightTime" method="post">
 
@@ -292,7 +292,7 @@
                                     <?php
                                     $vat_percent = $row['percent'];
                                     $current_price -= $discount_amount;
-                                    $vat_amount = $vat_percent * $current_price / 105;
+                                    $vat_amount = round($vat_percent * $current_price / 105, 2);
                                     ?>
                                     <span id="vatAmount">(<?= $row['percent'] ?>%)</span>
                                     <span id="vatPercent"><?= $vat_amount ?></span>
@@ -335,8 +335,8 @@
                         }
                         ?>
                         <tr>
-                            <td colspan="3" style="text-align: right;">Totals:</td>
-                            <td><?= $total_cost ?></td>
+                            <td colspan="3" style="text-align: right;">Total:</td>
+                            <td><?= number_format($total_cost, 2) ?></td>
                             <td></td>
                             <td colspan="2"><?= $total_duration ?></td>
                         </tr>
@@ -354,12 +354,14 @@
                     <div class="clearfix"></div>
                 </div>
                 <?php
-            } else {
+            }
+            else if($_GET['p'] == 1) {
                 ?>
                 <div class="" align="center">
                     <br>
                     <img src="<?=BASE_URL?>main/img/inflight_logo.png" width="350" style="margin-left:90px;" /><br>
 
+                    <h3>Please register/login to continue with the transaction</h3>
                     <button class="btn btn-large btnRegister" data-link="customer_add.php">Signup (New Customer)</button>
                     <button class="btn btn-large btnLogin" data-link="customer_login.php">Login</button>
                     <button class="btn btn-large btnForgotPass" data-link="customer_forgotpass.php">Forgot Password</button>
@@ -373,7 +375,7 @@
     </div>
 </div>
 
-<form id="payment_form" action="https://secureacceptance.cybersource.com/pay" method="post">
+<form id="payment_form" action="https://testsecureacceptance.cybersource.com/pay" method="post">
     <input type="hidden" name="access_key" value="<?=CYBER_ACCESS_KEY?>">
     <input type="hidden" name="profile_id" value="<?=CYBER_PROFILE_ID?>"><!--Your Profile Id-->
     <input type="hidden" name="transaction_uuid" value="<?php echo uniqid() ?>">
@@ -669,6 +671,18 @@
     $('.btnCheckout').on('click', function(e) {
         e.preventDefault();
 
+        if($('#resultTable tbody tr').length <= 1) {
+            bootbox.alert('Please select an offer first');
+            return false;
+        }
+
+        <?php
+        if(!isset($_SESSION['CUSTOMER_ID'])) {
+            echo sprintf('window.location.href = "store.php?p=1&invoice=%s";
+            return false;', $_GET['invoice']);
+        }
+        ?>
+
         var amount = $('#payment_form').find('input[name="amount"]').val();
         if(amount > 0) {
             $.ajax({
@@ -703,6 +717,11 @@
             });
         }
     });
+
+    var p = getParameterByName('p');
+    if(p == 2) {
+        $('#btnCheckout').click();
+    }
 
     var _setMinutes = function () {
         var minutes = $('#flightOffer').find('option:selected').data('duration');
