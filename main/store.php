@@ -375,7 +375,7 @@
     </div>
 </div>
 
-<form id="payment_form" action="https://testsecureacceptance.cybersource.com/pay" method="post">
+<form id="payment_form" action="https://secureacceptance.cybersource.com/pay" method="post">
     <input type="hidden" name="access_key" value="<?=CYBER_ACCESS_KEY?>">
     <input type="hidden" name="profile_id" value="<?=CYBER_PROFILE_ID?>"><!--Your Profile Id-->
     <input type="hidden" name="transaction_uuid" value="<?php echo uniqid() ?>">
@@ -909,7 +909,7 @@
                 'flight_offer_id': flightOfferId,
                 'duration': duration,
                 'show_slots_with_minutes_only': $('#chkOnlySlotsWithDuration').is(':checked') ? 1 : 0,
-                'office_time_slots': $('#chkOnlyOfficeTimeSlots').is(':checked') ? 1 : 0
+                'office_time_slots': 1,//$('#chkOnlyOfficeTimeSlots').is(':checked') ? 1 : 0
             },
             dataType: 'json',
             success: function (response) {

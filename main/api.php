@@ -12,7 +12,7 @@ function getTimeslotsForFlightDate() {
     $start = "00:00"/*date('i')>=30 ? date('H:30') : date('H:00')*/;
     $end = "23:30";
 
-    if ($office_time_slots == 1 || ENV == PRODUCTION) {
+    if ($office_time_slots == 1) {
         $start = "10:00";
         $end = "18:30";
     }
