@@ -330,7 +330,7 @@ $position = $_SESSION['SESS_LAST_NAME'];
                                     }
                                     ?>
                                 </select>
-                                (<span class="discountAmount">-<?=$discount_amount?></span>)
+                                (<span class="discountAmount">-<?=round($discount_amount, 2)?></span>)
                             </td>
                             <td>
                                 <?php
@@ -339,7 +339,7 @@ $position = $_SESSION['SESS_LAST_NAME'];
                                 $vat_amount = $vat_percent * $current_price / 105;
                                 ?>
                                 <span id="vatAmount">(<?=$row['percent']?>%)</span>
-                                <span id="vatPercent"><?=$vat_amount?></span>
+                                <span id="vatPercent"><?=round($vat_amount, 2)?></span>
                             </td>
                             <td><?php echo $row['deduct_from_balance']==1 ? '-' : $row['duration']; ?></td>
                             <td width="90"><a
@@ -377,7 +377,7 @@ $position = $_SESSION['SESS_LAST_NAME'];
                     ?>
                     <tr>
                         <td colspan="3" style="text-align: right;">Totals:</td>
-                        <td><?=$total_cost?></td>
+                        <td><?=round($total_cost, 2)?></td>
                         <td></td>
                         <td></td>
                         <td colspan="2"><?=$total_duration?></td>

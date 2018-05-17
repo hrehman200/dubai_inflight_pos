@@ -140,7 +140,7 @@
 
             <span style="vertical-align: middle; width: auto; padding-right:0">AED</span>
         <input type="number" name="total_cash" id="total_cash" placeholder="Cash"
-               style="width: 225px; height:30px;  margin-bottom: 15px;" value="<?= $_GET['total'] ?>" readonly/>
+               style="width: 225px; height:30px;  margin-bottom: 15px;" value="<?= round($_GET['total'], 0) ?>" readonly/>
 
         <br>
 

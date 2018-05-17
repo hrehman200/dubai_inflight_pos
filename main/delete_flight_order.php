@@ -17,7 +17,7 @@ if ($flight_purchase_id > 0) {
     $str_query = str_replace('booking_id=' . $booking_id, "", $str_query);
 }
 
-if(isset($_SESSION['CUSTOMER_ID']) || ENV == PRODUCTION) {
+if(isset($_SESSION['CUSTOMER_ID']) || in_array($_SERVER['SERVER_NAME'], ['store.inflightdubai.com', ONLINE_IP])) {
     $location = sprintf("store.php?%s", $str_query);
 } else {
     $location = sprintf("flight_picker.php?%s", $str_query);
