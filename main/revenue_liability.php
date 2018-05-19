@@ -33,9 +33,9 @@ include('header.php');
                 <form action="revenue_liability.php" method="get">
                     From : <input type="text" name="d1" style="width: 223px; padding:14px;" class="tcal" value=""/>
                     To: <input type="text" style="width: 223px; padding:14px;" name="d2" class="tcal" value=""/>
-                    <br/>
-                    <input type="hidden" name="customerId" id="customerId" value="<?=$_GET['customerId']?>" />
-                    <input type="text" class="form-contorl span4" placeholder="Customer Name" id="customer" name="customer" autocomplete="off" />
+                    <!--<br/>
+                    <input type="hidden" name="customerId" id="customerId" value="<?/*=$_GET['customerId']*/?>" />
+                    <input type="text" class="form-contorl span4" placeholder="Customer Name" id="customer" name="customer" autocomplete="off" />-->
 
                     <button class="btn btn-info" style="width: 123px; height:35px; margin-top:-8px;" type="submit">
                         <i class="icon icon-search icon-large"></i> Search
@@ -105,6 +105,8 @@ include('header.php');
 
                     if($package_name == 'FTF') {
                         $package_check = " fpkg.package_name LIKE 'FTF%'";
+                    } else if($package_name == 'RF - Repeat Flights') {
+                        $package_check = " fpkg.package_name LIKE 'RF - Repeat Flights%'";
                     } else {
                         $package_check = " fpkg.id IN (6, 8)";
                     }
@@ -165,7 +167,7 @@ include('header.php');
                                 (customer_name != 'FDR' AND customer_name != 'MAINTENANCE' AND customer_name != 'inflight staff flying') OR customer_name IS NULL
                             ) AND d.category ", $join_with_discount, $package_check);
 
-                    if($package_name == 'Skydivers' || $package_name == 'FTF') {
+                    if($package_name == 'Skydivers' || $package_name == 'FTF' || $package_name == 'RF - Repeat Flights') {
                         $sql .= "NOT IN ('Presidential Guard', 'Navy Seal', 'Military')";
                     } else {
                         $sql .= "IN ('".$package_name."')";
@@ -202,10 +204,13 @@ include('header.php');
 
                     $arr_minutes_used = array_group_by($arr2, function($v) { return $v['id']; });
                     $purchased_minutes_used = 0;
-                    $minutes_used = array_reduce($arr_minutes_used, function($carry, $item) use (&$purchased_minutes_used, $arr_flight_purchase_ids) {
+                    $total_credit_cost = 0;
+                    $minutes_used = array_reduce($arr_minutes_used, function($carry, $item) use (&$purchased_minutes_used, &$total_credit_cost, $arr_flight_purchase_ids) {
                         if($item[0]['flight_taken'] == 1) {
                             if ($item[0]['from_flight_purchase_id'] > 0) {
                                 $carry += $item[0]['credit_used'];
+                                $credit_cost_per_minute = getPerMinuteCostOfPurchasedPackage($item[0]['from_flight_purchase_id']);
+                                $total_credit_cost += $credit_cost_per_minute * $item[0]['credit_used'];
                                 // if credit used is from the same purchase in selected time range
                                 if(in_array($item[0]['from_flight_purchase_id'], $arr_flight_purchase_ids)) {
                                     $purchased_minutes_used += $item[0]['credit_used'];
@@ -223,13 +228,19 @@ include('header.php');
                         return $carry;
                     });
 
+                    if($total_minutes > 0) {
+                        $aed_per_paid_minute = $paid / $total_minutes;
+                        $total_purchased_cost = $aed_per_paid_minute * $purchased_minutes_used;
+                    }
+
                     $arr2 = [[
                         'package_name' => $package_name,
                         'paid' => $paid,
                         'total_minutes' => $total_minutes,
                         'minutes_used' => $minutes_used,
                         'credit_used' => $credit_used,
-                        'purchased_minutes_used' => $purchased_minutes_used
+                        'purchased_minutes_used' => $purchased_minutes_used,
+                        'aed_value' => $total_purchased_cost + $total_credit_cost
                     ]];
 
                     return $arr2;
@@ -247,12 +258,15 @@ include('header.php');
                             <th>Paid</th>
                             <th>Total Minutes</th>
                             <th>Minutes Used</th>
-                            <th>Minutes Liability</th>
-                            <th>Credit Used</th>
+                            <th>AED Value</th>
                         </tr>
                         <?php
                         /** FTF */
                         $arr_revenue = getDataAndAggregate('FTF');
+
+                        /** RF */
+                        $arr2 = getDataAndAggregate('RF - Repeat Flights');
+                        $arr_revenue = array_merge($arr_revenue, $arr2);
 
                         /** SKYDIVERS */
                         $arr2 = getDataAndAggregate('Skydivers');
@@ -284,14 +298,13 @@ include('header.php');
                                 <td><?= number_format($row['paid'], 1) ?></td>
                                 <td><?= number_format($row['total_minutes']) ?></td>
                                 <td><?= number_format($row['minutes_used']) ?></td>
-                                <td><?= number_format($row['total_minutes'] - $row['purchased_minutes_used']) ?></td>
-                                <td><?=$row['credit_used']?></td>
+                                <td><?= number_format($row['aed_value'], 2) ?></td>
                             </tr>
                             <?php
                         }
 
                         $arr_packages = json_encode(array_map(function($v) { return $v['package_name']; }, $arr_revenue));
-                        $arr_paid = json_encode(array_map(function($v) { return round($v['paid'], 1); }, $arr_revenue));
+                        $arr_paid = json_encode(array_map(function($v) { return round($v['aed_value'], 1); }, $arr_revenue));
 
                         ?>
                     </table>

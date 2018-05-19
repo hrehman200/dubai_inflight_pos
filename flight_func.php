@@ -491,6 +491,26 @@ function getRemainingMinutesOfFlightPurchase($flight_purchase_id) {
 }
 
 /**
+ * @param $flight_purchase_id
+ * @return mixed
+ */
+function getPerMinuteCostOfPurchasedPackage($flight_purchase_id) {
+    global $db;
+
+    $query = $db->prepare('SELECT
+          fo.duration, fp.discount, fp.price
+          FROM flight_purchases fp
+          INNER JOIN flight_offers fo ON fp.flight_offer_id = fo.id
+          WHERE fp.id = ?');
+    $query->execute([$flight_purchase_id]);
+    $row = $query->fetch();
+
+    $per_minute_cost = $row['price'] / $row['duration'];
+    $discounted_per_minute_cost = $per_minute_cost - ($row['discount'] * $per_minute_cost / 100);
+    return round($discounted_per_minute_cost, 2);
+}
+
+/**
  * @param $invoice_id
  * @return bool
  */
