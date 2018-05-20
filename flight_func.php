@@ -111,20 +111,6 @@ function deductFromBalance($customer_id, $flight_offer_id, $balance) {
 }
 
 /**
- * @param $customer_id
- * @param $balance
- */
-function deductFromCreditTime($customer_id, $flight_offer_id, $balance, $creditDuration) {
-    global $db;
-
-    $query = $db->prepare("UPDATE customer SET credit_time  = credit_time - :balanceToDeductFromRow WHERE customer_id = :customer_id");
-    $query->execute(array(
-        ':customer_id'            => $customer_id,
-        ':balanceToDeductFromRow' => $balance
-    ));
-}
-
-/**
  * @param $invoice_id
  * @param $flight_offer_id
  * @param $customer_id
@@ -283,13 +269,23 @@ function addBalance($booking_id) {
 function updateCustomerCredits($customer_id, $credits, $add = false) {
     global $db;
 
+    $query = $db->prepare('SELECT per_minute_cost FROM customer WHERE customer_id = ?');
+    $query->execute([$customer_id]);
+    $row = $query->fetch(PDO::FETCH_ASSOC);
+    $per_minute_cost = $row['per_minute_cost'];
+
     $operator = ($add) ? '+' : '-';
-    $sql      = sprintf("UPDATE customer SET credit_time = credit_time %s :credits WHERE customer_id = :customerId", $operator);
+    $sql      = sprintf("UPDATE customer 
+      SET 
+          credit_time = credit_time %s :credits,
+          credit_cash = credit_cash %s :perMinuteCost
+      WHERE customer_id = :customerId", $operator, $operator);
 
     $query = $db->prepare($sql);
     $query->execute(array(
         ':customerId' => $customer_id,
-        ':credits'    => $credits
+        ':credits'    => $credits,
+        ':perMinuteCost' => $per_minute_cost * $credits
     ));
 }
 
@@ -338,7 +334,7 @@ function adjustBalanceForDeletedFlightBookings($invoice_id) {
     global $db;
 
     // get those purchases which don't have bookings
-    $query = $db->prepare("SELECT fp.id, fp.customer_id, fo.duration
+    $query = $db->prepare("SELECT fp.id, fp.customer_id, fp.deduct_from_balance, fb.duration
       FROM flight_purchases fp
       INNER JOIN flight_offers fo ON fp.flight_offer_id = fo.id
       LEFT JOIN flight_bookings fb ON fb.flight_purchase_id = fp.id
@@ -349,7 +345,11 @@ function adjustBalanceForDeletedFlightBookings($invoice_id) {
     ));
 
     while ($row = $query->fetch()) {
-        updateCustomerFlightBalance($row['customer_id'], $row['id'], $row['duration'], true, true);
+        if($row['deduct_from_balance'] == 1) {
+            updateCustomerFlightBalance($row['customer_id'], $row['id'], $row['duration'], true, true);
+        } else if($row['deduct_from_balance'] == 2) {
+            updateCustomerCredits($row['customer_id'], $row['duration'], true);
+        }
     }
 }
 

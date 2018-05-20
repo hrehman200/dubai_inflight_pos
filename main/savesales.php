@@ -76,19 +76,6 @@ if (@$_POST['savingflight'] == 1) {
         $query->execute([$approval_request['id'], $a]);
     }
 
-    if ($mode_of_payment == 'credit_cash') {
-        # code...
-        $result = $db->prepare("SELECT * FROM customer WHERE customer_id = :customer_id");
-        $result->execute(array('customer_id'=>$_POST['customerId']));
-        $row = $result->fetch();
-
-        $credit_cash = $row['credit_cash'];
-        $remainingCreditCash = $credit_cash - $_POST['cash'];
-
-        $queryCS = $db->prepare("UPDATE customer SET credit_cash =:credit_cash WHERE customer_id = :customer_id");
-        $queryCS->execute(array(':credit_cash' => $remainingCreditCash, ':customer_id' => $_POST['customerId']));
-    }
-
     $query = $db->prepare("UPDATE flight_purchases SET status = 1 WHERE invoice_id = :invoiceId");
     $query->execute(array(
         ':invoiceId' => $a

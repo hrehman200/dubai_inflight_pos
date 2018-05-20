@@ -25,7 +25,7 @@ if ($_POST['useBalance'] == 1 && $_POST['useCredit'] == 0) {
 } else if ($_POST['useCredit'] == 1 && $_POST['useBalance'] == 0) {
     $flight_purchase_id = insertFlightPurchase($invoice, $flight_offer_id, $customer_id, 2, 0, $class_people);
     insertFlightBooking($flight_purchase_id, $flight_time, $flight_duration);
-    deductFromCreditTime($customer_id, $flight_offer_id, $flight_duration, $creditDuration);
+    updateCustomerCredits($customer_id, $flight_duration);
 } else {
 
     if ($flight_purchase_id > 0) {

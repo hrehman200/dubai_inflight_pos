@@ -174,7 +174,6 @@
                 <option value="Card">Card</option>
                 <option value="Account">Account</option>
                 <option value="Online">Online</option>
-                <option value="credit_cash">Credit Cash</option>
                 <option value="credit_time">Pre-Opening</option>
 
             </select>
