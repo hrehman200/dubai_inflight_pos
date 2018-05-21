@@ -117,7 +117,10 @@ include('header.php');
                             fb1.from_flight_purchase_id,
                             IFNULL(fb1.flight_time, NOW()+10) <= NOW() AS flight_taken,
                             s1.invoice_number,
-                            s1.amount AS paid,
+                            CASE WHEN(
+                                (s1.mode_of_payment = 'credit_time' OR s1.mode_of_payment_1 = 'credit_time') AND fp1.deduct_from_balance = 2
+                            ) THEN (fb1.duration * c.per_minute_cost) ELSE s1.amount
+                            END AS paid,
                             CASE WHEN(
                                 s1.mode_of_payment != 'credit_time' AND s1.mode_of_payment_1 != 'credit_time' AND fp1.deduct_from_balance = 0
                             ) THEN fb1.duration ELSE 0

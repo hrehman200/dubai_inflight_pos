@@ -364,9 +364,18 @@ $position = $_SESSION['SESS_LAST_NAME'];
                                 <td></td>
                                 <td></td>
                                 <td><?=$row2['duration']?></td>
-                                <td><a href="delete_flight_order.php?booking_id=<?php echo $row2['id'] . "&" . $str_query; ?>">
-                                        <button class="btn btn-mini btn-warning"><i class="icon icon-remove"></i> Cancel</button>
-                                    </a></td>
+                                <td><?php
+                                    if($row['deduct_from_balance'] != 2) {
+                                        ?>
+                                        <a href="delete_flight_order.php?booking_id=<?php echo $row2['id'] . "&" . $str_query; ?>">
+                                            <button class="btn btn-mini btn-warning"><i class="icon icon-remove"></i>
+                                                Cancel
+                                            </button>
+                                        </a>
+                                        <?php
+                                    }
+                                    ?>
+                                </td>
                             </tr>
                             <?php
                         }
