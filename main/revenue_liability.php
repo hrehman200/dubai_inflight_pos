@@ -165,7 +165,7 @@ include('header.php');
                                     'credit_cash'
                                 )
                             ) AND(
-                                s1.date >= :startDate AND s1.date <= :endDate
+                                DATE(fb1.flight_time) >= :startDate AND DATE(fb1.flight_time) <= :endDate
                             ) AND(
                                 (customer_name != 'FDR' AND customer_name != 'MAINTENANCE' AND customer_name != 'inflight staff flying') OR customer_name IS NULL
                             ) AND d.category ", $join_with_discount, $package_check);
