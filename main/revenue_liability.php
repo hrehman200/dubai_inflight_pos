@@ -94,6 +94,20 @@ include('header.php');
                     return $result;
                 }
 
+                /**
+                 * If search date is 15 May, purchase date is 15 May but credit-flight was taken on 16 May then
+                 * credit-used should not be shown on 15 May
+                 *
+                 * @param $flight_time
+                 * @param $date1
+                 * @param $date2
+                 * @return bool
+                 */
+                function isFlightTimeInsideSearchedDate($flight_time, $date1, $date2) {
+                    $flight_time = (new DateTime($flight_time))->format('Y-m-d');
+                    return (strtotime($flight_time) >= strtotime($date1) && strtotime($flight_time) <= strtotime($date2));
+                }
+
                 function getDataAndAggregate($package_name) {
                     global $db;
 
@@ -113,10 +127,13 @@ include('header.php');
 
                     $sql = sprintf("SELECT
                             fp1.id AS flight_purchase_id,
+                            fp1.deduct_from_balance,
                             fb1.id,
                             fb1.from_flight_purchase_id,
+                            fb1.flight_time,
                             IFNULL(fb1.flight_time, NOW()+10) <= NOW() AS flight_taken,
                             s1.invoice_number,
+                            s1.customer_id,
                             CASE WHEN(
                                 (s1.mode_of_payment = 'credit_time' OR s1.mode_of_payment_1 = 'credit_time') AND fp1.deduct_from_balance = 2
                             ) THEN (fb1.duration * c.per_minute_cost) ELSE s1.amount
@@ -165,7 +182,7 @@ include('header.php');
                                     'credit_cash'
                                 )
                             ) AND(
-                                DATE(fb1.flight_time) >= :startDate AND DATE(fb1.flight_time) <= :endDate
+                                s1.date >= :startDate AND s1.date <= :endDate
                             ) AND(
                                 (customer_name != 'FDR' AND customer_name != 'MAINTENANCE' AND customer_name != 'inflight staff flying') OR customer_name IS NULL
                             ) AND d.category ", $join_with_discount, $package_check);
@@ -208,15 +225,22 @@ include('header.php');
                     $arr_minutes_used = array_group_by($arr2, function($v) { return $v['id']; });
                     $purchased_minutes_used = 0;
                     $total_credit_cost = 0;
-                    $minutes_used = array_reduce($arr_minutes_used, function($carry, $item) use (&$purchased_minutes_used, &$total_credit_cost, $arr_flight_purchase_ids) {
+                    $minutes_used = array_reduce($arr_minutes_used, function($carry, $item) use (&$purchased_minutes_used, &$total_credit_cost, $arr_flight_purchase_ids, $package_name) {
                         if($item[0]['flight_taken'] == 1) {
-                            if ($item[0]['from_flight_purchase_id'] > 0) {
-                                $carry += $item[0]['credit_used'];
-                                $credit_cost_per_minute = getPerMinuteCostOfPurchasedPackage($item[0]['from_flight_purchase_id']);
-                                $total_credit_cost += $credit_cost_per_minute * $item[0]['credit_used'];
-                                // if credit used is from the same purchase in selected time range
-                                if(in_array($item[0]['from_flight_purchase_id'], $arr_flight_purchase_ids)) {
-                                    $purchased_minutes_used += $item[0]['credit_used'];
+                            if ($item[0]['from_flight_purchase_id'] > 0 || $item[0]['deduct_from_balance'] == 2) {
+                                if(isFlightTimeInsideSearchedDate($item[0]['flight_time'], $_GET['d1'], $_GET['d2'])) {
+                                    $carry += $item[0]['credit_used'];
+
+                                    if($item[0]['deduct_from_balance'] == 2) {
+                                        $credit_cost_per_minute = getPerMinuteCostForCustomer($item[0]['customer_id']);
+                                    } else {
+                                        $credit_cost_per_minute = getPerMinuteCostOfPurchasedPackage($item[0]['from_flight_purchase_id']);
+                                    }
+                                    $total_credit_cost += $credit_cost_per_minute * $item[0]['credit_used'];
+                                    // if credit used is from the same purchase in selected time range
+                                    if (in_array($item[0]['from_flight_purchase_id'], $arr_flight_purchase_ids)) {
+                                        $purchased_minutes_used += $item[0]['credit_used'];
+                                    }
                                 }
                             } else {
                                 $carry += $item[0]['minutes_used'];
@@ -227,7 +251,9 @@ include('header.php');
                     });
 
                     $credit_used = array_reduce($arr_minutes_used, function($carry, $item) {
-                        $carry += $item[0]['credit_used'];
+                        if(isFlightTimeInsideSearchedDate($item[0]['flight_time'], $_GET['d1'], $_GET['d2'])) {
+                            $carry += $item[0]['credit_used'];
+                        }
                         return $carry;
                     });
 
@@ -295,8 +321,20 @@ include('header.php');
                                 </tr>
                                 <?php
                             }
+                            if($row['package_name'] == 'Military') {
+                                $arr_military = array_slice($arr_revenue, 3);
+                                ?>
+                                <tr class="military-row" style="cursor:hand; background-color:#dddddd;">
+                                    <td><b><?= $row['package_name'] ?></b></td>
+                                    <td><?= number_format(array_sum(array_column($arr_military, 'paid')), 1) ?></td>
+                                    <td><?= number_format(array_sum(array_column($arr_military, 'total_minutes')), 1) ?></td>
+                                    <td><?= number_format(array_sum(array_column($arr_military, 'minutes_used')), 1) ?></td>
+                                    <td><?= number_format(array_sum(array_column($arr_military, 'aed_value')), 2) ?></td>
+                                </tr>
+                                <?php
+                            }
                             ?>
-                            <tr>
+                            <tr class="">
                                 <td><b><?= $row['package_name'] ?></b></td>
                                 <td><?= number_format($row['paid'], 1) ?></td>
                                 <td><?= number_format($row['total_minutes']) ?></td>
@@ -397,6 +435,9 @@ include('header.php');
 
 <script type="text/javascript">
 
+    $('.military-row').click(function(e) {
+        $(this).nextAll().toggle();
+    }).click();
 
     $("#customer").typeahead({
         onSelect: function(item) {

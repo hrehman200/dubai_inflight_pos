@@ -269,10 +269,7 @@ function addBalance($booking_id) {
 function updateCustomerCredits($customer_id, $credits, $add = false) {
     global $db;
 
-    $query = $db->prepare('SELECT per_minute_cost FROM customer WHERE customer_id = ?');
-    $query->execute([$customer_id]);
-    $row = $query->fetch(PDO::FETCH_ASSOC);
-    $per_minute_cost = $row['per_minute_cost'];
+    $per_minute_cost = getPerMinuteCostForCustomer($customer_id);
 
     $operator = ($add) ? '+' : '-';
     $sql      = sprintf("UPDATE customer 
@@ -508,6 +505,21 @@ function getPerMinuteCostOfPurchasedPackage($flight_purchase_id) {
     $per_minute_cost = $row['price'] / $row['duration'];
     $discounted_per_minute_cost = $per_minute_cost - ($row['discount'] * $per_minute_cost / 100);
     return round($discounted_per_minute_cost, 2);
+}
+
+/**
+ * Per minute cost of customer's remaining credit minutes which was entered manually by operators
+ *
+ * @param $customer_id
+ * @return mixed
+ */
+function getPerMinuteCostForCustomer($customer_id) {
+    global $db;
+
+    $query = $db->prepare('SELECT per_minute_cost FROM customer WHERE customer_id = ?');
+    $query->execute([$customer_id]);
+    $row = $query->fetch(PDO::FETCH_ASSOC);
+    return $row['per_minute_cost'];
 }
 
 /**
