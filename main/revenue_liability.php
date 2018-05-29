@@ -274,6 +274,32 @@ include('header.php');
 
                     return $arr2;
                 }
+
+                /**
+                 * @param $product_name
+                 * @param $date1
+                 * @param $date2
+                 * @return mixed
+                 */
+                function getMerchandiseRevenue($product_name, $date1, $date2) {
+                    global $db;
+                    $query = $db->prepare('SELECT SUM(s.amount) AS paid
+                            FROM sales s
+                            INNER JOIN sales_order so ON s.invoice_number = so.invoice
+                            INNER JOIN products p ON so.product = p.product_id 
+                            WHERE p.product_name LIKE ? 
+                            AND (s.date >= ? AND s.date <= ?)');
+                    $query->execute(["%".$product_name."%", $date1, $date2]);
+                    $row = $query->fetch(PDO::FETCH_ASSOC);
+
+                    $arr2 = [[
+                        'package_name' => $product_name,
+                        'paid' => $row['paid'],
+                        'aed_value' => $row['paid']
+                    ]];
+
+                    return $arr2;
+                }
                 ?>
 
                 <div class="content" id="content">
@@ -301,17 +327,38 @@ include('header.php');
                         $arr2 = getDataAndAggregate('Skydivers');
                         $arr_revenue = array_merge($arr_revenue, $arr2);
 
+                        $arr_military = [];
                         /** Military */
                         $arr2 = getDataAndAggregate('Military');
-                        $arr_revenue = array_merge($arr_revenue, $arr2);
+                        $arr_military = array_merge($arr_military, $arr2);
 
                         /** Navy Seal */
                         $arr2 = getDataAndAggregate('Navy Seal');
-                        $arr_revenue = array_merge($arr_revenue, $arr2);
+                        $arr_military = array_merge($arr_military, $arr2);
 
                         /** Presidential Guard */
                         $arr2 = getDataAndAggregate('Presidential Guard');
+                        $arr_military = array_merge($arr_military, $arr2);
+
+                        $arr_military_sum[0] = [
+                            'package_name' => 'Military',
+                            'paid' => array_sum(array_column($arr_military, 'paid')),
+                            'total_minutes' => array_sum(array_column($arr_military, 'total_minutes')),
+                            'minutes_used' => array_sum(array_column($arr_military, 'minutes_used')),
+                            'aed_value' => array_sum(array_column($arr_military, 'aed_value'))
+                        ];
+
+                        $arr_revenue = array_merge($arr_revenue, $arr_military_sum);
+
+                        /** HELMENT RENT */
+                        $arr2 = getMerchandiseRevenue('Helment Rent', $_GET['d1'], $_GET['d2']);
                         $arr_revenue = array_merge($arr_revenue, $arr2);
+
+                        /** VIDEO */
+                        $arr2 = getMerchandiseRevenue('Video', $_GET['d1'], $_GET['d2']);
+                        $arr_revenue = array_merge($arr_revenue, $arr2);
+
+
 
                         foreach ($arr_revenue as $row) {
                             if($row['package_name'] == 'Skydivers') {
@@ -321,20 +368,8 @@ include('header.php');
                                 </tr>
                                 <?php
                             }
-                            if($row['package_name'] == 'Military') {
-                                $arr_military = array_slice($arr_revenue, 3);
-                                ?>
-                                <tr class="military-row" style="cursor:hand; background-color:#dddddd;">
-                                    <td><b><?= $row['package_name'] ?></b></td>
-                                    <td><?= number_format(array_sum(array_column($arr_military, 'paid')), 1) ?></td>
-                                    <td><?= number_format(array_sum(array_column($arr_military, 'total_minutes')), 1) ?></td>
-                                    <td><?= number_format(array_sum(array_column($arr_military, 'minutes_used')), 1) ?></td>
-                                    <td><?= number_format(array_sum(array_column($arr_military, 'aed_value')), 2) ?></td>
-                                </tr>
-                                <?php
-                            }
                             ?>
-                            <tr class="">
+                            <tr class="<?=$row['package_name']=='Military'?'military-row':''?>">
                                 <td><b><?= $row['package_name'] ?></b></td>
                                 <td><?= number_format($row['paid'], 1) ?></td>
                                 <td><?= number_format($row['total_minutes']) ?></td>
@@ -356,78 +391,33 @@ include('header.php');
 
                     <hr/>
 
-                    <?php
-                    if($_GET['customerId'] > 0) {
-                        ?>
-                        <table class="table table-striped" style="background-color: white;" id="tblCollection">
-                            <?php
-                            $sql = "
-                              SELECT 
-                                c1.customer_name,
-                                IFNULL(fc.minutes,0)+IFNULL(c1.credit_time,0) AS units_remaining,
-                                SUM(fb1.duration) AS units_consumed,
-                                SUM(s1.amount) AS revenue_on_consumed
-                              FROM
-                                sales s1
-                              INNER JOIN
-                                flight_purchases fp1 ON s1.invoice_number = fp1.invoice_id
-                              INNER JOIN
-                                flight_offers fo1 ON fp1.flight_offer_id = fo1.id
-                              LEFT JOIN
-                                flight_credits fc ON fc.customer_id = fp1.customer_id
-                              LEFT JOIN
-                                flight_bookings fb1 ON fb1.flight_purchase_id = fp1.id
-                              LEFT JOIN
-                                vat_codes vc ON fp1.vat_code_id = vc.id
-                              LEFT JOIN
-                                discounts d on fp1.discount_id = d.id
-                              INNER JOIN
-                                customer c1 ON s1.customer_id = c1.customer_id
-                            WHERE s1.date <= :endDate
-                            AND ((customer_name != 'FDR' AND customer_name != 'MAINTENANCE' AND customer_name != 'inflight staff flying') OR customer_name IS NULL)
-                            AND s1.customer_id = :customerId
-                            AND fp1.status = 1
-                            GROUP BY c1.customer_id
-                            ORDER BY c1.customer_name";
-
-                            $result = $db->prepare($sql);
-                            $result->execute(array(
-                                ':endDate' => $_GET['d2'],
-                                ':customerId' => $_GET['customerId']
-                            ));
-
-                            ?>
-                            <tr>
-                                <th>Customer Name</th>
-                                <th>Unit Consumed</th>
-                                <th>Units Remaining</th>
-                                <th>Revenue On Consumed</th>
-                                <th>Amount Laibility</th>
-                            </tr>
-                            <?php
-                            $arr_revenue = $result->fetchAll();
-                            foreach ($arr_revenue as $row) {
-
-                                ?>
+                    <div class="row">
+                        <div class="span6">
+                            <table class="table">
                                 <tr>
-                                    <td><?= $row['customer_name'] ?></td>
-                                    <td><?= $row['units_consumed'] ?></td>
-                                    <td><?= $row['units_remaining'] ?></td>
-                                    <td><?php
-                                        $per_min_cost = $row['revenue_on_consumed'] / $row['units_consumed'];
-                                        $liability = $per_min_cost * $row['units_remaining'];
-                                        echo number_format($row['revenue_on_consumed'], 1);
-                                        ?></td>
-                                    <td><?= number_format($liability, 1) ?></td>
+                                    <th>Percentage</th>
+                                    <th>Categories</th>
+                                    <th>Value Discounted</th>
                                 </tr>
                                 <?php
-                            }
-                            ?>
 
-                        </table>
-                        <?php
-                    }
-                    ?>
+                                ?>
+                            </table>
+                        </div>
+                        <div class="span6">
+                            <table class="table">
+                                <tr>
+                                    <th>Percentage</th>
+                                    <th>Categories</th>
+                                    <th>Value Discounted</th>
+                                </tr>
+                                <?php
+
+                                ?>
+                            </table>
+                        </div>
+                    </div>
+
                 </div>
                 <div class="clearfix"></div>
             </div>
@@ -436,8 +426,9 @@ include('header.php');
 <script type="text/javascript">
 
     $('.military-row').click(function(e) {
-        $(this).nextAll().toggle();
-    }).click();
+        var win = window.open("<?=$_SERVER['PHP_SELF']?>", '_blank');
+        win.focus();
+    });
 
     $("#customer").typeahead({
         onSelect: function(item) {

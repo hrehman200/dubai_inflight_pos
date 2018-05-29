@@ -37,6 +37,7 @@ if ($position == 'cashier'  || $position == 'Operator' || $_SESSION[SESS_MOCK_RO
 				<li class="'.($current_page=='salesreport.php'?'active':'').'"><a href="salesreport.php?d1=0&d2=0"><i class="icon-bar-chart icon-2x"></i> Sales Report</a></li>
 				<li class="'.($current_page=='collection_other.php'?'active':'').'"><a href="collection_other.php?d1=0&d2=0"><i class="icon-bar-chart icon-2x"></i> Collection Report</a></li>
 				<li class="'.($current_page=='revenue_liability.php'?'active':'').'"><a href="revenue_liability.php?d1=0&d2=0"><i class="icon-money icon-2x"></i> Revenue & Liability</a></li>
+				<li class="'.($current_page=='revenue_liability_customer.php'?'active':'').'"><a href="revenue_liability_customer.php?d1=0&d2=0"><i class="icon-money icon-2x"></i> Customer Liability</a></li>
 				<li class="'.($current_page=='accountreceivables.php'?'active':'').'"><a href="accountreceivables.php?d1=0&d2=0"><i class="icon-bar-chart icon-2x"></i> Accounts Receivable Report</a>    </li>
 				<li class="'.($current_page=='select_customer.php'?'active':'').'"><a rel="facebox" href="select_customer.php"><i class="icon-user icon-2x"></i> Customer Ledger</a></li>
 				<li class="'.($current_page=='products.php'?'active':'').'"><a href="products.php"><i class="icon-table icon-2x"></i> Products</a></li>
