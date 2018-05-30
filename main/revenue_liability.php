@@ -283,17 +283,32 @@ include('header.php');
                  */
                 function getMerchandiseRevenue($product_name, $date1, $date2) {
                     global $db;
-                    $query = $db->prepare('SELECT SUM(s.amount) AS paid
+
+                    if($product_name == TYPE_MERCHANDISE) {
+                        $query = $db->prepare('SELECT SUM(s.amount) AS paid
+                            FROM sales s
+                            INNER JOIN sales_order so ON s.invoice_number = so.invoice
+                            INNER JOIN products p ON so.product = p.product_id 
+                            WHERE 
+                            (p.product_name NOT LIKE "%Video%" AND p.product_name NOT LIKE "%Helmet Rent%")
+                            AND p.gen_name = ?
+                            AND (s.date >= ? AND s.date <= ?)');
+                        $query->execute([TYPE_MERCHANDISE, $date1, $date2]);
+                        $row = $query->fetch(PDO::FETCH_ASSOC);
+
+                    } else {
+                        $query = $db->prepare('SELECT SUM(s.amount) AS paid
                             FROM sales s
                             INNER JOIN sales_order so ON s.invoice_number = so.invoice
                             INNER JOIN products p ON so.product = p.product_id 
                             WHERE p.product_name LIKE ? 
                             AND (s.date >= ? AND s.date <= ?)');
-                    $query->execute(["%".$product_name."%", $date1, $date2]);
-                    $row = $query->fetch(PDO::FETCH_ASSOC);
+                        $query->execute(["%" . $product_name . "%", $date1, $date2]);
+                        $row = $query->fetch(PDO::FETCH_ASSOC);
+                    }
 
                     $arr2 = [[
-                        'package_name' => $product_name,
+                        'package_name' => $product_name == 'Video' ? 'Videos/Photos' : $product_name,
                         'paid' => $row['paid'],
                         'aed_value' => $row['paid']
                     ]];
@@ -316,56 +331,64 @@ include('header.php');
                             <th>AED Value</th>
                         </tr>
                         <?php
-                        /** FTF */
-                        $arr_revenue = getDataAndAggregate('FTF');
 
-                        /** RF */
-                        $arr2 = getDataAndAggregate('RF - Repeat Flights');
-                        $arr_revenue = array_merge($arr_revenue, $arr2);
+                        if($_POST['military'] == 1) {
+                            $arr_revenue = json_decode(base64_decode($_POST['military_data']), true);
 
-                        /** SKYDIVERS */
-                        $arr2 = getDataAndAggregate('Skydivers');
-                        $arr_revenue = array_merge($arr_revenue, $arr2);
+                        } else {
+                            /** FTF */
+                            $arr_revenue = getDataAndAggregate('FTF');
 
-                        $arr_military = [];
-                        /** Military */
-                        $arr2 = getDataAndAggregate('Military');
-                        $arr_military = array_merge($arr_military, $arr2);
+                            /** RF */
+                            $arr2 = getDataAndAggregate('RF - Repeat Flights');
+                            $arr_revenue = array_merge($arr_revenue, $arr2);
 
-                        /** Navy Seal */
-                        $arr2 = getDataAndAggregate('Navy Seal');
-                        $arr_military = array_merge($arr_military, $arr2);
+                            /** SKYDIVERS */
+                            $arr2 = getDataAndAggregate('Skydivers');
+                            $arr_revenue = array_merge($arr_revenue, $arr2);
 
-                        /** Presidential Guard */
-                        $arr2 = getDataAndAggregate('Presidential Guard');
-                        $arr_military = array_merge($arr_military, $arr2);
+                            $arr_military = [];
+                            /** Military */
+                            $arr2 = getDataAndAggregate('Military');
+                            $arr_military = array_merge($arr_military, $arr2);
 
-                        $arr_military_sum[0] = [
-                            'package_name' => 'Military',
-                            'paid' => array_sum(array_column($arr_military, 'paid')),
-                            'total_minutes' => array_sum(array_column($arr_military, 'total_minutes')),
-                            'minutes_used' => array_sum(array_column($arr_military, 'minutes_used')),
-                            'aed_value' => array_sum(array_column($arr_military, 'aed_value'))
-                        ];
+                            /** Navy Seal */
+                            $arr2 = getDataAndAggregate('Navy Seal');
+                            $arr_military = array_merge($arr_military, $arr2);
 
-                        $arr_revenue = array_merge($arr_revenue, $arr_military_sum);
+                            /** Presidential Guard */
+                            $arr2 = getDataAndAggregate('Presidential Guard');
+                            $arr_military = array_merge($arr_military, $arr2);
 
-                        /** HELMENT RENT */
-                        $arr2 = getMerchandiseRevenue('Helment Rent', $_GET['d1'], $_GET['d2']);
-                        $arr_revenue = array_merge($arr_revenue, $arr2);
+                            $arr_military_sum[0] = [
+                                'package_name' => 'Military',
+                                'paid' => array_sum(array_column($arr_military, 'paid')),
+                                'total_minutes' => array_sum(array_column($arr_military, 'total_minutes')),
+                                'minutes_used' => array_sum(array_column($arr_military, 'minutes_used')),
+                                'aed_value' => array_sum(array_column($arr_military, 'aed_value'))
+                            ];
 
-                        /** VIDEO */
-                        $arr2 = getMerchandiseRevenue('Video', $_GET['d1'], $_GET['d2']);
-                        $arr_revenue = array_merge($arr_revenue, $arr2);
+                            $arr_revenue = array_merge($arr_revenue, $arr_military_sum);
 
+                            /** HELMET RENT */
+                            $arr2 = getMerchandiseRevenue('Helmet Rent', $_GET['d1'], $_GET['d2']);
+                            $arr_revenue = array_merge($arr_revenue, $arr2);
 
+                            /** VIDEO */
+                            $arr2 = getMerchandiseRevenue('Video', $_GET['d1'], $_GET['d2']);
+                            $arr_revenue = array_merge($arr_revenue, $arr2);
+
+                            /** MERCHANDISE */
+                            $arr2 = getMerchandiseRevenue(TYPE_MERCHANDISE, $_GET['d1'], $_GET['d2']);
+                            $arr_revenue = array_merge($arr_revenue, $arr2);
+                        }
 
                         foreach ($arr_revenue as $row) {
                             if($row['package_name'] == 'Skydivers') {
                                 ?>
-                                <tr>
+                                <!--<tr>
                                     <td colspan="6"><b>Experienced Return Flyers</b></td>
-                                </tr>
+                                </tr>-->
                                 <?php
                             }
                             ?>
@@ -383,7 +406,19 @@ include('header.php');
                         $arr_paid = json_encode(array_map(function($v) { return round($v['aed_value'], 1); }, $arr_revenue));
 
                         ?>
+                        <tr>
+                            <td><b>Total:</b></td>
+                            <td><b><?= number_format(array_sum(array_column($arr_revenue, 'paid')), 1) ?></b></td>
+                            <td><b><?= number_format(array_sum(array_column($arr_revenue, 'total_minutes'))) ?></b></td>
+                            <td><b><?= number_format(array_sum(array_column($arr_revenue, 'minutes_used'))) ?></b></td>
+                            <td><b><?= number_format(array_sum(array_column($arr_revenue, 'aed_value')), 2) ?></b></td>
+                        </tr>
                     </table>
+
+                    <form id="military-form" method="POST" action="<?=$_SERVER['REQUEST_URI']?>" target="_blank">
+                        <input type="hidden" name="military" value="1" />
+                        <input type="hidden" name="military_data" value="<?=base64_encode(json_encode($arr_military))?>" />
+                    </form>
 
                     <div class="app">
                         <pie-chart></pie-chart>
@@ -391,32 +426,38 @@ include('header.php');
 
                     <hr/>
 
-                    <div class="row">
-                        <div class="span6">
-                            <table class="table">
-                                <tr>
-                                    <th>Percentage</th>
-                                    <th>Categories</th>
-                                    <th>Value Discounted</th>
-                                </tr>
-                                <?php
+                    <?php
+                    if(!isset($_POST['military'])) {
+                        ?>
+                        <div class="row">
+                            <div class="span6">
+                                <table class="table">
+                                    <tr>
+                                        <th>Percentage</th>
+                                        <th>Categories</th>
+                                        <th>Value Discounted</th>
+                                    </tr>
+                                    <?php
 
-                                ?>
-                            </table>
-                        </div>
-                        <div class="span6">
-                            <table class="table">
-                                <tr>
-                                    <th>Percentage</th>
-                                    <th>Categories</th>
-                                    <th>Value Discounted</th>
-                                </tr>
-                                <?php
+                                    ?>
+                                </table>
+                            </div>
+                            <div class="span6">
+                                <table class="table">
+                                    <tr>
+                                        <th>Percentage</th>
+                                        <th>Categories</th>
+                                        <th>Value Discounted</th>
+                                    </tr>
+                                    <?php
 
-                                ?>
-                            </table>
+                                    ?>
+                                </table>
+                            </div>
                         </div>
-                    </div>
+                        <?php
+                    }
+                    ?>
 
                 </div>
                 <div class="clearfix"></div>
@@ -426,8 +467,10 @@ include('header.php');
 <script type="text/javascript">
 
     $('.military-row').click(function(e) {
-        var win = window.open("<?=$_SERVER['PHP_SELF']?>", '_blank');
-        win.focus();
+        /*var win = window.open("<?=$_SERVER['REQUEST_URI']?>&military=1", '_blank');
+        win.focus();*/
+
+        $('#military-form').submit();
     });
 
     $("#customer").typeahead({
@@ -538,7 +581,7 @@ include('header.php');
                     {
                         label: 'Data One',
                         data: JSON.parse('<?=$arr_paid?>'),
-                        backgroundColor: ['#F7DF00', '#ca0813', '#287AEB', '#89A366', '#9F7371']
+                        backgroundColor: ['#F7DF00', '#ca0813', '#287AEB', '#89A366', '#9F7371', '#72D84E', '#42C4F0']
                     }
                 ]
             }, {
@@ -562,5 +605,10 @@ include('header.php');
 </script>
 
 <?php include('footer.php'); ?>
+<style>
+    .military-row {
+        cursor:hand;
+    }
+</style>
 </html>
 
