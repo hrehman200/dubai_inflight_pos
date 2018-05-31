@@ -315,6 +315,76 @@ include('header.php');
 
                     return $arr2;
                 }
+
+                /**
+                 * @param $packages
+                 * @param $from
+                 * @param $to
+                 * @return array
+                 */
+                function getMinutesFlownInPackages($packages, $from, $to) {
+                    global $db;
+
+                    $packages = sprintf('"%s"', implode('","', $packages));
+
+                    $sql = sprintf('SELECT fpkg.package_name, SUM(fb.duration) AS duration 
+                        FROM flight_bookings fb
+                        INNER JOIN flight_purchases fp ON fb.flight_purchase_id = fp.id
+                        INNER JOIN flight_offers fo ON fp.flight_offer_id = fo.id
+                        INNER JOIN flight_packages fpkg ON fo.package_id = fpkg.id
+                        WHERE fpkg.package_name IN (%s)
+                          AND DATE(fb.flight_time) >= :from AND DATE(fb.flight_time) <= :to
+                        GROUP BY fpkg.package_name', $packages);
+
+                    $query = $db->prepare($sql);
+                    $query->execute([
+                        ':from' => $from,
+                        ':to' => $to
+                    ]);
+                    $rows = $query->fetchAll(PDO::FETCH_ASSOC);
+
+                    $arr = [];
+                    foreach($rows as $row) {
+                        $arr[$row['package_name']] = $row['duration'];
+                    }
+                    return $arr;
+                }
+
+                /**
+                 * @param $from
+                 * @param $to
+                 * @return array
+                 */
+                function getFlightDiscountsGiven($from, $to) {
+                    global $db;
+
+                    $query = $db->prepare('SELECT d.category, d.percent, SUM((d.percent*fp.price/100)) AS discount_value
+                        FROM `flight_purchases` fp
+                        INNER JOIN discounts d ON fp.discount_id = d.id
+                        WHERE DATE(fp.created) >= ? AND DATE(fp.created) <= ?
+                        GROUP BY d.category');
+                    $query->execute([$from, $to]);
+                    $rows = $query->fetchAll(PDO::FETCH_ASSOC);
+                    return $rows;
+                }
+
+                /**
+                 * @param $from
+                 * @param $to
+                 * @return array
+                 */
+                function getMerchandiseDiscountsGiven($from, $to) {
+                    global $db;
+
+                    $query = $db->prepare('SELECT d.category, d.percent, SUM((d.percent*so.price/100)) AS discount_value 
+                        FROM `sales_order` so
+                        INNER JOIN discounts d ON so.discount_id = d.id
+                        WHERE so.date >= ? AND so.date <= ? AND d.percent > 0
+                        GROUP BY d.category');
+                    $query->execute([$from, $to]);
+                    $rows = $query->fetchAll(PDO::FETCH_ASSOC);
+                    return $rows;
+                }
                 ?>
 
                 <div class="content" id="content">
@@ -426,31 +496,88 @@ include('header.php');
 
                     <hr/>
 
+
+
                     <?php
                     if(!isset($_POST['military'])) {
                         ?>
+
                         <div class="row">
-                            <div class="span6">
+                            <div class="span10 offset1">
                                 <table class="table">
+                                    <tr>
+                                        <th>Staff Flying</th>
+                                        <th>Maintenance</th>
+                                        <th>Marketing</th>
+                                        <th>Giveaway</th>
+                                        <th>Training IDP</th>
+                                        <th>Training FITP</th>
+                                        <th>Training Safety</th>
+                                    </tr>
+                                    <?php
+                                    $arr_minutes_flown = getMinutesFlownInPackages(['Staff Flying', 'Maintenance', 'Giveaways', 'Marketing'], $_GET['d1'], $_GET['d2']);
+                                    ?>
+                                    <tr>
+                                        <td><?=(int)$arr_minutes_flown['Staff Flying']?></td>
+                                        <td><?=(int)$arr_minutes_flown['Maintenance']?></td>
+                                        <td><?=(int)$arr_minutes_flown['Marketing']?></td>
+                                        <td><?=(int)$arr_minutes_flown['Giveaways']?></td>
+                                        <td>-</td>
+                                        <td>-</td>
+                                        <td>-</td>
+                                    </tr>
+                                </table>
+                            </div>
+                        </div>
+
+                        <br/>
+
+                        <div class="row">
+                            <div class="span5 offset1">
+                                <table class="table">
+                                    <tr>
+                                        <th colspan="3" style="text-align: center;">Discount Given on Flying Time</th>
+                                    </tr>
                                     <tr>
                                         <th>Percentage</th>
                                         <th>Categories</th>
                                         <th>Value Discounted</th>
                                     </tr>
                                     <?php
-
+                                    $discounts_given = getFLightDiscountsGiven($_GET['d1'], $_GET['d2']);
+                                    foreach($discounts_given as $row) {
+                                        ?>
+                                        <tr>
+                                            <td><?=$row['percent']?>%</td>
+                                            <td><?=$row['category']?></td>
+                                            <td><?=number_format($row['discount_value'], 2)?></td>
+                                        </tr>
+                                    <?php
+                                    }
                                     ?>
                                 </table>
                             </div>
-                            <div class="span6">
+                            <div class="span5">
                                 <table class="table">
+                                    <tr>
+                                        <th colspan="3" style="text-align: center;">Discount Given on Merchandise</th>
+                                    </tr>
                                     <tr>
                                         <th>Percentage</th>
                                         <th>Categories</th>
                                         <th>Value Discounted</th>
                                     </tr>
                                     <?php
-
+                                    $discounts_given = getMerchandiseDiscountsGiven($_GET['d1'], $_GET['d2']);
+                                    foreach($discounts_given as $row) {
+                                        ?>
+                                        <tr>
+                                            <td><?=$row['percent']?>%</td>
+                                            <td><?=$row['category']?></td>
+                                            <td><?=number_format($row['discount_value'], 2)?></td>
+                                        </tr>
+                                        <?php
+                                    }
                                     ?>
                                 </table>
                             </div>
