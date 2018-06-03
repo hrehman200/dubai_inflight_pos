@@ -24,15 +24,15 @@ include('header.php');
 
             <div>
                 <div style="margin-top: -19px; margin-bottom: 21px;">
-                    <a href="index.php">
+                    <a href="<?=($_POST['military']==1) ? $_SERVER['REQUEST_URI'] : 'index.php'?>">
                         <button class="btn btn-default btn-large" style="float: none;"><i
                                 class="icon icon-circle-arrow-left icon-large"></i> Back
                         </button>
                     </a>
                 </div>
                 <form action="revenue_liability.php" method="get">
-                    From : <input type="text" name="d1" style="width: 223px; padding:14px;" class="tcal" value=""/>
-                    To: <input type="text" style="width: 223px; padding:14px;" name="d2" class="tcal" value=""/>
+                    From : <input type="text" name="d1" style="width: 223px; padding:14px;" class="tcal" value="" autocomplete="false"/>
+                    To: <input type="text" style="width: 223px; padding:14px;" name="d2" class="tcal" value="" autocomplete="false"/>
                     <!--<br/>
                     <input type="hidden" name="customerId" id="customerId" value="<?/*=$_GET['customerId']*/?>" />
                     <input type="text" class="form-contorl span4" placeholder="Customer Name" id="customer" name="customer" autocomplete="off" />-->
@@ -320,21 +320,36 @@ include('header.php');
                  * @param $packages
                  * @param $from
                  * @param $to
+                 * @param bool $search_days
                  * @return array
                  */
-                function getMinutesFlownInPackages($packages, $from, $to) {
+                function getMinutesFlownInPackages($packages, $from, $to, $search_days = false) {
                     global $db;
 
-                    $packages = sprintf('"%s"', implode('","', $packages));
+                    $package_name_check = '';
+                    for($i=0; $i<count($packages); $i++) {
+                        $package_name_check .= sprintf('fpkg.package_name LIKE "%%%s%%"', $packages[$i]);
+                        if($i != count($packages) - 1) {
+                            $package_name_check .= ' OR ';
+                        }
+                    }
 
                     $sql = sprintf('SELECT fpkg.package_name, SUM(fb.duration) AS duration 
                         FROM flight_bookings fb
                         INNER JOIN flight_purchases fp ON fb.flight_purchase_id = fp.id
                         INNER JOIN flight_offers fo ON fp.flight_offer_id = fo.id
                         INNER JOIN flight_packages fpkg ON fo.package_id = fpkg.id
-                        WHERE fpkg.package_name IN (%s)
+                        WHERE (%s)
                           AND DATE(fb.flight_time) >= :from AND DATE(fb.flight_time) <= :to
-                        GROUP BY fpkg.package_name', $packages);
+                        ', $package_name_check);
+
+                    if($search_days == 'weekends') {
+                        $sql .= ' AND (DAYNAME(fb.flight_time) = "Friday" OR DAYNAME(fb.flight_time) = "Saturday")';
+                    } else if($search_days == 'weekdays') {
+                        $sql .= ' AND (DAYNAME(fb.flight_time) != "Friday" AND DAYNAME(fb.flight_time) != "Saturday")';
+                    }
+
+                    $sql .= ' GROUP BY fpkg.package_name';
 
                     $query = $db->prepare($sql);
                     $query->execute([
@@ -347,6 +362,20 @@ include('header.php');
                     foreach($rows as $row) {
                         $arr[$row['package_name']] = $row['duration'];
                     }
+
+                    // we need to sum same packages e.g. FTF-Single, FTF-Multipe into FTF
+                    if($search_days) {
+                        $arr2 = [];
+                        for($i=0; $i<count($packages); $i++) {
+                            foreach($arr as $package_full_name=>$minutes_used) {
+                                if(strpos($package_full_name, $packages[$i]) !== false) {
+                                    $arr2[$packages[$i]] += $minutes_used;
+                                }
+                            }
+                        }
+                        return $arr2;
+                    }
+
                     return $arr;
                 }
 
@@ -463,7 +492,7 @@ include('header.php');
                             }
                             ?>
                             <tr class="<?=$row['package_name']=='Military'?'military-row':''?>">
-                                <td><b><?= $row['package_name'] ?></b></td>
+                                <td><b><?= $row['package_name'] == 'Military' && $_POST['military'] == 1 ? 'Military Individuals' : $row['package_name']  ?></b></td>
                                 <td><?= number_format($row['paid'], 1) ?></td>
                                 <td><?= number_format($row['total_minutes']) ?></td>
                                 <td><?= number_format($row['minutes_used']) ?></td>
@@ -496,8 +525,6 @@ include('header.php');
 
                     <hr/>
 
-
-
                     <?php
                     if(!isset($_POST['military'])) {
                         ?>
@@ -525,6 +552,45 @@ include('header.php');
                                         <td>-</td>
                                         <td>-</td>
                                         <td>-</td>
+                                    </tr>
+                                </table>
+                            </div>
+                        </div>
+
+                        <br/>
+
+                        <div class="row">
+                            <div class="span10 offset1">
+                                <table class="table">
+                                    <tr>
+                                        <th>FTF</th>
+                                        <th>Used (min)</th>
+                                        <th>Experienced</th>
+                                        <th>Used (min)</th>
+                                        <th>Military</th>
+                                        <th>Used (min)</th>
+                                    </tr>
+                                    <?php
+                                    $arr_minutes_flown = getMinutesFlownInPackages(['FTF', 'Experienced', 'Military'], $_GET['d1'], $_GET['d2'], 'weekends');
+                                    ?>
+                                    <tr>
+                                        <td>Weekend</td>
+                                        <td><?=(int)$arr_minutes_flown['FTF']?></td>
+                                        <td>Weekend</td>
+                                        <td><?=(int)$arr_minutes_flown['Experienced']?></td>
+                                        <td>Weekend</td>
+                                        <td><?=(int)$arr_minutes_flown['Military']?></td>
+                                    </tr>
+                                    <?php
+                                    $arr_minutes_flown = getMinutesFlownInPackages(['FTF', 'Experienced', 'Military'], $_GET['d1'], $_GET['d2'], 'weekdays');
+                                    ?>
+                                    <tr>
+                                        <td>Weekday</td>
+                                        <td><?=(int)$arr_minutes_flown['FTF']?></td>
+                                        <td>Weekday</td>
+                                        <td><?=(int)$arr_minutes_flown['Experienced']?></td>
+                                        <td>Weekday</td>
+                                        <td><?=(int)$arr_minutes_flown['Military']?></td>
                                     </tr>
                                 </table>
                             </div>
