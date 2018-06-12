@@ -224,7 +224,7 @@ require_once('auth.php');
                     $total_online = 0;
 
                     for ($i = 0; $row = $result->fetch(PDO::FETCH_ASSOC); $i++) {
-                        $current_cost = $row['amount'];
+                        $current_cost = round($row['amount'], 0);
                         $discount = $current_cost * $row['discount'] / 100.00;
 
                         $query = $db->prepare('SELECT SUM(amount) AS totalService,

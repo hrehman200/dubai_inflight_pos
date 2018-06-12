@@ -177,8 +177,8 @@ session_start();
                               s.after_dis,
                               s.invoice_number
                               FROM flight_purchases fp
-                              LEFT JOIN flight_offers fo ON fp.flight_offer_id = fo.id
-                              LEFT JOIN flight_packages fpkg ON fo.package_id = fpkg.id
+                              INNER JOIN flight_offers fo ON fp.flight_offer_id = fo.id
+                              INNER JOIN flight_packages fpkg ON fo.package_id = fpkg.id
                               LEFT JOIN flight_bookings fb ON fb.flight_purchase_id = fp.id
                               INNER JOIN sales s ON fp.invoice_id = s.invoice_number
                               INNER JOIN customer c ON fp.customer_id = c.customer_id ";

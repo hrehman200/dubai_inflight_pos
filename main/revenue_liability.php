@@ -103,14 +103,20 @@ include('header.php');
                  * @param $date2
                  * @return bool
                  */
-                function isFlightTimeInsideSearchedDate($flight_time, $date1, $date2) {
-                    $flight_time = (new DateTime($flight_time))->format('Y-m-d');
-                    return (strtotime($flight_time) >= strtotime($date1) && strtotime($flight_time) <= strtotime($date2));
+                function isTimeInsideSearchedDate($flight_time, $date1, $date2) {
+                    $date = (new DateTime($flight_time))->format('Y-m-d');
+                    return (strtotime($date) >= strtotime($date1) && strtotime($date) <= strtotime($date2));
                 }
 
-                function getDataAndAggregate($package_name) {
-                    global $db;
-
+                /**
+                 * Performing sales.date is inside time-range OR booking.flight_time inside time range search at once hang up
+                 * the system, thats why two separate queries are needed.
+                 *
+                 * @param $package_name
+                 * @param bool $sale_date_check
+                 * @return string
+                 */
+                function getQuery($package_name, $sale_date_check = true) {
                     if($package_name == 'Skydivers' || $package_name == 'FTF') {
                         $join_with_discount = 'LEFT JOIN discounts d ON fp1.discount_id = d.id OR fp1.discount_id = 0';
                     } else {
@@ -125,6 +131,12 @@ include('header.php');
                         $package_check = " fpkg.id IN (6, 8)";
                     }
 
+                    if($sale_date_check) {
+                        $date_check = 's1.date >= :startDate AND s1.date <= :endDate';
+                    } else {
+                        $date_check = 'DATE(fb1.flight_time) >= :startDate AND DATE(fb1.flight_time) <= :endDate';
+                    }
+
                     $sql = sprintf("SELECT
                             fp1.id AS flight_purchase_id,
                             fp1.deduct_from_balance,
@@ -134,6 +146,7 @@ include('header.php');
                             IFNULL(fb1.flight_time, NOW()+10) <= NOW() AS flight_taken,
                             s1.invoice_number,
                             s1.customer_id,
+                            s1.date,
                             CASE WHEN(
                                 (s1.mode_of_payment = 'credit_time' OR s1.mode_of_payment_1 = 'credit_time') AND fp1.deduct_from_balance = 2
                             ) THEN (fb1.duration * c.per_minute_cost) ELSE s1.amount
@@ -182,10 +195,10 @@ include('header.php');
                                     'credit_cash'
                                 )
                             ) AND(
-                                s1.date >= :startDate AND s1.date <= :endDate
+                                %s
                             ) AND(
                                 (customer_name != 'FDR' AND customer_name != 'MAINTENANCE' AND customer_name != 'inflight staff flying') OR customer_name IS NULL
-                            ) AND d.category ", $join_with_discount, $package_check);
+                            ) AND d.category ", $join_with_discount, $package_check, $date_check);
 
                     if($package_name == 'Skydivers' || $package_name == 'FTF' || $package_name == 'RF - Repeat Flights') {
                         $sql .= "NOT IN ('Presidential Guard', 'Navy Seal', 'Military')";
@@ -198,14 +211,32 @@ include('header.php');
                     }
 
                     $sql .= " GROUP BY fp1.id, fb1.id";
+                    return $sql;
+                }
 
-                    $result = $db->prepare($sql);
+                function getDataAndAggregate($package_name) {
+                    global $db;
+
+                    $sql_w_sale_date = getQuery($package_name);
+                    $result = $db->prepare($sql_w_sale_date);
                     $result->execute(array(
                         ':startDate' => $_GET['d1'],
                         ':endDate'   => $_GET['d2']
                     ));
-
                     $arr2 = $result->fetchAll(PDO::FETCH_ASSOC);
+
+                    $sql_w_flight_date = getQuery($package_name, false);
+                    $result = $db->prepare($sql_w_flight_date);
+                    $result->execute(array(
+                        ':startDate' => $_GET['d1'],
+                        ':endDate'   => $_GET['d2']
+                    ));
+                    $arr_flight = $result->fetchAll(PDO::FETCH_ASSOC);
+
+                    $arr_diff = array_map('unserialize',
+                        array_diff(array_map('serialize', $arr_flight), array_map('serialize', $arr2)));
+
+                    $arr2 = array_merge($arr2, $arr_diff);
 
                     $arr_flight_purchase_ids = array_map(function($v) { return $v['flight_purchase_id'];}, $arr2);
                     $arr_flight_purchase_ids = array_unique($arr_flight_purchase_ids);
@@ -218,7 +249,9 @@ include('header.php');
 
                     $arr_total_minutes = array_group_by($arr2, function($v) { return $v['flight_purchase_id']; });
                     $total_minutes = array_reduce($arr_total_minutes, function($carry, $item) {
-                        $carry += $item[0]['total_minutes'];
+                        if(isTimeInsideSearchedDate($item[0]['date'], $_GET['d1'], $_GET['d2'])) {
+                            $carry += $item[0]['total_minutes'];
+                        }
                         return $carry;
                     });
 
@@ -228,7 +261,7 @@ include('header.php');
                     $minutes_used = array_reduce($arr_minutes_used, function($carry, $item) use (&$purchased_minutes_used, &$total_credit_cost, $arr_flight_purchase_ids, $package_name) {
                         if($item[0]['flight_taken'] == 1) {
                             if ($item[0]['from_flight_purchase_id'] > 0 || $item[0]['deduct_from_balance'] == 2) {
-                                if(isFlightTimeInsideSearchedDate($item[0]['flight_time'], $_GET['d1'], $_GET['d2'])) {
+                                if(isTimeInsideSearchedDate($item[0]['flight_time'], $_GET['d1'], $_GET['d2'])) {
                                     $carry += $item[0]['credit_used'];
 
                                     if($item[0]['deduct_from_balance'] == 2) {
@@ -242,16 +275,20 @@ include('header.php');
                                         $purchased_minutes_used += $item[0]['credit_used'];
                                     }
                                 }
-                            } else {
+                            } else if(isTimeInsideSearchedDate($item[0]['flight_time'], $_GET['d1'], $_GET['d2'])) {
                                 $carry += $item[0]['minutes_used'];
                                 $purchased_minutes_used += $item[0]['minutes_used'];
+
+                                // special case, customer booked via online on 31st May but came to fly on 1st Jun
+                                $credit_cost_per_minute = getPerMinuteCostOfPurchasedPackage($item[0]['flight_purchase_id']);
+                                $total_credit_cost += $credit_cost_per_minute * $item[0]['minutes_used'];
                             }
                         }
                         return $carry;
                     });
 
                     $credit_used = array_reduce($arr_minutes_used, function($carry, $item) {
-                        if(isFlightTimeInsideSearchedDate($item[0]['flight_time'], $_GET['d1'], $_GET['d2'])) {
+                        if(isTimeInsideSearchedDate($item[0]['flight_time'], $_GET['d1'], $_GET['d2'])) {
                             $carry += $item[0]['credit_used'];
                         }
                         return $carry;
@@ -326,22 +363,47 @@ include('header.php');
                 function getMinutesFlownInPackages($packages, $from, $to, $search_days = false) {
                     global $db;
 
-                    $package_name_check = '';
-                    for($i=0; $i<count($packages); $i++) {
-                        $package_name_check .= sprintf('fpkg.package_name LIKE "%%%s%%"', $packages[$i]);
-                        if($i != count($packages) - 1) {
-                            $package_name_check .= ' OR ';
+                    if(count($packages) > 1) {
+                        $package_name_check = 'AND (';
+                        for ($i = 0; $i < count($packages); $i++) {
+                            $package_name_check .= sprintf('fpkg.package_name LIKE "%%%s%%"', $packages[$i]);
+                            if ($i != count($packages) - 1) {
+                                $package_name_check .= ' OR ';
+                            }
+                        }
+                        $package_name_check .= ')';
+
+                    } else {
+                        if($packages == ['Skydivers'] || $packages == ['FTF']) {
+                            $join_with_discount = 'LEFT JOIN discounts d ON fp.discount_id = d.id OR fp.discount_id = 0';
+                        } else {
+                            $join_with_discount = 'INNER JOIN discounts d ON fp.discount_id = d.id';
+                        }
+
+                        if($packages == ['FTF']) {
+                            $package_name_check = "AND fpkg.package_name LIKE 'FTF%'";
+                        } else if($packages == ['Skydivers']) {
+                            $package_name_check = "AND fpkg.id IN (6, 8)";
+                        }
+
+                        if($packages == ['Skydivers'] || $packages == ['FTF']) {
+                            $discount_category_check = "AND d.category NOT IN ('Presidential Guard', 'Navy Seal', 'Military')";
+                        } else {
+                            $discount_category_check = "AND d.category IN ('Presidential Guard', 'Navy Seal', 'Military')";
                         }
                     }
 
-                    $sql = sprintf('SELECT fpkg.package_name, SUM(fb.duration) AS duration 
+                    $sql = sprintf('SELECT DISTINCT fb.id, fpkg.package_name, fb.duration AS duration 
                         FROM flight_bookings fb
                         INNER JOIN flight_purchases fp ON fb.flight_purchase_id = fp.id
                         INNER JOIN flight_offers fo ON fp.flight_offer_id = fo.id
                         INNER JOIN flight_packages fpkg ON fo.package_id = fpkg.id
-                        WHERE (%s)
-                          AND DATE(fb.flight_time) >= :from AND DATE(fb.flight_time) <= :to
-                        ', $package_name_check);
+                        %s
+                        WHERE
+                          DATE(fb.flight_time) >= :from AND DATE(fb.flight_time) <= :to
+                          %s
+                          %s
+                        ', $join_with_discount, $package_name_check, $discount_category_check);
 
                     if($search_days == 'weekends') {
                         $sql .= ' AND (DAYNAME(fb.flight_time) = "Friday" OR DAYNAME(fb.flight_time) = "Saturday")';
@@ -349,7 +411,7 @@ include('header.php');
                         $sql .= ' AND (DAYNAME(fb.flight_time) != "Friday" AND DAYNAME(fb.flight_time) != "Saturday")';
                     }
 
-                    $sql .= ' GROUP BY fpkg.package_name';
+                    //$sql .= ' GROUP BY fpkg.package_name';
 
                     $query = $db->prepare($sql);
                     $query->execute([
@@ -360,7 +422,11 @@ include('header.php');
 
                     $arr = [];
                     foreach($rows as $row) {
-                        $arr[$row['package_name']] = $row['duration'];
+                        if(isset($arr[$row['package_name']])) {
+                            $arr[$row['package_name']] += $row['duration'];
+                        } else {
+                            $arr[$row['package_name']] = $row['duration'];
+                        }
                     }
 
                     // we need to sum same packages e.g. FTF-Single, FTF-Multipe into FTF
@@ -368,7 +434,14 @@ include('header.php');
                         $arr2 = [];
                         for($i=0; $i<count($packages); $i++) {
                             foreach($arr as $package_full_name=>$minutes_used) {
-                                if(strpos($package_full_name, $packages[$i]) !== false) {
+
+                                if($packages[$i] == 'Skydivers' && strpos($package_full_name, 'Experienced') !== false) {
+                                    $arr2[$packages[$i]] += $minutes_used;
+
+                                } else if($packages[$i] == 'Military' && strpos($package_full_name, 'Experienced') !== false) {
+                                    $arr2[$packages[$i]] += $minutes_used;
+
+                                } else if(strpos($package_full_name, $packages[$i]) !== false) {
                                     $arr2[$packages[$i]] += $minutes_used;
                                 }
                             }
@@ -570,27 +643,27 @@ include('header.php');
                                         <th>Military</th>
                                         <th>Used (min)</th>
                                     </tr>
-                                    <?php
-                                    $arr_minutes_flown = getMinutesFlownInPackages(['FTF', 'Experienced', 'Military'], $_GET['d1'], $_GET['d2'], 'weekends');
-                                    ?>
                                     <tr>
                                         <td>Weekend</td>
-                                        <td><?=(int)$arr_minutes_flown['FTF']?></td>
+                                        <td><?=(int)getMinutesFlownInPackages(['FTF'], $_GET['d1'], $_GET['d2'], 'weekends')['FTF']?></td>
                                         <td>Weekend</td>
-                                        <td><?=(int)$arr_minutes_flown['Experienced']?></td>
+                                        <td><?php
+                                            $flown = getMinutesFlownInPackages(['Skydivers'], $_GET['d1'], $_GET['d2'], 'weekends');
+                                            echo (int)$flown['Skydivers'] + (int)$flown['Experienced-Return Flyers '];
+                                        ?></td>
                                         <td>Weekend</td>
-                                        <td><?=(int)$arr_minutes_flown['Military']?></td>
+                                        <td><?=(int)getMinutesFlownInPackages(['Military'], $_GET['d1'], $_GET['d2'], 'weekends')['Military']?></td>
                                     </tr>
-                                    <?php
-                                    $arr_minutes_flown = getMinutesFlownInPackages(['FTF', 'Experienced', 'Military'], $_GET['d1'], $_GET['d2'], 'weekdays');
-                                    ?>
                                     <tr>
                                         <td>Weekday</td>
-                                        <td><?=(int)$arr_minutes_flown['FTF']?></td>
+                                        <td><?=(int)getMinutesFlownInPackages(['FTF'], $_GET['d1'], $_GET['d2'], 'weekdays')['FTF']?></td>
                                         <td>Weekday</td>
-                                        <td><?=(int)$arr_minutes_flown['Experienced']?></td>
+                                        <td><?php
+                                            $flown = getMinutesFlownInPackages(['Skydivers'], $_GET['d1'], $_GET['d2'], 'weekdays');
+                                            echo (int)$flown['Skydivers'] + (int)$flown['Experienced-Return Flyers '];
+                                        ?></td>
                                         <td>Weekday</td>
-                                        <td><?=(int)$arr_minutes_flown['Military']?></td>
+                                        <td><?=(int)getMinutesFlownInPackages(['Military'], $_GET['d1'], $_GET['d2'], 'weekdays')['Military']?></td>
                                     </tr>
                                 </table>
                             </div>

@@ -251,7 +251,8 @@ include('navfixed.php');
                               0 AS units_remaining,
                               0 AS amount_liability,
                               d.category AS discount_reason,
-                              0 AS class_people
+                              0 AS class_people,
+                              so.gen_name
                             FROM
                               sales s
                             INNER JOIN
@@ -291,7 +292,8 @@ include('navfixed.php');
                             fo1.duration - fb1.duration AS units_remaining,
                             0 AS amount_liability,
                             d.category AS discount_reason,
-                            fp1.class_people
+                            fp1.class_people,
+                            'Service' AS gen_name
                           FROM
                             sales s1
                           INNER JOIN
@@ -416,7 +418,7 @@ include('navfixed.php');
                                 <td><?= $row['transaction_date'] ?></td>
                                 <td><?= $row['cashier'] ?></td>
                                 <td><?= $row['invoice_number'] ?></td>
-                                <td><?= $row['sale_type'] ?></td>
+                                <td><?= $row['gen_name'] ?></td>
                                 <td><?= $row['customer_name'] ?></td>
                                 <td><?= $mode_of_payment ?></td>
                                 <td><?php
