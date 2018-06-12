@@ -2,6 +2,10 @@
 
 require_once '../connect.php';
 
+if(!isset($_SESSION['SESS_LAST_NAME'])) {
+    header('Location: /main/index.php');
+}
+
 //session_start();
 $current_page = basename($_SERVER['PHP_SELF']);
 $position = $_SESSION['SESS_LAST_NAME'];

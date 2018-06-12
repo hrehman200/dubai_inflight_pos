@@ -31,8 +31,27 @@ include('header.php');
                     </a>
                 </div>
                 <form action="<?=$_SERVER['PHP_SELF']?>" method="get">
-                    From : <input type="text" name="d1" style="width: 223px; padding:14px;" class="tcal" value="<?=$_GET['d1']?>" autocomplete="0"/>
-                    To: <input type="text" style="width: 223px; padding:14px;" name="d2" class="tcal" value="<?=$_GET['d2']?>" autocomplete="0"/>
+
+                    Liability till:
+                    <select id='year' name="year" class="span2">
+                        <option>2017</option>
+                        <option>2018</option>
+                    </select>
+
+                    <select id='month' name="month" class="span2">
+                        <option selected value='1'>Jan</option>
+                        <option value='2'>Feb</option>
+                        <option value='3'>Mar</option>
+                        <option value='4'>Aprl</option>
+                        <option value='5'>May</option>
+                        <option value='6'>Jun</option>
+                        <option value='7'>Jul</option>
+                        <option value='8'>Aug</option>
+                        <option value='9'>Sep</option>
+                        <option value='10'>Oct</option>
+                        <option value='11'>Nov</option>
+                        <option value='12'>Dec</option>
+                    </select>
 
                     <br/>
                     <input type="hidden" name="customerId" id="customerId" value="<?=$_GET['customerId']?>" />
@@ -53,18 +72,6 @@ include('header.php');
                 </form>
 
                 <?php
-
-                if(isset($_GET['d1'])  && $_GET['d1'] != '' && $_GET['d1'] != '0'){
-                    $_GET['d1'] = date('Y-m-d', strtotime($_GET['d1']));
-                } else {
-                    $_GET['d1'] = date('Y-m-01');
-                }
-
-                if(isset($_GET['d2']) && $_GET['d2'] != '' && $_GET['d2'] != '0'){
-                    $_GET['d2'] = date('Y-m-d', strtotime($_GET['d2']));
-                } else {
-                    $_GET['d2'] = date('Y-m-t');
-                }
 
                 /**
                  * @param $arr
@@ -101,50 +108,64 @@ include('header.php');
                 <div class="content" id="content">
 
                     <?php
-                    if($_GET['customerId'] > 0) {
+                    //if($_GET['customerId'] > 0) {
                         ?>
                         <table class="table table-striped" style="background-color: white;" id="tblCustomerLiability">
                             <?php
                             $sql = "
-                              SELECT 
-                                c1.customer_name, c1.customer_id, c1.expected_date,
-                                SUM(fc.minutes) AS credit_minutes,
-                                IFNULL(c1.credit_time,0) AS credit_time,
-                                IFNULL(c1.credit_time,0) * c1.per_minute_cost AS credit_time_liability,
-                                IFNULL(c1.credit_cash,0) AS credit_cash,
-                                SUM(IFNULL(fb1.duration, 0)) AS units_consumed,
-                                SUM(s1.amount) AS revenue_on_consumed,
-                                SUM(fo1.duration) AS units_purchased
-                              FROM
-                                sales s1
-                              INNER JOIN
-                                flight_purchases fp1 ON s1.invoice_number = fp1.invoice_id
-                              INNER JOIN
-                                flight_offers fo1 ON fp1.flight_offer_id = fo1.id
-                              LEFT JOIN
-                                flight_credits fc ON fc.customer_id = fp1.customer_id
-                              LEFT JOIN
-                                flight_bookings fb1 ON fb1.flight_purchase_id = fp1.id
-                              LEFT JOIN
-                                vat_codes vc ON fp1.vat_code_id = vc.id
-                              LEFT JOIN
-                                discounts d on fp1.discount_id = d.id
-                              INNER JOIN
-                                customer c1 ON s1.customer_id = c1.customer_id
-                            WHERE 
-                             (s1.date >= :startDate AND s1.date <= :endDate)
-                            AND ((customer_name != 'FDR' AND customer_name != 'MAINTENANCE' AND customer_name != 'inflight staff flying') OR customer_name IS NULL)
-                            AND s1.customer_id = :customerId
-                            AND fp1.status = 1
-                            GROUP BY c1.customer_id
-                            ORDER BY c1.customer_name";
+                                SELECT  s1.customer_id, s1.month, s1.year, SUM(s1.amount) AS purchased_amount, c.customer_name, c.credit_time, c.credit_cash, c.per_minute_cost, SUM(fc.minutes) AS credit_minutes
+                                FROM `sales` s1
+                                INNER JOIN customer c ON s1.customer_id = c.customer_id
+                                LEFT JOIN flight_credits fc ON fc.customer_id = c.customer_id
+                                WHERE YEAR(s1.date) <= :year AND MONTH(s1.date) <= :month AND s1.customer_id > 0";
+
+                            if($_GET['customerId'] > 0) {
+                                $sql .= sprintf(" AND c.customer_id = %d", $_GET['customerId']);
+                            }
+
+                            $sql .= " GROUP BY s1.customer_id
+                                ORDER BY c.customer_name";
 
                             $result = $db->prepare($sql);
                             $result->execute(array(
-                                ':customerId' => $_GET['customerId'],
-                                ':startDate' => $_GET['d1'],
-                                ':endDate' => $_GET['d2']
+                                ':year' => $_GET['year'],
+                                ':month' => $_GET['month']
                             ));
+
+                            $sql = "
+                                SELECT s1.customer_id, SUM(fo.duration) AS minutes_purchased, SUM(fb.duration) AS minutes_used
+                                FROM `sales` s1
+                                INNER JOIN flight_purchases fp ON fp.customer_id = s1.customer_id
+                                INNER JOIN flight_offers fo ON fp.flight_offer_id = fo.id
+                                LEFT JOIN flight_bookings fb ON fb.flight_purchase_id = fp.id
+                                WHERE YEAR(s1.date) <= :year AND MONTH(s1.date) <= :month AND s1.customer_id > 0";
+
+                            if($_GET['customerId'] > 0) {
+                                $sql .= sprintf(" AND s1.customer_id = %d", $_GET['customerId']);
+                            }
+
+                            $sql .= " GROUP BY s1.customer_id";
+
+                            $result2 = $db->prepare($sql);
+                            $result2->execute(array(
+                                ':year' => $_GET['year'],
+                                ':month' => $_GET['month']
+                            ));
+
+                            $arr1 = $result->fetchAll(PDO::FETCH_ASSOC);
+                            $arr2 = $result2->fetchAll(PDO::FETCH_ASSOC);
+
+                            foreach($arr1 as &$item1) {
+                                $filtered = array_filter($arr2, function ($item2) use ($item1) {
+                                    return $item2['customer_id'] == $item1['customer_id'];
+                                });
+
+                                $filtered = array_values($filtered);
+
+                                if(count($filtered) > 0) {
+                                    $item1 = array_merge($filtered[0], $item1);
+                                }
+                            }
 
                             ?>
                             <tr>
@@ -156,17 +177,22 @@ include('header.php');
                                 <th>VAT on Pre 2018</th>
                             </tr>
                             <?php
-                            $arr_revenue = $result->fetchAll(PDO::FETCH_ASSOC);
-
-                            if(count($arr_revenue) > 0) {
-                                foreach ($arr_revenue as $row) {
+                            $total_minutes = 0;
+                            $total_price = 0;
+                            if(count($arr1) > 0) {
+                                foreach ($arr1 as $row) {
                                     $units_remaining = $row['credit_minutes'] + $row['credit_time'];
-                                    if($row['units_consumed'] > 0) {
-                                        $per_min_cost = $row['revenue_on_consumed'] / $row['units_consumed'];
+                                    if($row['minutes_used'] > 0) {
+                                        $per_min_cost = $row['purchased_amount'] / $row['minutes_used'];
                                     } else {
-                                        $per_min_cost = $row['revenue_on_consumed'] / $row['units_purchased'];
+                                        $per_min_cost = $row['purchased_amount'] / $row['minutes_purchased'];
                                     }
-                                    $credit_minutes_liability = ($per_min_cost * $row['credit_minutes']) + $row['credit_time_liability'];
+                                    $credit_minutes_liability = ($per_min_cost * $row['credit_minutes']) + ($row['per_minute_cost'] * $row['credit_time']);
+                                    if(is_nan($credit_minutes_liability)) {
+                                        $credit_minutes_liability = 0;
+                                    }
+                                    $total_minutes += $units_remaining;
+                                    $total_price += $credit_minutes_liability;
                                     ?>
                                     <tr>
                                         <td><?= $row['customer_name'] ?></td>
@@ -190,6 +216,15 @@ include('header.php');
                                     </tr>
                                     <?php
                                 }
+                                ?>
+                                <tr>
+                                    <td colspan="2" style="text-align:right; padding-right: 50px;"><b>Total:</b></td>
+                                    <td><b><?=number_format($total_minutes)?></b></td>
+                                    <td><b><?=number_format($total_price)?></b></td>
+                                    <td></td>
+                                    <td></td>
+                                </tr>
+                                <?php
                             } else {
                                 ?>
                                 <tr>
@@ -198,10 +233,9 @@ include('header.php');
                             <?php
                             }
                             ?>
-
                         </table>
                         <?php
-                    }
+                    //}
                     ?>
                 </div>
                 <div class="clearfix"></div>
@@ -210,11 +244,14 @@ include('header.php');
 
 <script type="text/javascript">
 
+    $('#month').val('<?=$_GET['month']?>');
+    $('#year').val('<?=$_GET['year']?>');
+
     $('#chkPre2018').on('change', function (e) {
         if($(this).is(':checked')) {
-            $('#tblCustomerLiability th:gt(3), #tblCustomerLiability td:gt(3)').show();
+            $('#tblCustomerLiability tr th:nth-last-child(-n+2), #tblCustomerLiability tr td:nth-last-child(-n+2)').show();
         } else {
-            $('#tblCustomerLiability th:gt(3), #tblCustomerLiability td:gt(3)').hide();
+            $('#tblCustomerLiability tr th:nth-last-child(-n+2), #tblCustomerLiability tr td:nth-last-child(-n+2)').hide();
         }
     }).change();
 
@@ -251,7 +288,7 @@ include('header.php');
         });
 
     function convertToCSV() {
-        exportTableToCSV($('#tblRnLSummary'), 'rnl.csv');
+        exportTableToCSV($('#tblCustomerLiability'), 'rnl.csv');
     }
 
     function exportTableToCSV($table, filename) {
