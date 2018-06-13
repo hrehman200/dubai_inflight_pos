@@ -60,8 +60,11 @@ include('header.php');
                     <button class="btn btn-info" style="width: 123px; height:35px; margin-top:-8px;" type="submit">
                         <i class="icon icon-search icon-large"></i> Search
                     </button>
-                    <input type="checkbox" id="chkPre2018" class="form-control" />
-                    <label for="chkPre2018" style="display: inline;">Pre 2018</label>
+
+                    <span id="spPre2018">
+                        <input type="checkbox" id="chkPre2018" class="form-control" />
+                        <label for="chkPre2018" style="display: inline;">Pre 2018</label>
+                    </span>
 
                     <button style="width: 123px; height:35px; margin-top:-2px; float:right;"
                             class="btn btn-info btn-large" onclick="convertToCSV()"><i
@@ -112,8 +115,15 @@ include('header.php');
                         ?>
                         <table class="table table-striped" style="background-color: white;" id="tblCustomerLiability">
                             <?php
+
+                            if(!isset($_GET['month'])) {
+                                $_GET['month'] = date('n');
+                                $_GET['year'] = date('Y');
+                            }
+
                             $sql = "
-                                SELECT  s1.customer_id, s1.month, s1.year, SUM(s1.amount) AS purchased_amount, c.customer_name, c.credit_time, c.credit_cash, c.per_minute_cost, SUM(fc.minutes) AS credit_minutes
+                                SELECT  s1.customer_id, s1.month, s1.year, SUM(s1.amount) AS purchased_amount, c.customer_name, c.credit_time, c.credit_cash, c.per_minute_cost, SUM(fc.minutes) AS credit_minutes,
+                                c.expected_date
                                 FROM `sales` s1
                                 INNER JOIN customer c ON s1.customer_id = c.customer_id
                                 LEFT JOIN flight_credits fc ON fc.customer_id = c.customer_id
@@ -193,6 +203,16 @@ include('header.php');
                                     }
                                     $total_minutes += $units_remaining;
                                     $total_price += $credit_minutes_liability;
+
+                                    if($units_remaining <= 0 && $credit_minutes_liability <= 0 && $_GET['customerId'] <= 0) {
+                                        continue;
+                                    }
+
+                                    if(strcasecmp($row['customer_name'], 'inflight staff flying') == 0 ||
+                                        strcasecmp($row['customer_name'], 'fdr') == 0 ||
+                                        strcasecmp($row['customer_name'], 'maintenance') == 0) {
+                                        continue;
+                                    }
                                     ?>
                                     <tr>
                                         <td><?= $row['customer_name'] ?></td>
@@ -200,14 +220,14 @@ include('header.php');
                                         <td><?= number_format($units_remaining) ?></td>
                                         <td><?= number_format(round($credit_minutes_liability)) ?></td>
                                         <td><?php
-                                            if(date('Y', strtotime($row['expected_date'])) <= 2018) {
+                                            if(date('Y', strtotime($row['expected_date'])) < 2018) {
                                                 echo $row['credit_time'];
                                             } else {
                                                 echo 0;
                                             }?>
                                         </td>
                                         <td><?php
-                                            if(date('Y', strtotime($row['expected_date'])) <= 2018) {
+                                            if(date('Y', strtotime($row['expected_date'])) < 2018) {
                                                 echo round($row['credit_cash'] * 5 / 105, 2);
                                             } else {
                                                 echo 0;
@@ -252,6 +272,16 @@ include('header.php');
             $('#tblCustomerLiability tr th:nth-last-child(-n+2), #tblCustomerLiability tr td:nth-last-child(-n+2)').show();
         } else {
             $('#tblCustomerLiability tr th:nth-last-child(-n+2), #tblCustomerLiability tr td:nth-last-child(-n+2)').hide();
+        }
+    }).change();
+
+    $('#year').on('change', function (e) {
+        if($(this).val() < 2018) {
+            $('#spPre2018')
+                .find('#chkPre2018').prop('checked', false).change().end()
+                .hide();
+        } else {
+            $('#spPre2018').show();
         }
     }).change();
 
