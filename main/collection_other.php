@@ -252,7 +252,8 @@ include('navfixed.php');
                               0 AS amount_liability,
                               d.category AS discount_reason,
                               0 AS class_people,
-                              so.gen_name
+                              so.gen_name,
+                              0 AS per_minute_cost
                             FROM
                               sales s
                             INNER JOIN
@@ -293,7 +294,8 @@ include('navfixed.php');
                             0 AS amount_liability,
                             d.category AS discount_reason,
                             fp1.class_people,
-                            'Service' AS gen_name
+                            'Service' AS gen_name,
+                            c1.per_minute_cost
                           FROM
                             sales s1
                           INNER JOIN
@@ -399,6 +401,8 @@ include('navfixed.php');
                                 $unit_price = round($row['unit_price'], 2);
                             } else if($row['class_people'] > 0 && $booking_duration == 0) {
                                 $unit_price = CLASS_SESSION_COST;
+                            } else if($mode_of_payment == 'Account'){
+                                $unit_price = $row['per_minute_cost'];
                             } else {
                                 $unit_price = round($row['unit_price']/$row['total_quantity'], 2);
                             }
