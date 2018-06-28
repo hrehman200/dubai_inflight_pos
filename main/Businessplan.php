@@ -1,88 +1,51 @@
-<html>
-<head>
-    <title>
-        POS
-    </title>
-    <?php
-    require_once('../connect.php');
-    ?>
-    <link href="css/bootstrap.css" rel="stylesheet">
+<?php
+include('header.php');
 
-    <link rel="stylesheet" type="text/css" href="css/DT_bootstrap.css">
+$csv = array();
 
-    <link rel="stylesheet" href="css/font-awesome.min.css">
-    <style type="text/css">
-        body {
-            padding-top: 60px;
-            padding-bottom: 40px;
+// check there are no errors
+if(isset($_FILES['csvFile']) && $_FILES['csvFile']['error'] == 0){
+    $name = $_FILES['csvFile']['name'];    // 2018.csv
+    $year = str_ireplace('.csv', '', $name);    // 2018
+    $ext = strtolower(end(explode('.', $_FILES['csvFile']['name'])));
+    $type = $_FILES['csvFile']['type'];
+    $tmpName = $_FILES['csvFile']['tmp_name'];
+
+    // check the file is a csv
+    if($ext === 'csv'){
+        if(($handle = fopen($tmpName, 'r')) !== FALSE) {
+            // necessary if a large csv file
+            set_time_limit(0);
+
+            $row = 0;
+            $parent_entity = '';
+            $parent_entity_id = 0;
+
+            while(($data = fgetcsv($handle, 1000, ',')) !== FALSE) {
+                if($row > 0) {  // ignore header
+                    if(stripos($data[0], 'total') === false) {
+                        if ($data[0] != '' && $data[2] == '') {
+                            $parent_entity = $data[0];
+                            $parent_entity_id = getParentEntityId($parent_entity);
+
+                        } else if($data[0] != '') {
+                            $entity_name = $data[0];
+                            for ($col = 2; $col <= 13; $col++) {
+                                $entity_id = getBusinessEntityId($entity_name, $parent_entity_id);
+                                $month = date("M", mktime(0, 0, 0, $col - 1, 10));
+                                updateBusinessEntityValue($entity_id, $year, $month, $data[$col]);
+                            }
+                        }
+                    }
+                }
+                $row++;
+            }
+            fclose($handle);
         }
-
-        .sidebar-nav {
-            padding: 9px 0;
-        }
-
-        .table td {
-            background-color: white;
-        }
-
-        .rowTotal td {
-            font-weight: bold;
-        }
-    </style>
-    <link href="css/bootstrap-responsive.css" rel="stylesheet">
-
-
-    <link href="../style.css" media="screen" rel="stylesheet" type="text/css"/>
-    <!--sa poip up-->
-    <script src="jeffartagame.js" type="text/javascript" charset="utf-8"></script>
-    <script src="js/application.js" type="text/javascript" charset="utf-8"></script>
-    <link href="src/facebox.css" media="screen" rel="stylesheet" type="text/css"/>
-    <script src="js/jquery-1.12.4.min.js" type="text/javascript"></script>
-    <script src="src/facebox.js" type="text/javascript"></script>
-    <script type="text/javascript">
-        jQuery(document).ready(function ($) {
-            $('a[rel*=facebox]').facebox({
-                loadingImage: 'src/loading.gif',
-                closeImage: 'src/closelabel.png'
-            })
-        })
-    </script>
-</head>
-
-
-<script language="javascript" type="text/javascript">
-    /* Visit http://www.yaldex.com/ for full source code
-     and get more free JavaScript, CSS and DHTML scripts! */
-    var timerID      = null;
-    var timerRunning = false;
-    function stopclock() {
-        if (timerRunning)
-            clearTimeout(timerID);
-        timerRunning = false;
     }
-    function showtime() {
-        var now       = new Date();
-        var hours     = now.getHours();
-        var minutes   = now.getMinutes();
-        var seconds   = now.getSeconds()
-        var timeValue = "" + ((hours > 12) ? hours - 12 : hours)
-        if (timeValue == "0") timeValue = 12;
-        timeValue += ((minutes < 10) ? ":0" : ":") + minutes
-        timeValue += ((seconds < 10) ? ":0" : ":") + seconds
-        timeValue += (hours >= 12) ? " P.M." : " A.M."
-        document.clock.face.value = timeValue;
-        timerID                   = setTimeout("showtime()", 1000);
-        timerRunning              = true;
-    }
-    function startclock() {
-        stopclock();
-        showtime();
-    }
-    window.onload = startclock;
-    // End -->
-</SCRIPT>
-<body>
-<?php include('navfixed.php'); ?>
+}
+?>
+
 <div class="container-fluid">
     <div class="row-fluid">
         <div class="span2">
@@ -115,17 +78,12 @@
                 <li class="active">Business Plan</li>
             </ul>
 
-            <Button type="button" onclick="convertToCSV()" id="exportCSV" class="btn btn-info"
-                    style="float:right; width:230px; height:35px;">
-                <i class="icon-plus-sign icon-large"></i> Export
-            </button>
-
-            <form id="bpForm" method="get" action="<?= $_SERVER['PHP_SELF'] ?>">
-                <input type="hidden" name="monthIndex" id="monthIndex" value="<?= $_GET['monthIndex'] ?>"/>
+            <form id="bpForm" method="POST" action="<?= $_SERVER['PHP_SELF'] ?>" enctype="multipart/form-data">
+                <input type="hidden" name="monthIndex" id="monthIndex" value="<?= $_REQUEST['monthIndex'] ?>"/>
                 <select id="year" name="year">
                     <?php
                     for ($year = 2017; $year <= 2027; $year++) {
-                        echo sprintf('<option %s>%d</option>', $_GET['year'] == $year ? 'selected' : '', $year);
+                        echo sprintf('<option %s>%d</option>', $_REQUEST['year'] == $year ? 'selected' : '', $year);
                     }
                     ?>
                 </select>
@@ -162,20 +120,43 @@
                     <option>Dec</option>
                 </select>
 
+                <div class="pull-right">
+                    <label for="chk1" >Budget</label>
+                    <input type="radio" id="chk1" name="chkSheetFormat" value="1" />
+                    <label for="chk2" >Actual</label>
+                    <input type="radio" id="chk2" name="chkSheetFormat" value="2" />
+                    <label for="chk3" >Reconsilation</label>
+                    <input type="radio" id="chk3" name="chkSheetFormat" value="3" />
+    
+                    <button class="btn btnUploadCsv"> <i class="icon-upload icon-large"></i> Upload CSV </button>
+                    <input type="file" id="csvFile" name="csvFile" style="display:none">
+
+                    <Button type="button" onclick="convertToCSV()" id="exportCSV" class="btn btn-info">
+                        <i class="icon-plus-sign icon-large"></i> Export
+                    </button>
+                </div>
+
             </form>
 
-            <table class="table table-striped table-bordered">
+            <table class="table table-bordered">
 
                 <?php
-                $year               = isset($_GET['year']) ? $_GET['year'] : date('Y');
-                $month_index        = (int)$_GET['monthIndex'];
+                $year               = isset($_REQUEST['year']) ? $_REQUEST['year'] : date('Y');
+                $month_index        = (int)$_REQUEST['monthIndex'];
                 $all_months         = array('Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec');
                 $month_placeholders = rtrim(str_repeat('?, ', count($all_months)), ', ');
-                $from_month         = isset($_GET['fromMonth']) ? $_GET['fromMonth'] : 'Jan';
-                $to_month           = isset($_GET['toMonth']) ? $_GET['toMonth'] : 'Dec';
+                $from_month         = isset($_REQUEST['fromMonth']) ? $_REQUEST['fromMonth'] : 'Jan';
+                $to_month           = isset($_REQUEST['toMonth']) ? $_REQUEST['toMonth'] : 'Dec';
                 $from_month_index   = array_search($from_month, $all_months);
                 $to_month_index     = array_search($to_month, $all_months);
                 $months             = array_slice($all_months, $from_month_index, $to_month_index+1);
+                $start_end_dates    = [];
+                foreach($months as $m) {
+                    $start_end_dates[] = getStartEndDateFromMonthYear($year, $m);
+                }
+                $year_start_date    = "{$year}-01-01";
+                $year_end_date      = "{$year}-12-31";
+
 
                 function getFYEstimatedForEntity($entity_name, $entity_id = null) {
 
@@ -257,24 +238,37 @@
 
                 $fy_estimated_merchandise = getFYEstimatedForEntity(null, 9);
 
+                $arr_values = [];
+
                 // --------------- FTF ----------------
-                $arr_ftf = [];
                 foreach($months as $m) {
-                    $arr_ftf[] = getFlightSaleForMonth('FTF', $m, $year);
+                    $arr_values['FTF'][] = getFlightSaleForMonth('FTF', $m, $year);
                 }
-                $total_ftf        = getFlightSaleForYear('FTF', $year);
-                $fy_estimated_ftf = getFYEstimatedForEntity('FTF');
+                $arr_values['FTF']['total'] = getFlightSaleForYear('FTF', $year);
+                $arr_values['FTF']['totalEstimated'] = getFYEstimatedForEntity('FTF');
 
                 // --------------- COGS Merchandise ----------------
                 $fy_estimated_merchandise_cogs = getFYEstimatedForEntity(null, 24);
 
                 // --------------- SKyDivers ----------------
-                $arr_skydivers = [];
                 foreach($months as $m) {
-                    $arr_skydivers[] = getFlightSaleForMonth('Skydivers', $m, $year);
+                    $arr_values['Skydivers'][] = getFlightSaleForMonth('Skydivers', $m, $year);
                 }
-                $total_skydivers        = getFlightSaleForYear('Skydivers', $year);
-                $fy_estimated_skydivers = getFYEstimatedForEntity('SkyDivers');
+                $arr_values['Skydivers']['total'] = getFlightSaleForYear('Skydivers', $year);
+                $arr_values['Skydivers']['totalEstimated'] = getFYEstimatedForEntity('SkyDivers');
+
+                // Presidential Guard
+                for($i=0; $i<count($start_end_dates); $i++) {
+                    $arr_values[PRESIDENTIAL_GUARD][] = getDataAndAggregate(PRESIDENTIAL_GUARD, $start_end_dates[$i]['start'], $start_end_dates[$i]['end'])[0]['paid'];
+                    $arr_values[NAVY_SEALS][] = getDataAndAggregate(NAVY_SEALS, $start_end_dates[$i]['start'], $start_end_dates[$i]['end'])[0]['paid'];
+                    $arr_values[MILITARY_INDIVIDUALS][] = getDataAndAggregate(MILITARY_INDIVIDUALS, $start_end_dates[$i]['start'], $start_end_dates[$i]['end'])[0]['paid'];
+                }
+                $arr_values[PRESIDENTIAL_GUARD]['total'] = getDataAndAggregate(PRESIDENTIAL_GUARD, $year_start_date, $year_end_date)[0]['paid'];
+                $arr_values[PRESIDENTIAL_GUARD]['totalEstimated'] = getFYEstimatedForEntity(PRESIDENTIAL_GUARD);
+                $arr_values[NAVY_SEALS]['total'] = getDataAndAggregate(NAVY_SEALS, $year_start_date, $year_end_date)[0]['paid'];
+                $arr_values[NAVY_SEALS]['totalEstimated'] = getFYEstimatedForEntity(NAVY_SEALS);
+                $arr_values[MILITARY_INDIVIDUALS]['total'] = getDataAndAggregate(MILITARY_INDIVIDUALS, $year_start_date, $year_end_date)[0]['paid'];
+                $arr_values[MILITARY_INDIVIDUALS]['totalEstimated'] = getFYEstimatedForEntity(MILITARY_INDIVIDUALS);
                 ?>
 
                 <thead id="tblHead">
@@ -284,14 +278,14 @@
                     <?php
                     foreach($months as $m) {
                         ?>
-                        <th><?= $_GET['year'] ?><br/><?= $m ?></th>
-                        <th><?= $_GET['year'] ?><br/><?= $m ?></th>
+                        <th class="budget"><?= $_REQUEST['year'] ?><br/><?= $m ?></th>
+                        <th class="actual"><?= $_REQUEST['year'] ?><br/><?= $m ?></th>
                     <?php
                     }
                     ?>
-                    <th><?= $_GET['year'] ?><br/>FY Total</th>
-                    <th><?= $_GET['year'] ?><br/>FY Total</th>
-                    <th><?= $_GET['year'] ?><br/>Deviation</th>
+                    <th class="budget"><?= $_REQUEST['year'] ?><br/>FY Total Estimated</th>
+                    <th class="actual"><?= $_REQUEST['year'] ?><br/>FY Total</th>
+                    <th><?= $_REQUEST['year'] ?><br/>Deviation</th>
                 </tr>
                 </thead>
                 <tbody>
@@ -313,7 +307,7 @@
                 $stmt_merchandise->execute();
                 while ($row = $stmt_merchandise->fetch()) {
                     ?>
-                    <tr>
+                    <tr class="rowParent">
                         <td>
                             <button class="btn btn-small btn-secondary btnParentRow" data-parent-id="<?= $row['id'] ?>">
                                 +
@@ -322,8 +316,8 @@
                         <?php
                         foreach($months as $m) {
                             ?>
-                            <td></td>
-                            <td></td>
+                            <td class="budget"></td>
+                            <td class="actual"></td>
                             <?php
                         }
                         ?>
@@ -339,7 +333,7 @@
                     $result2 = $db->prepare($sql);
                     $arr     = array(
                         ':parentId' => $row['id'],
-                        ':years'    => $_GET['year']
+                        ':years'    => $_REQUEST['year']
                     );
                     $result2->execute($arr);
 
@@ -363,12 +357,10 @@
                             <?php
                             for($i=0; $i<count($months); $i++) {
                                 ?>
-                                <td><input type="text" class="input-small"
-                                           data-entity-id="<?= $arr_monthwise_data[0]['id'] ?>"
-                                           data-index="<?=$i+1?>"
-                                           value="<?= getMonthValue($months[$i], $arr_monthwise_data) ?>"/>
+                                <td class="budget">
+                                    <?= getMonthValue($months[$i], $arr_monthwise_data) ?>
                                 </td>
-                                <td>
+                                <td class="actual">
                                     <?php
                                     switch ($entity_name) {
                                         case 'Merchandise':
@@ -378,12 +370,8 @@
                                                 echo $arr_merhandise[$i];
                                             }
                                             break;
-                                        case 'FTF':
-                                            echo $arr_ftf[$i];
-                                            break;
-                                        case 'SkyDivers':
-                                            echo $arr_skydivers[$i];
-                                            break;
+                                        default:
+                                            echo $arr_values[$entity_name][$i];
                                     }
                                     ?>
                                 </td>
@@ -391,7 +379,7 @@
                             }
                             ?>
 
-                            <td class="fyEstimted">
+                            <td class="fyEstimted budget">
                                 <?php
                                 switch ($entity_name) {
                                     case 'Merchandise':
@@ -401,16 +389,12 @@
                                             echo $fy_estimated_merchandise;
                                         }
                                         break;
-                                    case 'FTF':
-                                        echo $fy_estimated_ftf;
-                                        break;
-                                    case 'SkyDivers':
-                                        echo $fy_estimated_skydivers;
-                                        break;
+                                    default:
+                                        echo $arr_values[$entity_name]['totalEstimated'];
                                 }
                                 ?>
                             </td>
-                            <td>
+                            <td class="actual">
                                 <?php
                                 switch ($entity_name) {
                                     case 'Merchandise':
@@ -419,12 +403,8 @@
                                         }
                                         echo $total_merchandise;
                                         break;
-                                    case 'FTF':
-                                        echo $total_ftf;
-                                        break;
-                                    case 'SkyDivers':
-                                        echo $total_skydivers;
-                                        break;
+                                    default:
+                                        echo $arr_values[$entity_name]['total'];
                                 }
                                 ?>
                             </td>
@@ -438,12 +418,8 @@
                                             echo round($fy_estimated_merchandise - $total_merchandise, 1);
                                         }
                                         break;
-                                    case 'FTF':
-                                        echo round($fy_estimated_ftf - $total_ftf, 1);
-                                        break;
-                                    case 'SkyDivers':
-                                        echo $fy_estimated_skydivers - $total_skydivers;
-                                        break;
+                                    default:
+                                        echo $arr_values[$entity_name]['totalEstimated'] - $arr_values[$entity_name]['total'];
                                 }
                                 ?>
                             </td>
@@ -456,8 +432,8 @@
                         <?php
                         $count = 0;
                         for($i=0; $i<count($months)*2; $i+=2) {
-                            echo sprintf('<td data-index="%d"></td>', $i+1);
-                            echo sprintf('<td data-index="%d"></td>', $i+2);
+                            echo sprintf('<td data-index="%d" class="budget"></td>', $i+1);
+                            echo sprintf('<td data-index="%d" class="actual"></td>', $i+2);
                             $count+=2;
                         }
                         ?>
@@ -556,6 +532,37 @@
 
 </html>
 
+<style>
+    select{
+        width: 100px;
+    }
+
+    label {
+        display: inline;
+    }
+
+    div * {
+        vertical-align: baseline;
+    }
+
+    th, td {
+        background-color: white;
+    }
+
+    .actual {
+        background-color: #ceffc2
+    }
+
+    .budget {
+        background-color: #fff6b4
+    }
+
+    .rowParent td, .rowTotal td {
+        background-color: lightgrey;
+        font-weight: bold;
+    }
+</style>
+
 <script type="text/javascript">
 
     $('#year, #fromMonth, #toMonth').on('change', function (e) {
@@ -616,6 +623,7 @@
                     } else {
                         value = $(obj2).html();
                     }
+                    console.log(obj2);
                     value = Number(value);
                     sum += value;
                 });
@@ -628,5 +636,34 @@
 
     $('td:contains("EBITDA")').css('background-color', 'yellow')
         .siblings().css('background-color', 'yellow');
+
+    $('input[name="chkSheetFormat"]').on('change', function(e) {
+        console.log($(this).val());
+        switch(Number($(this).val())) {
+            case 1:
+                $('.budget').show();
+                $('.actual').hide();
+                break;
+            case 2:
+                $('.budget').hide();
+                $('.actual').show();
+                break;
+            case 3:
+                $('.budget').show();
+                $('.actual').show();
+                break;
+        }
+    });
+
+    $('.btnUploadCsv').on('click', function (e) {
+        e.preventDefault();
+        $('#csvFile').click();
+    });
+
+    $('#csvFile').on('change', function () {
+        if($('#csvFile').val()) {
+            $('#bpForm').submit();
+        }
+    });
 
 </script>

@@ -21,6 +21,10 @@ define('ROLE_MANAGEMENT', 'Management');
 
 define('SESS_MOCK_ROLE', 'sess_mock_role');
 
+define('PRESIDENTIAL_GUARD', 'Presidential Guard');
+define('NAVY_SEALS', 'Navy Seals');
+define('MILITARY_INDIVIDUALS', 'Military Individuals');
+
 $_ROLE_ALLOWED_PAGES = [
     ROLE_MANAGEMENT => ['index', 'Businessplan', 'supplier', 'partners'],
     ROLE_CASHIER => ['index', 'sales', 'products', 'customer', 'partners', 'salesreport', 'flight_packages', 'flight_picker'],
@@ -784,22 +788,28 @@ function getQuery($package_name, $sale_date_check = true) {
     return $sql;
 }
 
-function getDataAndAggregate($package_name) {
+/**
+ * @param $package_name
+ * @param $start_date
+ * @param $end_date
+ * @return array
+ */
+function getDataAndAggregate($package_name, $start_date, $end_date) {
     global $db;
 
     $sql_w_sale_date = getQuery($package_name);
     $result = $db->prepare($sql_w_sale_date);
     $result->execute(array(
-        ':startDate' => $_GET['d1'],
-        ':endDate'   => $_GET['d2']
+        ':startDate' => $start_date,
+        ':endDate'   => $end_date
     ));
     $arr2 = $result->fetchAll(PDO::FETCH_ASSOC);
 
     $sql_w_flight_date = getQuery($package_name, false);
     $result = $db->prepare($sql_w_flight_date);
     $result->execute(array(
-        ':startDate' => $_GET['d1'],
-        ':endDate'   => $_GET['d2']
+        ':startDate' => $start_date,
+        ':endDate'   => $end_date
     ));
     $arr_flight = $result->fetchAll(PDO::FETCH_ASSOC);
 
@@ -818,8 +828,8 @@ function getDataAndAggregate($package_name) {
     });
 
     $arr_total_minutes = array_group_by($arr2, function($v) { return $v['flight_purchase_id']; });
-    $total_minutes = array_reduce($arr_total_minutes, function($carry, $item) {
-        if(isTimeInsideSearchedDate($item[0]['date'], $_GET['d1'], $_GET['d2'])) {
+    $total_minutes = array_reduce($arr_total_minutes, function($carry, $item) use ($start_date, $end_date) {
+        if(isTimeInsideSearchedDate($item[0]['date'], $start_date, $end_date)) {
             $carry += $item[0]['total_minutes'];
         }
         return $carry;
@@ -828,10 +838,10 @@ function getDataAndAggregate($package_name) {
     $arr_minutes_used = array_group_by($arr2, function($v) { return $v['id']; });
     $purchased_minutes_used = 0;
     $total_credit_cost = 0;
-    $minutes_used = array_reduce($arr_minutes_used, function($carry, $item) use (&$purchased_minutes_used, &$total_credit_cost, $arr_flight_purchase_ids, $package_name) {
+    $minutes_used = array_reduce($arr_minutes_used, function($carry, $item) use (&$purchased_minutes_used, &$total_credit_cost, $arr_flight_purchase_ids, $package_name, $start_date, $end_date) {
         if($item[0]['flight_taken'] == 1) {
             if ($item[0]['from_flight_purchase_id'] > 0 || $item[0]['deduct_from_balance'] == 2) {
-                if(isTimeInsideSearchedDate($item[0]['flight_time'], $_GET['d1'], $_GET['d2'])) {
+                if(isTimeInsideSearchedDate($item[0]['flight_time'], $start_date, $end_date)) {
                     $carry += $item[0]['credit_used'];
 
                     if($item[0]['deduct_from_balance'] == 2) {
@@ -845,7 +855,7 @@ function getDataAndAggregate($package_name) {
                         $purchased_minutes_used += $item[0]['credit_used'];
                     }
                 }
-            } else if(isTimeInsideSearchedDate($item[0]['flight_time'], $_GET['d1'], $_GET['d2'])) {
+            } else if(isTimeInsideSearchedDate($item[0]['flight_time'], $start_date, $end_date)) {
                 $carry += $item[0]['minutes_used'];
                 $purchased_minutes_used += $item[0]['minutes_used'];
 
@@ -857,8 +867,8 @@ function getDataAndAggregate($package_name) {
         return $carry;
     });
 
-    $credit_used = array_reduce($arr_minutes_used, function($carry, $item) {
-        if(isTimeInsideSearchedDate($item[0]['flight_time'], $_GET['d1'], $_GET['d2'])) {
+    $credit_used = array_reduce($arr_minutes_used, function($carry, $item) use ($start_date, $end_date) {
+        if(isTimeInsideSearchedDate($item[0]['flight_time'], $start_date, $end_date)) {
             $carry += $item[0]['credit_used'];
         }
         return $carry;
@@ -1056,4 +1066,27 @@ function getMerchandiseDiscountsGiven($from, $to) {
     $query->execute([$from, $to]);
     $rows = $query->fetchAll(PDO::FETCH_ASSOC);
     return $rows;
+}
+
+/**
+ * @param $year
+ * @param null $month
+ * @return array
+ */
+function getStartEndDateFromMonthYear($year, $month = null) {
+
+    if($month == null) {
+        $time = $year;
+    } else {
+        $time = "{$month}-{$year}";
+    }
+
+    $dt = DateTime::createFromFormat('M-Y', $time);
+    $start_date = $dt->format('Y-m-01');
+    $end_date = $dt->format('Y-m-t');
+
+    return [
+        'start' => $start_date,
+        'end' => $end_date
+    ];
 }

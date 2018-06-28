@@ -84,27 +84,27 @@ include('header.php');
 
                         } else {
                             /** FTF */
-                            $arr_revenue = getDataAndAggregate('FTF');
+                            $arr_revenue = getDataAndAggregate('FTF', $_GET['d1'], $_GET['d2']);
 
                             /** RF */
-                            $arr2 = getDataAndAggregate('RF - Repeat Flights');
+                            $arr2 = getDataAndAggregate('RF - Repeat Flights', $_GET['d1'], $_GET['d2']);
                             $arr_revenue = array_merge($arr_revenue, $arr2);
 
                             /** SKYDIVERS */
-                            $arr2 = getDataAndAggregate('Skydivers');
+                            $arr2 = getDataAndAggregate('Skydivers', $_GET['d1'], $_GET['d2']);
                             $arr_revenue = array_merge($arr_revenue, $arr2);
 
                             $arr_military = [];
                             /** Military */
-                            $arr2 = getDataAndAggregate('Military');
+                            $arr2 = getDataAndAggregate('Military', $_GET['d1'], $_GET['d2']);
                             $arr_military = array_merge($arr_military, $arr2);
 
                             /** Navy Seal */
-                            $arr2 = getDataAndAggregate('Navy Seal');
+                            $arr2 = getDataAndAggregate('Navy Seal', $_GET['d1'], $_GET['d2']);
                             $arr_military = array_merge($arr_military, $arr2);
 
                             /** Presidential Guard */
-                            $arr2 = getDataAndAggregate('Presidential Guard');
+                            $arr2 = getDataAndAggregate('Presidential Guard', $_GET['d1'], $_GET['d2']);
                             $arr_military = array_merge($arr_military, $arr2);
 
                             $arr_military_sum[0] = [
