@@ -116,16 +116,18 @@ require_once('auth.php');
             </ul>
 
             <div style="margin-top: -19px; margin-bottom: 21px;" class="btns">
-                <a href="index.php">
-                    <button class="btn btn-default btn-large" style="float: none;"><i
-                            class="icon icon-circle-arrow-left icon-large"></i> Back
-                    </button>
+                <a href="index.php" class="btn btn-default btn-large" style="float: none;">
+                    <i class="icon icon-circle-arrow-left icon-large"></i> Back
                 </a>
-                <button style="float:right;" class="btn btn-success btn-mini"><a href="javascript:window.print()">
-                        Print</button>
-                </a> <br><br>
-                <button style="float:right;" class="btn btn-success btn-mini" onclick="convertToCSV()" id="exportCSV"/>
-                <i class="icon-plus-sign icon-large"></i> Export </button>
+                <button style="float:right; margin-right: 5px;" class="btn btn-success btn-large" onclick="window.print()">
+                    Print
+                </button>
+                <button style="float:right; margin-right:5px;" class="btn btn-warning btn-large" onclick="convertToCSV()" id="exportCSV"/>
+                    Export
+                </button>
+                <button style="float:right; margin-right: 5px;" class="btn btn-info btn-large btnVerified" />
+                    Verified
+                </button>
                 <br><br>
 
 
@@ -346,13 +348,14 @@ require_once('auth.php');
 <script src="js/jquery.js"></script>
 <script type="text/javascript">
 
+    $('.btnVerified').on('click', function(e) {
+
+    });
+
     function convertToCSV() {
         exportTableToCSV($('#resultTable'), 'filename.csv');
     }
-</script>
 
-
-<script type="text/javascript">
     function exportTableToCSV($table, filename) {
 
         // var $rows = $table.find('tr:has(td)'),

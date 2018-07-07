@@ -117,6 +117,9 @@ include('header.php');
 
                             $arr_revenue = array_merge($arr_revenue, $arr_military_sum);
 
+                            // just for heading
+                            $arr_revenue[] = ['package_name' => 'Other Revenue'];
+
                             /** HELMET RENT */
                             $arr2 = getMerchandiseRevenue('Helmet Rent', $_GET['d1'], $_GET['d2']);
                             $arr_revenue = array_merge($arr_revenue, $arr2);
@@ -131,12 +134,13 @@ include('header.php');
                         }
 
                         foreach ($arr_revenue as $row) {
-                            if($row['package_name'] == 'Skydivers') {
+                            if($row['package_name'] == 'Other Revenue') {
                                 ?>
-                                <!--<tr>
-                                    <td colspan="6"><b>Experienced Return Flyers</b></td>
-                                </tr>-->
+                                <tr>
+                                    <td colspan="6" bgcolor="#eeeeee"><b><?=$row['package_name']?></b></td>
+                                </tr>
                                 <?php
+                                continue;
                             }
                             ?>
                             <tr class="<?=$row['package_name']=='Military'?'military-row':''?>">
@@ -149,9 +153,13 @@ include('header.php');
                             <?php
                         }
 
-                        $arr_packages = json_encode(array_map(function($v) { return $v['package_name']; }, $arr_revenue));
+                        $arr_packages = json_encode(array_map(function($v) {
+                            if(isset($_POST['military']) && $v['package_name'] == 'Military') {
+                                return 'Military Individuals';
+                            }
+                            return $v['package_name'];
+                        }, $arr_revenue));
                         $arr_paid = json_encode(array_map(function($v) { return round($v['aed_value'], 1); }, $arr_revenue));
-
                         ?>
                         <tr>
                             <td><b>Total:</b></td>
