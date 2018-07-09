@@ -7,7 +7,7 @@ require_once('auth.php');
         POS
     </title>
     <link href="css/bootstrap.css" rel="stylesheet">
-
+    <script src="js/jquery-1.12.4.min.js" type="text/javascript"></script>
     <link rel="stylesheet" type="text/css" href="css/DT_bootstrap.css">
 
     <link rel="stylesheet" href="css/font-awesome.min.css">
@@ -125,9 +125,9 @@ require_once('auth.php');
                 <button style="float:right; margin-right:5px;" class="btn btn-warning btn-large" onclick="convertToCSV()" id="exportCSV"/>
                     Export
                 </button>
-                <button style="float:right; margin-right: 5px;" class="btn btn-info btn-large btnVerified" />
+                <a href="salesreport.php?verified=1" style="float:right; margin-right: 5px;" class="btn btn-info btn-large btnVerified" target="_blank" />
                     Verified
-                </button>
+                </a>
                 <br><br>
 
 
@@ -171,11 +171,18 @@ require_once('auth.php');
                 }
                 $d2 = $dt->format('Y-m-d');
                 ?>
-                <table class="table table-bordered table-striped" id="tblSalesReport" style="text-align: left;">
+                <table class="table table-bordered table-striped" id="tblSalesReport">
                     <thead>
                     <tr>
                         <th colspan="10" style="text-align: center;">
                             <h3>Sales Report from&nbsp;<?php echo date('M j, Y', strtotime($d1)) ?>&nbsp;to&nbsp;<?php echo date('M j, Y', strtotime($d2)) ?></h3>
+                            <?php
+                            if(isset($_GET['verified'])) {
+                            ?>
+                                <h4>Verified by: <?=$_SESSION['SESS_FIRST_NAME']?></h4>
+                            <?php
+                            }
+                            ?>
                         </th>
                     </tr>
                     <tr>
@@ -345,12 +352,33 @@ require_once('auth.php');
 </div>
 
 </body>
-<script src="js/jquery.js"></script>
 <script type="text/javascript">
+$(function() {
 
-    $('.btnVerified').on('click', function(e) {
+    <?php
+    if(isset($_GET['verified'])) {
+    ?>
+    $('#tblSalesReport').css('border-collapse', 'collapse');
+    $('#tblSalesReport, #tblSalesReport th, #tblSalesReport td')
+        .css('border', '1px solid grey');
 
+    $.ajax({
+        url: 'api.php',
+        method: 'POST',
+        data: {
+            'call': 'emailSalesReportToAdmin',
+            'tableHtml': $('#tblSalesReport').parent().html()
+        },
+        dataType: 'json',
+        success: function (response) {
+            alert('Email sent');
+            window.top.close();
+        }
     });
+    <?php
+    }
+    ?>
+});
 
     function convertToCSV() {
         exportTableToCSV($('#resultTable'), 'filename.csv');

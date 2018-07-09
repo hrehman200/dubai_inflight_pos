@@ -1060,4 +1060,19 @@ function askForGiveawayApproval() {
     ));
 }
 
+function emailSalesReportToAdmin() {
+    global $db;
+
+    if(isset($_POST['tableHtml'])) {
+        $subject = 'Verified Sales Report for ' . date('jS F, Y');
+        $body = $_POST['tableHtml'];
+        sendEmail('carlos.euribe@inflightdubai.com', $subject, $body);
+        sendEmail('shah@inflightdubai.com', $subject, $body);
+    }
+
+    echo json_encode(array(
+        'success' => 1
+    ));
+}
+
 call_user_func($_POST['call']);

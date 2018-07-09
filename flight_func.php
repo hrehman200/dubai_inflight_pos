@@ -879,6 +879,11 @@ function getDataAndAggregate($package_name, $start_date, $end_date) {
         $total_purchased_cost = $aed_per_paid_minute * $purchased_minutes_used;
     }
 
+    // renaming for display
+    if($package_name ==  'RF - Repeat Flights') {
+        $package_name = 'Repeat Flight';
+    }
+
     $arr2 = [[
         'package_name' => $package_name,
         'paid' => $paid,
