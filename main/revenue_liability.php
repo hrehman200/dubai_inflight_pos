@@ -107,6 +107,10 @@ include('header.php');
                             $arr2 = getDataAndAggregate('Presidential Guard', $_GET['d1'], $_GET['d2']);
                             $arr_military = array_merge($arr_military, $arr2);
 
+                            /** Sky god */
+                            $arr2 = getDataAndAggregate('Sky god%', $_GET['d1'], $_GET['d2']);
+                            $arr_military = array_merge($arr_military, $arr2);
+
                             $arr_military_sum[0] = [
                                 'package_name' => 'Military',
                                 'paid' => array_sum(array_column($arr_military, 'paid')),

@@ -772,14 +772,14 @@ function getQuery($package_name, $sale_date_check = true) {
                                 %s
                             ) AND(
                                 (customer_name != 'FDR' AND customer_name != 'MAINTENANCE' AND customer_name != 'inflight staff flying') OR customer_name IS NULL
-                            ) AND d.category ", $join_with_discount, $package_check, $date_check);
+                            ) ", $join_with_discount, $package_check, $date_check);
 
     if($package_name == 'Skydivers' || $package_name == 'FTF' || $package_name == 'RF - Repeat Flights') {
-        $sql .= "NOT IN ('Presidential Guard', 'Navy Seal', 'Military')";
+        $sql .= "AND d.category NOT IN ('Presidential Guard', 'Navy Seal', 'Military', 'Sky god%') AND d.category NOT LIKE 'Navy Seal%'";
     } else if($package_name == NAVY_SEAL){
-        $sql .= "LIKE 'Navy Seal%'";
+        $sql .= "AND d.category LIKE 'Navy Seal%'";
     } else {
-        $sql .= "IN ('".$package_name."')";
+        $sql .= "AND d.category IN ('".$package_name."')";
     }
 
     if($package_name == 'FTF') {
@@ -884,6 +884,10 @@ function getDataAndAggregate($package_name, $start_date, $end_date) {
     // renaming for display
     if($package_name ==  'RF - Repeat Flights') {
         $package_name = 'Repeat Flight';
+    }
+
+    if($package_name == 'Sky god%') {
+        $package_name = 'US Navy';
     }
 
     $arr2 = [[
