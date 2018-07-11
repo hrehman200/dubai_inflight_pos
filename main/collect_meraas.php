@@ -7,7 +7,7 @@ require_once('auth.php');
         POS
     </title>
     <link href="css/bootstrap.css" rel="stylesheet">
-    <script src="js/jquery-1.12.4.min.js" type="text/javascript"></script>
+
     <link rel="stylesheet" type="text/css" href="css/DT_bootstrap.css">
 
     <link rel="stylesheet" href="css/font-awesome.min.css">
@@ -116,6 +116,7 @@ require_once('auth.php');
             </ul>
 
             <div style="margin-top: -19px; margin-bottom: 21px;" class="btns">
+
                 <a href="index.php" class="btn btn-default btn-large" style="float: none;">
                     <i class="icon icon-circle-arrow-left icon-large"></i> Back
                 </a>
@@ -123,13 +124,17 @@ require_once('auth.php');
                     Print
                 </button>
                 <button style="float:right; margin-right:5px;" class="btn btn-warning btn-large" onclick="convertToCSV()" id="exportCSV"/>
-                    Export
+                Export
                 </button>
+
+                <a href="collect_meraas.php?verified=1" style="float:right; margin-right: 5px;" class="btn btn-info btn-large btnVerified" target="_blank" />
+                    Verified
+                </a>
                 <br><br>
 
 
             </div>
-            <form action="salesreport.php" method="get">
+            <form action="collect_meraas.php" method="get">
                 <center><strong>From : <input type="text" style="width: 223px; padding:3px;height: 30px;" name="d1"
                                               class="tcal" value=""/>
                         To: <input type="text"
@@ -168,32 +173,26 @@ require_once('auth.php');
                 }
                 $d2 = $dt->format('Y-m-d');
                 ?>
-                <table class="table table-bordered table-striped" id="tblSalesReport">
+                <table class="table table-bordered table-striped" id="tblSalesReport" style="text-align: left;">
                     <thead>
                     <tr>
                         <th colspan="10" style="text-align: center;">
                             <h3>Sales Report from&nbsp;<?php echo date('M j, Y', strtotime($d1)) ?>&nbsp;to&nbsp;<?php echo date('M j, Y', strtotime($d2)) ?></h3>
-                            <?php
-                            if(isset($_GET['verified'])) {
-                            ?>
-                                <h4>Verified by: <?=$_SESSION['SESS_FIRST_NAME']?></h4>
-                            <?php
-                            }
-                            ?>
                         </th>
                     </tr>
                     <tr>
                         <th width="16%"> Invoice Number</th>
-                        <th width="13%"> Transaction ID</th>
                         <th width="13%"> Transaction Date</th>
-                        <th width="13%"> Mode of Payment 1</th>
-                        <th width="13%"> Amount 1</th>
-                        <th width="13%"> Mode of Payment 2</th>
-                        <th width="13%"> Amount 2</th>
+                        <th width="13%"> Cash</th>
+                        <th width="13%"> Card</th>
+                        <th width="13%"> Online</th>
+                        <th width="13%"> Customer ID</th>
                         <th width="20%"> Customer Name</th>
-                        <th width="20%"> Sale Type</th>
-                        <th width="18%"> Amount</th>
-                        <!--<th width="13%"> Profit</th>-->
+                        <th width="20%"> Service</th>
+                        <th width="20%"> Merchandise</th>
+                        <th width="18%"> VAT</th>
+                        <th width="18%"> Net of VAT</th>
+                    
                     </tr>
                     </thead>
                     <tbody>
@@ -213,7 +212,7 @@ require_once('auth.php');
                     if($_SESSION['SESS_LAST_NAME'] == 'Operator') {
                         $sql .= sprintf(" AND u.name = '%s'", $_SESSION['SESS_FIRST_NAME']);
                     }
-                    
+                    $sql .= ' AND s.amount > 0 AND (s.mode_of_payment !="Account" AND s.mode_of_payment_1 != "Account") ';
                     $sql .= " AND (c.customer_name != 'FDR' OR c.customer_name IS NULL)
                     ORDER by transaction_id DESC";
 
@@ -232,14 +231,27 @@ require_once('auth.php');
                         $current_cost = round($row['amount'], 0);
                         $discount = $current_cost * $row['discount'] / 100.00;
 
-                        $query = $db->prepare('SELECT transaction_id FROM sales_order WHERE invoice = ? AND gen_name = "Service" LIMIT 1');
+                        $query = $db->prepare('SELECT SUM(amount) AS totalService,
+                        SUM(amount) - (SUM(amount) * SUM(discount) / 100) AS discountedService
+                        FROM sales_order WHERE invoice = ? AND gen_name = "Service" LIMIT 1');
                         $query->execute([$row['invoice_number']]);
-                        $is_service = ($query->rowCount() > 0);
+                        $row2 = $query->fetch();
+                        $is_service_merchandise = ($row2['discountedService'] > 0);
 
-                        if ($row['sale_type'] == 'Merchandise' || $is_service) {
-                            $invoiceHref = 'preview.php?invoice=' . $row['invoice_number'] . '&sale_type=' . $row['sale_type'] . '&payfirst=&paysecond=&d1=' . $d1 . '&d2=' . $d2;
-                        } else {
+                        $query = $db->prepare('SELECT SUM(amount) AS totalMerchandise,
+                        SUM(amount) - (SUM(amount) * SUM(discount) / 100) AS discountedMerchandise
+                        FROM sales_order WHERE invoice = ? AND gen_name = "Merchandise" LIMIT 1');
+                        $query->execute([$row['invoice_number']]);
+                        $row3 = $query->fetch();
+                        $is_merchandise = ($row3['discountedMerchandise'] > 0);
+
+                        $is_only_service = (!$is_merchandise && !$is_service_merchandise);
+
+                        if ($is_only_service) {
                             $invoiceHref = 'flight_preview.php?invoice=' . $row['invoice_number'] . '&sale_type=' . $row['sale_type'];
+
+                        } else {
+                            $invoiceHref = 'preview.php?invoice=' . $row['invoice_number'] . '&sale_type=' . $row['sale_type'] . '&payfirst=&paysecond=&d1=' . $d1 . '&d2=' . $d2;
                         }
                         $total_sale += $current_cost;
                         $total_profit += $row['profit'];
@@ -275,54 +287,81 @@ require_once('auth.php');
                         ?>
                         <tr>
                             <td><a href='<?php echo $invoiceHref ?>'> <?php echo $row['invoice_number']; ?></td>
-                            <td>STI-00<?php echo $row['transaction_id']; ?></td>
                             <td><?php echo $row['date']; ?></td>
-                            <td><?php echo $row['mode_of_payment']; ?></td>
-                            <td><?php echo $row['mop_amount']; ?></td>
+                            <td><?php  
+                            if ($row['mode_of_payment']=='Cash') echo $row['mop_amount'];
+                            if ($row['mode_of_payment_1']=='Cash') echo $row['mop1_amount'];?></td>
+                            <td><?php
+                            if ($row['mode_of_payment']=='Card') echo $row['mop_amount'];
+                            if ($row['mode_of_payment_1']=='Card') echo $row['mop1_amount'];?></td>
+                            <td><?php
+                            if ($row['mode_of_payment']=='Online') echo $row['mop_amount'];
+                            if ($row['mode_of_payment_1']=='Online') echo $row['mop1_amount'];?></td>
+                            <td><?php
+                            echo ($row['customer_id']) ? $row['customer_id'] : $row['customer_id']; ?></td>
+                            <td><?php
+                            echo ($row['customer_name']) ? $row['customer_name'] : $row['name']; ?></td>
+                            <td><?php
+                                if($is_only_service) {
+                                    echo ($row['mop_amount'] + $row['mop1_amount']);
 
-                            <td><?php echo $row['mode_of_payment_1']; ?></td>
-                            <td><?php echo $row['mop1_amount']; ?></td>
+                                } else if($is_merchandise || $is_service_merchandise) {
+                                    echo round($row2['discountedService'],2);
+                                }
+                            ?></td> 
+                            <td><?php
+                            if ($is_merchandise || $is_service_merchandise) {
+                                echo round($row3['discountedMerchandise'], 2);
+                            }
+                            ?></td> 
+                            
+                            <td>
+                                       <?php
+                                        $vat_percent = "5%";
+                                        $VAT = $row['amount'] *$vat_percent/105;
+                                        //$vat_amount  = $vat_percent * $current_amount_w_discount / 105;
+                                        echo number_format($VAT, 2);
+                                        ?></td>
 
-                            <td><?php echo ($row['customer_name']) ? $row['customer_name'] : $row['name']; ?></td>
-                            <td><?= $row['sale_type'] ?></td>
-                            <td><?= number_format($current_cost, 0) ?></td>
-                            <!--<td><?= number_format($row['profilt']) ?></td>-->
+                           <td><?= number_format($current_cost-$VAT, 2); ?></td>
+                            
                         </tr>
                         <?php
+                    
                     }
                     ?>
 
                     <tr>
                         <td colspan="9" style="text-align: right;"> <b>Total:</b></td>
-                        <td colspan="1" style=""><b><?= number_format($total_sale, 0) ?></b></td>
+                        <td colspan="1" style=""><b><?= number_format($total_sale, 1) ?></b></td>
                     </tr>
                     <tr>
                         <td colspan="9" style="text-align: right;"> <b>Cash:</b></td>
-                        <td colspan="1" style=""><b><?= number_format($total_cash, 0) ?></b></td>
+                        <td colspan="1" style=""><b><?= number_format($total_cash, 1) ?></b></td>
                     </tr>
                     <tr>
                         <td colspan="9" style="text-align: right;"> <b>Card:</b></td>
-                        <td colspan="1" style=""><b><?= number_format($total_card, 0) ?></b></td>
+                        <td colspan="1" style=""><b><?= number_format($total_card, 1) ?></b></td>
                     </tr>
-                    <tr>
+                    <!--<tr>
                         <td colspan="9" style="text-align: right;"> <b>Account:</b></td>
-                        <td colspan="1" style=""><b><?= number_format($total_account, 0) ?></b></td>
-                    </tr>
+                        <td colspan="1" style=""><b><?= number_format($total_account, 1) ?></b></td>
+                    </tr>-->
                     <?php
                     if(strtolower($_SESSION['SESS_LAST_NAME']) == 'admin' || strtolower($_SESSION['SESS_LAST_NAME']) == 'account') {
                         ?>
                         <tr>
                             <td colspan="9" style="text-align: right;"><b>Online:</b></td>
-                            <td colspan="1" style=""><b><?= number_format($total_online, 0) ?></b></td>
+                            <td colspan="1" style=""><b><?= number_format($total_online, 1) ?></b></td>
                         </tr>
                         <?php
                     }
                     ?>
 
-                    <tr>
-                        <td colspan="9" style="text-align: right;"><b>Souq:</b></td>
+                   <!-- <tr>
+                       <td colspan="9" style="text-align: right;"><b>Souq:</b></td>
                         <td colspan="1" style="padding-top:10px;">__________________</td>
-                    </tr>
+                    </tr>-->
 
                     <?php
                     if($_SESSION['SESS_LAST_NAME'] == 'Operator') {
@@ -349,7 +388,36 @@ require_once('auth.php');
 </div>
 
 </body>
+<script src="js/jquery.js"></script>
 <script type="text/javascript">
+
+    $(function() {
+
+        <?php
+        if(isset($_GET['verified'])) {
+        ?>
+        $('#tblSalesReport').css('border-collapse', 'collapse');
+        $('#tblSalesReport, #tblSalesReport th, #tblSalesReport td')
+            .css('border', '1px solid grey');
+
+        $.ajax({
+            url: 'api.php',
+            method: 'POST',
+            data: {
+                'call': 'emailSalesReportToAdmin',
+                'tableHtml': $('#tblSalesReport').parent().html()
+            },
+            dataType: 'json',
+            success: function (response) {
+                alert('Email sent');
+                window.top.close();
+            }
+        });
+        <?php
+        }
+        ?>
+    });
+
     function convertToCSV() {
         exportTableToCSV($('#resultTable'), 'filename.csv');
     }

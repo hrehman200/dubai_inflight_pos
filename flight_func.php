@@ -22,7 +22,7 @@ define('ROLE_MANAGEMENT', 'Management');
 define('SESS_MOCK_ROLE', 'sess_mock_role');
 
 define('PRESIDENTIAL_GUARD', 'Presidential Guard');
-define('NAVY_SEALS', 'Navy Seals');
+define('NAVY_SEAL', 'Navy Seal');
 define('MILITARY_INDIVIDUALS', 'Military Individuals');
 
 $_ROLE_ALLOWED_PAGES = [
@@ -776,6 +776,8 @@ function getQuery($package_name, $sale_date_check = true) {
 
     if($package_name == 'Skydivers' || $package_name == 'FTF' || $package_name == 'RF - Repeat Flights') {
         $sql .= "NOT IN ('Presidential Guard', 'Navy Seal', 'Military')";
+    } else if($package_name == NAVY_SEAL){
+        $sql .= "LIKE 'Navy Seal%'";
     } else {
         $sql .= "IN ('".$package_name."')";
     }

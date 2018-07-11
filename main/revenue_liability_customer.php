@@ -74,40 +74,6 @@ include('header.php');
                                 class="icon icon-print icon-large"></i> Print</a></button>
                 </form>
 
-                <?php
-
-                /**
-                 * @param $arr
-                 * @return mixed
-                 */
-                function sumTwoRows($arr) {
-                    if (count($arr) > 1) {
-                        for ($i = 1; $i < count($arr); $i++) {
-                            $arr[0]['paid'] += $arr[$i]['paid'];
-                            $arr[0]['minutes_used'] += $arr[$i]['minutes_used'];
-                            $arr[0]['total_minutes'] += $arr[$i]['total_minutes'];
-                        }
-
-                        array_splice($arr, 1);
-                    }
-                    return $arr;
-                }
-
-                /**
-                 * @param array $arr
-                 * @param callable $key_selector
-                 * @return array
-                 */
-                function array_group_by(array $arr, callable $key_selector) {
-                    $result = array();
-                    foreach ($arr as $i) {
-                        $key = call_user_func($key_selector, $i);
-                        $result[$key][] = $i;
-                    }
-                    return $result;
-                }
-                ?>
-
                 <div class="content" id="content">
 
                     <?php

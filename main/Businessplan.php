@@ -260,13 +260,13 @@ if(isset($_FILES['csvFile']) && $_FILES['csvFile']['error'] == 0){
                 // Presidential Guard
                 for($i=0; $i<count($start_end_dates); $i++) {
                     $arr_values[PRESIDENTIAL_GUARD][] = getDataAndAggregate(PRESIDENTIAL_GUARD, $start_end_dates[$i]['start'], $start_end_dates[$i]['end'])[0]['paid'];
-                    $arr_values[NAVY_SEALS][] = getDataAndAggregate(NAVY_SEALS, $start_end_dates[$i]['start'], $start_end_dates[$i]['end'])[0]['paid'];
+                    $arr_values[NAVY_SEAL][] = getDataAndAggregate(NAVY_SEAL, $start_end_dates[$i]['start'], $start_end_dates[$i]['end'])[0]['paid'];
                     $arr_values[MILITARY_INDIVIDUALS][] = getDataAndAggregate(MILITARY_INDIVIDUALS, $start_end_dates[$i]['start'], $start_end_dates[$i]['end'])[0]['paid'];
                 }
                 $arr_values[PRESIDENTIAL_GUARD]['total'] = getDataAndAggregate(PRESIDENTIAL_GUARD, $year_start_date, $year_end_date)[0]['paid'];
                 $arr_values[PRESIDENTIAL_GUARD]['totalEstimated'] = getFYEstimatedForEntity(PRESIDENTIAL_GUARD);
-                $arr_values[NAVY_SEALS]['total'] = getDataAndAggregate(NAVY_SEALS, $year_start_date, $year_end_date)[0]['paid'];
-                $arr_values[NAVY_SEALS]['totalEstimated'] = getFYEstimatedForEntity(NAVY_SEALS);
+                $arr_values[NAVY_SEAL]['total'] = getDataAndAggregate(NAVY_SEAL, $year_start_date, $year_end_date)[0]['paid'];
+                $arr_values[NAVY_SEAL]['totalEstimated'] = getFYEstimatedForEntity(NAVY_SEAL);
                 $arr_values[MILITARY_INDIVIDUALS]['total'] = getDataAndAggregate(MILITARY_INDIVIDUALS, $year_start_date, $year_end_date)[0]['paid'];
                 $arr_values[MILITARY_INDIVIDUALS]['totalEstimated'] = getFYEstimatedForEntity(MILITARY_INDIVIDUALS);
                 ?>
