@@ -506,9 +506,12 @@ function getPerMinuteCostOfPurchasedPackage($flight_purchase_id) {
     $query->execute([$flight_purchase_id]);
     $row = $query->fetch();
 
-    $per_minute_cost = $row['price'] / $row['duration'];
-    $discounted_per_minute_cost = $per_minute_cost - ($row['discount'] * $per_minute_cost / 100);
-    return round($discounted_per_minute_cost, 2);
+    if($row['duration'] > 0) {
+        $per_minute_cost = $row['price'] / $row['duration'];
+        $discounted_per_minute_cost = $per_minute_cost - ($row['discount'] * $per_minute_cost / 100);
+        return round($discounted_per_minute_cost, 2);
+    }
+    return 0;
 }
 
 /**
