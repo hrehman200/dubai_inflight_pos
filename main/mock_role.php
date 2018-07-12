@@ -12,7 +12,7 @@ if($_SESSION['SESS_LAST_NAME'] == ROLE_MANAGEMENT) {
 
 $goto_page = $_SERVER['HTTP_REFERER'];
 $filename =pathinfo($goto_page, PATHINFO_FILENAME);
-if(in_array($filename, $_ROLE_ALLOWED_PAGES[$_SESSION['SESS_LAST_NAME']])) {
+if(in_array($filename, $_ROLE_ALLOWED_PAGES[$_SESSION['SESS_MOCK_ROLE']])) {
     header('Location: ' . $_SERVER['HTTP_REFERER']);
 } else {
     header('Location: index.php');
