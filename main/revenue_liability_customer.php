@@ -88,11 +88,10 @@ include('header.php');
                             }
 
                             $sql = "
-                                SELECT  s1.customer_id, s1.month, s1.year, SUM(s1.amount) AS purchased_amount, c.customer_name, c.credit_time, c.credit_cash, c.per_minute_cost, SUM(fc.minutes) AS credit_minutes,
+                                SELECT  s1.customer_id, s1.month, s1.year, SUM(s1.amount) AS purchased_amount, c.customer_name, c.credit_time, c.credit_cash, c.per_minute_cost, 
                                 c.expected_date
                                 FROM `sales` s1
                                 INNER JOIN customer c ON s1.customer_id = c.customer_id
-                                LEFT JOIN flight_credits fc ON fc.customer_id = c.customer_id
                                 WHERE YEAR(s1.date) <= :year AND MONTH(s1.date) <= :month AND s1.customer_id > 0";
 
                             if($_GET['customerId'] > 0) {
@@ -157,13 +156,25 @@ include('header.php');
                             $total_price = 0;
                             if(count($arr1) > 0) {
                                 foreach ($arr1 as $row) {
-                                    $units_remaining = $row['credit_minutes'] + $row['credit_time'];
+
+                                    // when joining with flight_credits in above queries multiple rows were returned, don't know why
+                                    $result3 = $db->prepare(sprintf("SELECT SUM(fc.minutes) AS credit_minutes
+                                      FROM flight_credits fc
+                                      INNER JOIN flight_purchases fp ON fc.flight_purchase_id = fp.id
+                                      WHERE fc.customer_id = :customerId AND fp.created <= '%d-%d-31'", $_GET['year'], $_GET['month']));
+                                    $result3->execute(array(
+                                        ':customerId' => $row['customer_id']
+                                    ));
+                                    $row3 = $result3->fetch(PDO::FETCH_ASSOC);
+
+
+                                    $units_remaining = $row3['credit_minutes'] + $row['credit_time'];
                                     if($row['minutes_used'] > 0) {
                                         $per_min_cost = $row['purchased_amount'] / $row['minutes_used'];
                                     } else {
                                         $per_min_cost = $row['purchased_amount'] / $row['minutes_purchased'];
                                     }
-                                    $credit_minutes_liability = ($per_min_cost * $row['credit_minutes']) + ($row['per_minute_cost'] * $row['credit_time']);
+                                    $credit_minutes_liability = ($per_min_cost * $row3['credit_minutes']) + ($row['per_minute_cost'] * $row['credit_time']);
                                     if(is_nan($credit_minutes_liability)) {
                                         $credit_minutes_liability = 0;
                                     }
