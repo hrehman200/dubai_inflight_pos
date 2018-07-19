@@ -88,7 +88,7 @@ include('header.php');
                             }
 
                             $sql = "
-                                SELECT  s1.customer_id, s1.month, s1.year, SUM(s1.amount) AS purchased_amount, c.customer_name, c.credit_time, c.credit_cash, c.per_minute_cost, 
+                                SELECT  s1.customer_id, s1.month, s1.year, SUM(s1.mop_amount + s1.mop1_amount) AS purchased_amount, c.customer_name, c.credit_time, c.credit_cash, c.per_minute_cost, 
                                 c.expected_date
                                 FROM `sales` s1
                                 INNER JOIN customer c ON s1.customer_id = c.customer_id
@@ -119,7 +119,7 @@ include('header.php');
                                 $sql .= sprintf(" AND s1.customer_id = %d", $_GET['customerId']);
                             }
 
-                            $sql .= " GROUP BY s1.customer_id";
+                            $sql .= " GROUP BY s1.invoice_number";
 
                             $result2 = $db->prepare($sql);
                             $result2->execute(array(
@@ -166,7 +166,6 @@ include('header.php');
                                         ':customerId' => $row['customer_id']
                                     ));
                                     $row3 = $result3->fetch(PDO::FETCH_ASSOC);
-
 
                                     $units_remaining = $row3['credit_minutes'] + $row['credit_time'];
                                     if($row['minutes_used'] > 0) {
