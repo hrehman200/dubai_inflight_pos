@@ -739,7 +739,8 @@ function getQuery($package_name, $sale_date_check = true) {
                             CASE WHEN(
                                 s1.mode_of_payment = 'credit_time' OR s1.mode_of_payment_1 = 'credit_time' OR fp1.deduct_from_balance > 0
                             ) THEN fb1.duration ELSE 0
-                            END AS credit_used
+                            END AS credit_used,
+                            s1.mode_of_payment
                         FROM
                             sales s1
                         INNER JOIN flight_purchases fp1 ON
@@ -865,8 +866,11 @@ function getDataAndAggregate($package_name, $start_date, $end_date) {
                 $purchased_minutes_used += $item[0]['minutes_used'];
 
                 // special case, customer booked via online on 31st May but came to fly on 1st Jun
-                $credit_cost_per_minute = getPerMinuteCostOfPurchasedPackage($item[0]['flight_purchase_id']);
-                $total_credit_cost += $credit_cost_per_minute * $item[0]['minutes_used'];
+                // this section is problematic
+                if($item[0]['mode_of_payment'] == 'Online') {
+                    $credit_cost_per_minute = getPerMinuteCostOfPurchasedPackage($item[0]['flight_purchase_id']);
+                    //$total_credit_cost += $credit_cost_per_minute * $item[0]['minutes_used'];
+                }
             }
         }
         return $carry;
@@ -916,7 +920,7 @@ function getMerchandiseRevenue($product_name, $date1, $date2) {
     global $db;
 
     if($product_name == TYPE_MERCHANDISE) {
-        $query = $db->prepare('SELECT SUM(s.amount) AS paid
+        $query = $db->prepare('SELECT SUM(so.amount) AS paid
                             FROM sales s
                             INNER JOIN sales_order so ON s.invoice_number = so.invoice
                             INNER JOIN products p ON so.product = p.product_id 
@@ -928,7 +932,7 @@ function getMerchandiseRevenue($product_name, $date1, $date2) {
         $row = $query->fetch(PDO::FETCH_ASSOC);
 
     } else {
-        $query = $db->prepare('SELECT SUM(s.amount) AS paid
+        $query = $db->prepare('SELECT SUM(so.amount) AS paid
                             FROM sales s
                             INNER JOIN sales_order so ON s.invoice_number = so.invoice
                             INNER JOIN products p ON so.product = p.product_id 
