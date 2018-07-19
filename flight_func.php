@@ -855,10 +855,12 @@ function getDataAndAggregate($package_name, $start_date, $end_date) {
                     } else {
                         $credit_cost_per_minute = getPerMinuteCostOfPurchasedPackage($item[0]['from_flight_purchase_id']);
                     }
-                    $total_credit_cost += $credit_cost_per_minute * $item[0]['credit_used'];
-                    // if credit used is from the same purchase in selected time range
+
+                    // if credit used is from the flight-purchase that is included in selected time range
                     if (in_array($item[0]['from_flight_purchase_id'], $arr_flight_purchase_ids)) {
                         $purchased_minutes_used += $item[0]['credit_used'];
+                    } else {
+                        $total_credit_cost += $credit_cost_per_minute * $item[0]['credit_used'];
                     }
                 }
             } else if(isTimeInsideSearchedDate($item[0]['flight_time'], $start_date, $end_date)) {
