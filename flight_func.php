@@ -932,12 +932,13 @@ function getMerchandiseRevenue($product_name, $date1, $date2) {
         $row = $query->fetch(PDO::FETCH_ASSOC);
 
     } else {
-        $query = $db->prepare('SELECT SUM(so.amount) AS paid
+        // since video phots are being displayed collectively
+        $query = $db->prepare(sprintf('SELECT SUM(so.amount) AS paid
                             FROM sales s
                             INNER JOIN sales_order so ON s.invoice_number = so.invoice
                             INNER JOIN products p ON so.product = p.product_id 
-                            WHERE p.product_name LIKE ? 
-                            AND (s.date >= ? AND s.date <= ?)');
+                            WHERE (p.product_name LIKE ? %s)
+                            AND (s.date >= ? AND s.date <= ?)', ($product_name=='Video') ? 'OR p.product_name LIKE "%%photo%%"' : ''));
         $query->execute(["%" . $product_name . "%", $date1, $date2]);
         $row = $query->fetch(PDO::FETCH_ASSOC);
     }
