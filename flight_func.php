@@ -828,8 +828,10 @@ function getDataAndAggregate($package_name, $start_date, $end_date) {
     $arr_flight_purchase_ids = array_unique($arr_flight_purchase_ids);
 
     $arr_paid = array_group_by($arr2, function($v) { return $v['invoice_number']; });
-    $paid = array_reduce($arr_paid, function($carry, $item) {
-        $carry += $item[0]['paid'];
+    $paid = array_reduce($arr_paid, function($carry, $item) use ($start_date, $end_date) {
+        if(isTimeInsideSearchedDate($item[0]['date'], $start_date, $end_date)) {
+            $carry += $item[0]['paid'];
+        }
         return $carry;
     });
 
@@ -844,7 +846,9 @@ function getDataAndAggregate($package_name, $start_date, $end_date) {
     $arr_minutes_used = array_group_by($arr2, function($v) { return $v['id']; });
     $purchased_minutes_used = 0;
     $total_credit_cost = 0;
-    $minutes_used = array_reduce($arr_minutes_used, function($carry, $item) use (&$purchased_minutes_used, &$total_credit_cost, $arr_flight_purchase_ids, $package_name, $start_date, $end_date) {
+    $total_purchased_cost = 0;
+
+    $minutes_used = array_reduce($arr_minutes_used, function($carry, $item) use (&$purchased_minutes_used, &$total_credit_cost, &$total_purchased_cost, $arr_flight_purchase_ids, $package_name, $start_date, $end_date) {
         if($item[0]['flight_taken'] == 1) {
             if ($item[0]['from_flight_purchase_id'] > 0 || $item[0]['deduct_from_balance'] == 2) {
                 if(isTimeInsideSearchedDate($item[0]['flight_time'], $start_date, $end_date)) {
@@ -869,9 +873,14 @@ function getDataAndAggregate($package_name, $start_date, $end_date) {
 
                 // special case, customer booked via online on 31st May but came to fly on 1st Jun
                 // this section is problematic
-                if($item[0]['mode_of_payment'] == 'Online') {
+                $date_purchased = $item[0]['date'];
+                $date_flown = substr($item[0]['flight_time'], 0, strpos($item[0]['flight_time'], ' '));
+                if($item[0]['mode_of_payment'] == 'Online' && $date_purchased != $date_flown) {
                     $credit_cost_per_minute = getPerMinuteCostOfPurchasedPackage($item[0]['flight_purchase_id']);
-                    //$total_credit_cost += $credit_cost_per_minute * $item[0]['minutes_used'];
+                    $total_credit_cost += $credit_cost_per_minute * $item[0]['minutes_used'];
+                } else {
+                    $per_minute_cost = getPerMinuteCostOfPurchasedPackage($item[0]['flight_purchase_id']);
+                    $total_purchased_cost += $per_minute_cost * $item[0]['minutes_used'];
                 }
             }
         }
@@ -884,11 +893,6 @@ function getDataAndAggregate($package_name, $start_date, $end_date) {
         }
         return $carry;
     });
-
-    if($total_minutes > 0) {
-        $aed_per_paid_minute = $paid / $total_minutes;
-        $total_purchased_cost = $aed_per_paid_minute * $purchased_minutes_used;
-    }
 
     // renaming for display
     if($package_name ==  'RF - Repeat Flights') {
