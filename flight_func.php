@@ -694,7 +694,7 @@ function isTimeInsideSearchedDate($flight_time, $date1, $date2) {
  * @return string
  */
 function getQuery($package_name, $sale_date_check = true) {
-    if($package_name == 'Skydivers' || $package_name == 'FTF') {
+    if($package_name == 'Skydivers' || $package_name == 'FTF' || $package_name == 'RF - Repeat Flights') {
         $join_with_discount = 'LEFT JOIN discounts d ON fp1.discount_id = d.id OR fp1.discount_id = 0';
     } else {
         $join_with_discount = 'INNER JOIN discounts d ON fp1.discount_id = d.id';
@@ -828,8 +828,8 @@ function getDataAndAggregate($package_name, $start_date, $end_date) {
     $arr_flight_purchase_ids = array_unique($arr_flight_purchase_ids);
 
     $arr_paid = array_group_by($arr2, function($v) { return $v['invoice_number']; });
-    $paid = array_reduce($arr_paid, function($carry, $item) use ($start_date, $end_date) {
-        if(isTimeInsideSearchedDate($item[0]['date'], $start_date, $end_date)) {
+    $paid = array_reduce($arr_paid, function($carry, $item) use ($start_date, $end_date, $package_name) {
+        if(isTimeInsideSearchedDate($item[0]['date'], $start_date, $end_date) && $item[0]['credit_used'] == 0) {
             $carry += $item[0]['paid'];
         }
         return $carry;
