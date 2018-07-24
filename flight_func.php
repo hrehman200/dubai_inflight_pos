@@ -702,10 +702,17 @@ function getQuery($package_name, $sale_date_check = true) {
 
     if($package_name == 'FTF') {
         $package_check = " fpkg.package_name LIKE 'FTF%'";
+
     } else if($package_name == 'RF - Repeat Flights') {
         $package_check = " fpkg.package_name LIKE 'RF - Repeat Flights%'";
+
     } else {
-        $package_check = " fpkg.id IN (6, 8)";
+        $package_check = " (fpkg.id IN (6, 8)";
+        if($package_name == 'Military') { // we need to check whether for RF, military discount is given, in which case RF will come in Military
+            $package_check .= " OR fpkg.package_name LIKE 'RF - Repeat Flights%'";
+
+        }
+        $package_check .= ')';
     }
 
     if($sale_date_check) {
