@@ -789,6 +789,8 @@ function getQuery($package_name, $sale_date_check = true) {
         $sql .= "AND d.category NOT IN ('Presidential Guard', 'Navy Seal', 'Military', 'Sky god%') AND d.category NOT LIKE 'Navy Seal%'";
     } else if($package_name == NAVY_SEAL){
         $sql .= "AND d.category LIKE 'Navy Seal%'";
+    } else if($package_name == 'Military'){
+        $sql .= "AND d.category IN ('Presidential Guard', 'Military', 'Sky god%')";
     } else {
         $sql .= "AND d.category IN ('".$package_name."')";
     }
