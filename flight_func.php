@@ -939,7 +939,7 @@ function getMerchandiseRevenue($product_name, $date1, $date2) {
     global $db;
 
     if($product_name == TYPE_MERCHANDISE) {
-        $query = $db->prepare('SELECT SUM(so.amount) AS paid
+        $query = $db->prepare('SELECT SUM(so.amount - (so.discount * so.amount / 100)) AS paid
                             FROM sales s
                             INNER JOIN sales_order so ON s.invoice_number = so.invoice
                             INNER JOIN products p ON so.product = p.product_id 
