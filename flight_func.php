@@ -842,7 +842,7 @@ function getDataAndAggregate($package_name, $start_date, $end_date) {
 
     $arr_paid = array_group_by($arr2, function($v) { return $v['invoice_number']; });
     $paid = array_reduce($arr_paid, function($carry, $item) use ($start_date, $end_date, $package_name) {
-        if(isTimeInsideSearchedDate($item[0]['date'], $start_date, $end_date) && $item[0]['credit_used'] == 0) {
+        if(isTimeInsideSearchedDate($item[0]['date'], $start_date, $end_date) && !is_null($item[0]['credit_used']) && $item[0]['credit_used'] == 0) {
             $carry += $item[0]['paid'];
         }
         return $carry;
@@ -952,7 +952,7 @@ function getMerchandiseRevenue($product_name, $date1, $date2) {
 
     } else {
         // since video phots are being displayed collectively
-        $query = $db->prepare(sprintf('SELECT SUM(so.amount) AS paid
+        $query = $db->prepare(sprintf('SELECT SUM(so.amount - (so.discount * so.amount / 100))  AS paid
                             FROM sales s
                             INNER JOIN sales_order so ON s.invoice_number = so.invoice
                             INNER JOIN products p ON so.product = p.product_id 
