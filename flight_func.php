@@ -709,7 +709,8 @@ function getQuery($package_name, $sale_date_check = true) {
     } else {
         $package_check = " (fpkg.id IN (6, 8)";
         if($package_name == 'Military') { // we need to check whether for RF, military discount is given, in which case RF will come in Military
-            $package_check .= " OR fpkg.package_name LIKE 'RF - Repeat Flights%'";
+            $package_check .= " OR fpkg.package_name LIKE 'RF - Repeat Flights%'
+                OR fpkg.package_name LIKE 'FTF%' ";
 
         }
         $package_check .= ')';
@@ -791,9 +792,15 @@ function getQuery($package_name, $sale_date_check = true) {
         $sql .= "AND d.category LIKE 'Navy Seal%'";
     } else if($package_name == 'Military'){ // so that military discounts given to RF can be included in Military
         $sql .= "AND (
-                    (fpkg.package_name LIKE 'RF - Repeat Flights%' AND d.category IN ('Presidential Guard', 'Military', 'Sky god%'))
-                    OR 
-                    (fpkg.package_name NOT LIKE 'RF - Repeat Flights%' AND d.category IN ('Military'))
+                    (
+                        (fpkg.package_name LIKE 'RF - Repeat Flights%' AND d.category IN ('Presidential Guard', 'Military', 'Sky god%'))
+                        OR 
+                        (fpkg.package_name NOT LIKE 'RF - Repeat Flights%' AND d.category IN ('Military'))
+                    ) OR (
+                        (fpkg.package_name LIKE 'FTF%' AND d.category IN ('Presidential Guard', 'Military', 'Sky god%'))
+                        OR 
+                        (fpkg.package_name NOT LIKE 'FTF%' AND d.category IN ('Military'))
+                    )
                 )";
     } else {
         $sql .= "AND d.category IN ('".$package_name."')";
