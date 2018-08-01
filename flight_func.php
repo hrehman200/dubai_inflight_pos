@@ -520,13 +520,36 @@ function getPerMinuteCostOfPurchasedPackage($flight_purchase_id) {
  * @param $customer_id
  * @return mixed
  */
-function getPerMinuteCostForCustomer($customer_id) {
+function getPerMinuteCostForCustomer($customer_id, $start_date=false, $end_date=false) {
     global $db;
 
-    $query = $db->prepare('SELECT per_minute_cost FROM customer WHERE customer_id = ?');
-    $query->execute([$customer_id]);
+    if(!$start_date) {
+        $query = $db->prepare('SELECT per_minute_cost FROM customer WHERE customer_id = ?');
+        $query->execute([$customer_id]);
+        $row = $query->fetch(PDO::FETCH_ASSOC);
+        return $row['per_minute_cost'];
+
+    } else {
+        $row = getCustomerYearlyPurchase($customer_id, $start_date, $end_date);
+        return $row['per_minute_cost'];
+    }
+}
+
+/**
+ * Navy Seal buys in bulk for one year. Each month there are certain minutes they can fly on a certain per-minute-rate
+ *
+ * @param $customer_id
+ * @param $start_date
+ * @param $end_date
+ * @return bool|mixed
+ */
+function getCustomerYearlyPurchase($customer_id, $start_date, $end_date) {
+    global $db;
+
+    $query = $db->prepare('SELECT * FROM customer_yearly_purchases WHERE customer_id = ? AND start_date <= ? AND end_date > ?');
+    $query->execute([$customer_id, $start_date, $end_date]);
     $row = $query->fetch(PDO::FETCH_ASSOC);
-    return $row['per_minute_cost'];
+    return $row;
 }
 
 /**
@@ -847,21 +870,35 @@ function getDataAndAggregate($package_name, $start_date, $end_date) {
     $arr_flight_purchase_ids = array_map(function($v) { return $v['flight_purchase_id'];}, $arr2);
     $arr_flight_purchase_ids = array_unique($arr_flight_purchase_ids);
 
-    $arr_paid = array_group_by($arr2, function($v) { return $v['invoice_number']; });
-    $paid = array_reduce($arr_paid, function($carry, $item) use ($start_date, $end_date, $package_name) {
-        if(isTimeInsideSearchedDate($item[0]['date'], $start_date, $end_date) && !is_null($item[0]['credit_used']) && $item[0]['credit_used'] == 0) {
-            $carry += $item[0]['paid'];
+    if($package_name == NAVY_SEAL) {
+        // TODO: so far there is only one Navy Seal customer and no chance of increase
+        if(count($arr2) > 0) {
+            $customer_yearly_purchase = getCustomerYearlyPurchase($arr2[0]['customer_id'], $start_date, $end_date);
+            $total_minutes = $customer_yearly_purchase['per_month_minutes'];
+            $paid = $customer_yearly_purchase['per_minute_cost'] * $total_minutes;
         }
-        return $carry;
-    });
 
-    $arr_total_minutes = array_group_by($arr2, function($v) { return $v['flight_purchase_id']; });
-    $total_minutes = array_reduce($arr_total_minutes, function($carry, $item) use ($start_date, $end_date) {
-        if(isTimeInsideSearchedDate($item[0]['date'], $start_date, $end_date)) {
-            $carry += $item[0]['total_minutes'];
-        }
-        return $carry;
-    });
+    } else {
+        $arr_paid = array_group_by($arr2, function ($v) {
+            return $v['invoice_number'];
+        });
+        $paid = array_reduce($arr_paid, function ($carry, $item) use ($start_date, $end_date, $package_name) {
+            if (isTimeInsideSearchedDate($item[0]['date'], $start_date, $end_date) && !is_null($item[0]['credit_used']) && $item[0]['credit_used'] == 0) {
+                $carry += $item[0]['paid'];
+            }
+            return $carry;
+        });
+
+        $arr_total_minutes = array_group_by($arr2, function ($v) {
+            return $v['flight_purchase_id'];
+        });
+        $total_minutes = array_reduce($arr_total_minutes, function ($carry, $item) use ($start_date, $end_date) {
+            if (isTimeInsideSearchedDate($item[0]['date'], $start_date, $end_date)) {
+                $carry += $item[0]['total_minutes'];
+            }
+            return $carry;
+        });
+    }
 
     $arr_minutes_used = array_group_by($arr2, function($v) { return $v['id']; });
     $purchased_minutes_used = 0;
@@ -875,7 +912,11 @@ function getDataAndAggregate($package_name, $start_date, $end_date) {
                     $carry += $item[0]['credit_used'];
 
                     if($item[0]['deduct_from_balance'] == 2) {
-                        $credit_cost_per_minute = getPerMinuteCostForCustomer($item[0]['customer_id']);
+                        if($package_name == NAVY_SEAL) {
+                            $credit_cost_per_minute = getPerMinuteCostForCustomer($item[0]['customer_id'], $start_date, $end_date);
+                        } else {
+                            $credit_cost_per_minute = getPerMinuteCostForCustomer($item[0]['customer_id']);
+                        }
                     } else {
                         $credit_cost_per_minute = getPerMinuteCostOfPurchasedPackage($item[0]['from_flight_purchase_id']);
                     }
