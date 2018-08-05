@@ -235,7 +235,7 @@ include('navfixed.php');
                               s.date AS transaction_date,
                               s.cashier,
                               s.invoice_number,
-                              s.sale_type,
+                              so.gen_name AS sale_type,
                               s.mode_of_payment,
                               s.mop_amount,
                               s.mode_of_payment_1,
@@ -363,7 +363,7 @@ include('navfixed.php');
                         </tr>
                         <?php
                         $prev_invoice_no = '';
-                        $arr = $result->fetchAll();
+                        $arr = $result->fetchAll(PDO::FETCH_ASSOC);
                         $units_consumed = 0;
                         foreach ($arr as $row) {
 
