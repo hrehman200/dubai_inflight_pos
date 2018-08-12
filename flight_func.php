@@ -1242,6 +1242,7 @@ function getMonthNameFromIndex($month_index) {
 function recordCustomerMonthlyLiability($all_months = false) {
     global $db;
 
+    // we had Pre-2018 liability month-wise in a csv file till Aug 2018 that we already imported
     $months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug'];
 
     $query = $db->prepare('SELECT 
@@ -1289,26 +1290,29 @@ function getCustomerLiabilityForMonth($customer_id, $end_date_of_month) {
 
     foreach ($result2 as $fp) {
 
+        $query = $db->prepare('SELECT flight_purchase_id, from_flight_purchase_id, duration AS minutes_used 
+                  FROM flight_bookings 
+                  WHERE flight_purchase_id = ? AND DATE(flight_time) <= ?');
+
+        $query->execute([$fp['id'], $end_date_of_month]);
+        $fb = $query->fetch(PDO::FETCH_ASSOC);
+
         if ($fp['deduct_from_balance'] == 0) {
             $purchased_minutes += $fp['duration'];
             $cost_per_minute = getPerMinuteCostOfPurchasedPackage($fp['id']);
             $purchased_minutes_cost += $cost_per_minute * $fp['duration'];
 
         } else if ($fp['deduct_from_balance'] == 1) {
-            $cost_per_minute = getPerMinuteCostOfPurchasedPackage($fp['from_flight_purchase_id']);
+            $cost_per_minute = getPerMinuteCostOfPurchasedPackage($fb['from_flight_purchase_id']);
 
         } else if ($fp['deduct_from_balance'] == 2) {
             $cost_per_minute = getPerMinuteCostForCustomer($fp['customer_id']);
         }
 
-        $query = $db->prepare('SELECT SUM(duration) AS minutes_used 
-                  FROM flight_bookings 
-                  WHERE flight_purchase_id = ? AND DATE(flight_time) <= ?');
-
-        $query->execute([$fp['id'], $end_date_of_month]);
-        $result3 = $query->fetch(PDO::FETCH_ASSOC);
-        $minutes_used += $result3['minutes_used'];
-        $minutes_used_cost += $cost_per_minute * $result3['minutes_used'];
+        if($fp['deduct_from_balance'] != 2) {
+            $minutes_used += $fb['minutes_used'];
+            $minutes_used_cost += $cost_per_minute * $fb['minutes_used'];
+        }
     }
 
     $liability_minutes = $purchased_minutes - $minutes_used;

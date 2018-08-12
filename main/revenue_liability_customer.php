@@ -140,18 +140,12 @@ include('header.php');
                                         <td><?= number_format($units_remaining) ?></td>
                                         <td><?= number_format(round($credit_minutes_liability)) ?></td>
                                         <td><?php
-                                            if(date('Y', strtotime($row['expected_date'])) < 2018) {
-                                                echo $row['pre_2018_minutes'];
-                                            } else {
-                                                echo 0;
-                                            }?>
+                                            echo $row['pre_2018_minutes'];
+                                            ?>
                                         </td>
                                         <td><?php
-                                            if(date('Y', strtotime($row['expected_date'])) < 2018) {
-                                                echo round($row['pre_2018_amount'] * 5 / 105, 2);
-                                            } else {
-                                                echo 0;
-                                            }?>
+                                            echo round($row['pre_2018_amount'] * 5 / 105, 2);
+                                            ?>
                                         </td>
                                     </tr>
                                     <?php
