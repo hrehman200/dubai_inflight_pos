@@ -39,18 +39,18 @@ include('header.php');
                     </select>
 
                     <select id='month' name="month" class="span2">
-                        <option selected value='1'>Jan</option>
-                        <option value='2'>Feb</option>
-                        <option value='3'>Mar</option>
-                        <option value='4'>Aprl</option>
-                        <option value='5'>May</option>
-                        <option value='6'>Jun</option>
-                        <option value='7'>Jul</option>
-                        <option value='8'>Aug</option>
-                        <option value='9'>Sep</option>
-                        <option value='10'>Oct</option>
-                        <option value='11'>Nov</option>
-                        <option value='12'>Dec</option>
+                        <option selected>Jan</option>
+                        <option>Feb</option>
+                        <option>Mar</option>
+                        <option>Apr</option>
+                        <option>May</option>
+                        <option>Jun</option>
+                        <option>Jul</option>
+                        <option>Aug</option>
+                        <option>Sep</option>
+                        <option>Oct</option>
+                        <option>Nov</option>
+                        <option>Dec</option>
                     </select>
 
                     <br/>
@@ -83,64 +83,26 @@ include('header.php');
                             <?php
 
                             if(!isset($_GET['month'])) {
-                                $_GET['month'] = date('n');
+                                $_GET['month'] = date('M');
                                 $_GET['year'] = date('Y');
                             }
 
                             $sql = "
-                                SELECT  s1.customer_id, s1.month, s1.year, SUM(s1.mop_amount + s1.mop1_amount) AS purchased_amount, c.customer_name, c.credit_time, c.credit_cash, c.per_minute_cost, 
-                                c.expected_date
-                                FROM `sales` s1
-                                INNER JOIN customer c ON s1.customer_id = c.customer_id
-                                WHERE YEAR(s1.date) <= :year AND MONTH(s1.date) <= :month AND s1.customer_id > 0";
+                                SELECT * FROM customer_monthly_liability cml
+                                INNER JOIN customer c ON cml.customer_id = c.customer_id
+                                WHERE cml.year = :year AND cml.month = :month";
 
                             if($_GET['customerId'] > 0) {
                                 $sql .= sprintf(" AND c.customer_id = %d", $_GET['customerId']);
                             }
 
-                            $sql .= " GROUP BY s1.customer_id
-                                ORDER BY c.customer_name";
+                            $sql .= " ORDER BY c.customer_name";
 
                             $result = $db->prepare($sql);
                             $result->execute(array(
                                 ':year' => $_GET['year'],
                                 ':month' => $_GET['month']
                             ));
-
-                            $sql = "
-                                SELECT s1.customer_id, SUM(fo.duration) AS minutes_purchased, SUM(fb.duration) AS minutes_used
-                                FROM `sales` s1
-                                INNER JOIN flight_purchases fp ON fp.customer_id = s1.customer_id
-                                INNER JOIN flight_offers fo ON fp.flight_offer_id = fo.id
-                                LEFT JOIN flight_bookings fb ON fb.flight_purchase_id = fp.id
-                                WHERE YEAR(s1.date) <= :year AND MONTH(s1.date) <= :month AND s1.customer_id > 0";
-
-                            if($_GET['customerId'] > 0) {
-                                $sql .= sprintf(" AND s1.customer_id = %d", $_GET['customerId']);
-                            }
-
-                            $sql .= " GROUP BY s1.invoice_number";
-
-                            $result2 = $db->prepare($sql);
-                            $result2->execute(array(
-                                ':year' => $_GET['year'],
-                                ':month' => $_GET['month']
-                            ));
-
-                            $arr1 = $result->fetchAll(PDO::FETCH_ASSOC);
-                            $arr2 = $result2->fetchAll(PDO::FETCH_ASSOC);
-
-                            foreach($arr1 as &$item1) {
-                                $filtered = array_filter($arr2, function ($item2) use ($item1) {
-                                    return $item2['customer_id'] == $item1['customer_id'];
-                                });
-
-                                $filtered = array_values($filtered);
-
-                                if(count($filtered) > 0) {
-                                    $item1 = array_merge($filtered[0], $item1);
-                                }
-                            }
 
                             ?>
                             <tr>
@@ -154,29 +116,11 @@ include('header.php');
                             <?php
                             $total_minutes = 0;
                             $total_price = 0;
-                            if(count($arr1) > 0) {
-                                foreach ($arr1 as $row) {
+                            if($result->rowCount() > 0) {
+                                while ($row = $result->fetch(PDO::FETCH_ASSOC)) {
 
-                                    // when joining with flight_credits in above queries multiple rows were returned, don't know why
-                                    $result3 = $db->prepare(sprintf("SELECT SUM(fc.minutes) AS credit_minutes
-                                      FROM flight_credits fc
-                                      INNER JOIN flight_purchases fp ON fc.flight_purchase_id = fp.id
-                                      WHERE fc.customer_id = :customerId AND fp.created <= '%d-%d-31'", $_GET['year'], $_GET['month']));
-                                    $result3->execute(array(
-                                        ':customerId' => $row['customer_id']
-                                    ));
-                                    $row3 = $result3->fetch(PDO::FETCH_ASSOC);
-
-                                    $units_remaining = $row3['credit_minutes'] + $row['credit_time'];
-                                    if($row['minutes_used'] > 0) {
-                                        $per_min_cost = $row['purchased_amount'] / $row['minutes_used'];
-                                    } else {
-                                        $per_min_cost = $row['purchased_amount'] / $row['minutes_purchased'];
-                                    }
-                                    $credit_minutes_liability = ($per_min_cost * $row3['credit_minutes']) + ($row['per_minute_cost'] * $row['credit_time']);
-                                    if(is_nan($credit_minutes_liability)) {
-                                        $credit_minutes_liability = 0;
-                                    }
+                                    $units_remaining = $row['liability_minutes'];
+                                    $credit_minutes_liability = $row['liability_amount'];
                                     $total_minutes += $units_remaining;
                                     $total_price += $credit_minutes_liability;
 
@@ -197,14 +141,14 @@ include('header.php');
                                         <td><?= number_format(round($credit_minutes_liability)) ?></td>
                                         <td><?php
                                             if(date('Y', strtotime($row['expected_date'])) < 2018) {
-                                                echo $row['credit_time'];
+                                                echo $row['pre_2018_minutes'];
                                             } else {
                                                 echo 0;
                                             }?>
                                         </td>
                                         <td><?php
                                             if(date('Y', strtotime($row['expected_date'])) < 2018) {
-                                                echo round($row['credit_cash'] * 5 / 105, 2);
+                                                echo round($row['pre_2018_amount'] * 5 / 105, 2);
                                             } else {
                                                 echo 0;
                                             }?>
@@ -236,7 +180,9 @@ include('header.php');
                 </div>
                 <div class="clearfix"></div>
             </div>
-</body>
+        </div>
+    </div>
+</div>
 
 <script type="text/javascript">
 
