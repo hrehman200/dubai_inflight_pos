@@ -110,7 +110,8 @@ include('header.php');
                                 <th>Customer ID</th>
                                 <th>Total Mins Liability</th>
                                 <th>AED Liability</th>
-                                <th>Mins Pre 2018 Avail</th>
+                                <th>Mins. Liability Pre 2018</th>
+                                <th>AED Value Pre 2018</th>
                                 <th>VAT on Pre 2018</th>
                             </tr>
                             <?php
@@ -143,6 +144,11 @@ include('header.php');
                                             echo $row['pre_2018_minutes'];
                                             ?>
                                         </td>
+                                        <td>
+                                            <?php
+                                            echo round($row['pre_2018_amount']);
+                                            ?>
+                                        </td>
                                         <td><?php
                                             echo round($row['pre_2018_amount'] * 5 / 105, 2);
                                             ?>
@@ -155,6 +161,7 @@ include('header.php');
                                     <td colspan="2" style="text-align:right; padding-right: 50px;"><b>Total:</b></td>
                                     <td><b><?=number_format($total_minutes)?></b></td>
                                     <td><b><?=number_format($total_price)?></b></td>
+                                    <td></td>
                                     <td></td>
                                     <td></td>
                                 </tr>
