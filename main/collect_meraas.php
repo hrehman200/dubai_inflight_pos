@@ -27,12 +27,12 @@ include('header.php');
         </div><!--/span-->
         <div class="span10">
             <div class="contentheader hidden-print">
-                <i class="icon-bar-chart"></i> Sales Report
+                <i class="icon-bar-chart"></i> End of Day Report
             </div>
             <ul class="breadcrumb">
                 <li><a href="index.php">Dashboard</a></li>
                 /
-                <li class="active">Sales Report</li>
+                <li class="active">End of Day Report</li>
             </ul>
 
             <div style="margin-top: -19px; margin-bottom: 21px;" class="btns">
@@ -97,7 +97,7 @@ include('header.php');
                     <thead>
                     <tr>
                         <th colspan="10" style="text-align: center;">
-                            <h3>Sales Report from&nbsp;<?php echo date('M j, Y', strtotime($d1)) ?>&nbsp;to&nbsp;<?php echo date('M j, Y', strtotime($d2)) ?></h3>
+                            <h3>End of Day Report from&nbsp;<?php echo date('M j, Y', strtotime($d1)) ?>&nbsp;to&nbsp;<?php echo date('M j, Y', strtotime($d2)) ?></h3>
                         </th>
                     </tr>
                     <tr>
@@ -254,25 +254,30 @@ include('header.php');
                     <tr>
                         <td colspan="9" style="text-align: right;"> <b>Total:</b></td>
                         <td colspan="1" style=""><b><?= number_format($total_sale, 1) ?></b></td>
+                        <td></td>
                     </tr>
                     <tr>
                         <td colspan="9" style="text-align: right;"> <b>Cash:</b></td>
                         <td colspan="1" style=""><b><?= number_format($total_cash, 1) ?></b></td>
+                        <td></td>
                     </tr>
                     <tr>
                         <td colspan="9" style="text-align: right;"> <b>Card:</b></td>
                         <td colspan="1" style=""><b><?= number_format($total_card, 1) ?></b></td>
+                        <td></td>
                     </tr>
                     <!--<tr>
                         <td colspan="9" style="text-align: right;"> <b>Account:</b></td>
                         <td colspan="1" style=""><b><?= number_format($total_account, 1) ?></b></td>
                     </tr>-->
                     <?php
-                    if(strtolower($_SESSION['SESS_LAST_NAME']) == 'admin' || strtolower($_SESSION['SESS_LAST_NAME']) == 'account') {
+                    if(strtolower($_SESSION['SESS_LAST_NAME']) == 'admin' || strtolower($_SESSION['SESS_LAST_NAME']) == 'account'
+                        || $_SESSION[SESS_MOCK_ROLE] == ROLE_ACCOUNT) {
                         ?>
                         <tr>
                             <td colspan="9" style="text-align: right;"><b>Online:</b></td>
                             <td colspan="1" style=""><b><?= number_format($total_online, 1) ?></b></td>
+                            <td></td>
                         </tr>
                         <?php
                     }
@@ -284,11 +289,12 @@ include('header.php');
                     </tr>-->
 
                     <?php
-                    if($_SESSION['SESS_LAST_NAME'] == 'Operator') {
+                    if($_SESSION['SESS_LAST_NAME'] == 'Operator' || $_SESSION[SESS_MOCK_ROLE] == ROLE_OPERATOR) {
                         ?>
                         <tr>
                             <td colspan="9" style="text-align: right;"><b>Operator:</b></td>
                             <td colspan="1" style=""><b><?= $_SESSION['SESS_FIRST_NAME'] ?></b></td>
+                            <td></td>
                         </tr>
                         <?php
                     }
@@ -296,6 +302,7 @@ include('header.php');
                     <tr>
                         <td colspan="9" style="text-align: right;"><b>Signature:</b></td>
                         <td colspan="1" style="padding-top:50px;">__________________</td>
+                        <td></td>
                     </tr>
 
                     </tbody>
