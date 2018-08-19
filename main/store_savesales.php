@@ -25,6 +25,16 @@ if(empty($invoice) || is_null($invoice)) {
     exit();
 }
 
+// mark groupon codes as used
+$query = $db->prepare('SELECT groupon_code FROM flight_purchases WHERE groupon_code IS NOT NULL AND invoice_id=? ');
+$query->execute([$invoice]);
+$groupon_codes = $query->fetchAll(PDO::FETCH_ASSOC);
+foreach($groupon_codes as $gc) {
+    $query = $db->prepare('UPDATE groupon_discount_codes SET used = NOW() WHERE code = ? LIMIT 1');
+    $query->execute([$gc['groupon_code']]);
+    echo json_encode(array('success' => 1));
+}
+
 $query = $db->prepare('SELECT SUM(discount) AS total_discount FROM flight_purchases WHERE invoice_id=?');
 $query->execute([$invoice]);
 $row = $query->fetch();

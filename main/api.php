@@ -904,14 +904,23 @@ function saveDiscount() {
     global $db;
 
     if (@$_POST['saving_flight'] == 1) {
-        $query = $db->prepare("UPDATE flight_purchases SET discount = ?, discount_id = ?
-          WHERE id = ?");
+        $sql = "UPDATE flight_purchases SET discount = ?, discount_id = ? ";
+        $arr = [$_POST['discount'], $_POST['discount_id']];
+        if(strlen($_POST['groupon_code']) > 0) {
+            $sql .= ", groupon_code = ?, deduct_from_balance=3 ";
+            $arr[] = $_POST['groupon_code'];
+        }
+        $sql .= "WHERE id = ?";
+        $arr[] = $_POST['transaction_id'];
+
+        $query = $db->prepare($sql);
+        $query->execute($arr);
 
     } else {
         $query = $db->prepare("UPDATE sales_order SET discount = ?, discount_id = ?
           WHERE transaction_id = ?");
+        $query->execute([$_POST['discount'], $_POST['discount_id'], $_POST['transaction_id']]);
     }
-    $query->execute([$_POST['discount'], $_POST['discount_id'], $_POST['transaction_id']]);
 
     echo json_encode(array(
         'success' => 1,
@@ -1073,6 +1082,24 @@ function emailSalesReportToAdmin() {
     echo json_encode(array(
         'success' => 1
     ));
+}
+
+function verifyGroupon() {
+    global $db, $offer_to_groupon_map;
+
+    $query = $db->prepare('SELECT flight_offer_id FROM flight_purchases WHERE id = ? ');
+    $query->execute([$_POST['transaction_id']]);
+    $row = $query->fetch(PDO::FETCH_ASSOC);
+    $flight_offer_id = $row['flight_offer_id'];
+
+    $query = $db->prepare('SELECT * FROM groupon_discount_codes 
+      WHERE discount_id = ? AND code = ? AND used LIKE "0000-00-%" ');
+    $query->execute([$offer_to_groupon_map[$flight_offer_id], $_POST['code']]);
+    if($query->rowCount() > 0) {
+        echo json_encode(array('success' => 1));
+    } else {
+        echo json_encode(array('success' => 0));
+    }
 }
 
 call_user_func($_POST['call']);

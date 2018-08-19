@@ -217,7 +217,7 @@
                             <th> Package</th>
                             <th> Flight Offer</th>
                             <th> Price</th>
-                            <!--<th> Discount</th>-->
+                            <th> Discount</th>
                             <th> VAT</th>
                             <th> Minutes</th>
                             <th> Action</th>
@@ -268,26 +268,29 @@
                                         echo $current_price;
                                     }
                                     ?></td>
-                                <!--<td>
+                                <td>
                                     <?php
-/*                                    $discount_percent = $row['discount'];
+                                    $discount_percent = $row['discount'];
                                     $discount_amount = $discount_percent * $current_price / 100;
                                     $total_cost -= $discount_amount;
-                                    */?>
+                                    ?>
                                     <select class="discountPercent"
-                                            data-transaction-id="<?/*= $row['flight_purchase_id'] */?>">
+                                            data-transaction-id="<?= $row['flight_purchase_id'] ?>">
                                         <option value="0" data-percent="0">None</option>
                                         <?php
-/*                                        $query = $db->query(sprintf('SELECT * FROM discounts WHERE type = "%s" AND status=1', TYPE_SERVICE));
-                                        $query->execute();
-                                        while ($row2 = $query->fetch()) {
-                                            $selected = (($row['discount_id'] == $row2['id']) ? 'selected' : '');
-                                            echo sprintf('<option value="%d" %s data-percent="%.2f">%s (%.0f%%)</option>', $row2['id'], $selected, $row2['percent'], $row2['category'], $row2['percent']);
+                                        // Discount only for Earn your wings
+                                        if($row['package_id'] == 1) {
+                                            $query = $db->query(sprintf('SELECT * FROM discounts WHERE status=1 AND id = %d ', $offer_to_groupon_map[$row['flight_offer_id']]) );
+                                            $query->execute();
+                                            while ($row2 = $query->fetch()) {
+                                                $selected = (($row['discount_id'] == $row2['id']) ? 'selected' : '');
+                                                echo sprintf('<option value="%d" %s data-percent="%.2f">%s (%.0f%%)</option>', $row2['id'], $selected, $row2['percent'], $row2['category'], $row2['percent']);
+                                            }
                                         }
-                                        */?>
+                                        ?>
                                     </select>
-                                    (<span class="discountAmount">-<?/*= $discount_amount */?></span>)
-                                </td>-->
+                                    (<span class="discountAmount">-<?= $discount_amount ?></span>)
+                                </td>
                                 <td>
                                     <?php
                                     $vat_percent = $row['percent'];
@@ -377,7 +380,7 @@
 
 <form id="payment_form" action="https://secureacceptance.cybersource.com/pay" method="post">
     <input type="hidden" name="access_key" value="<?=CYBER_ACCESS_KEY?>">
-    <input type="hidden" name="profile_id" value="<?=CYBER_PROFILE_ID?>"><!--Your Profile Id-->
+    <input type="hidden" name="profile_id" value="<?=CYBER_PROFILE_ID?>">
     <input type="hidden" name="transaction_uuid" value="<?php echo uniqid() ?>">
     <input type="hidden" name="signed_field_names" value="access_key,profile_id,transaction_uuid,signed_field_names,unsigned_field_names,signed_date_time,locale,transaction_type,reference_number,amount,currency,bill_to_address_line1,bill_to_address_city,bill_to_address_country,bill_to_email,bill_to_forename,bill_to_surname">
 
@@ -672,7 +675,7 @@
         e.preventDefault();
 
         if($('#resultTable tbody tr').length <= 1) {
-            bootbox.alert('Please select an offer first');
+            bootbox.alert('Please select an offer and time first');
             return false;
         }
 
@@ -1357,24 +1360,17 @@
         }
     }
 
-    var _onDiscountPercentChange = function (e) {
-        var quantity = $(e.target).parents('tr').find('.tdQty').text();
-        var totalAmount = $(e.target).parents('tr').find('.tdAmount').text();
-        var discountPercent = $(e.target).find('option:selected').data('percent');
-        var discountAmount = discountPercent * totalAmount / 100;
-        $(e.target).parents('tr').find('.discountAmount').text('-' + discountAmount.toFixed(2));
-
-        var transactionId = $(e.target).data('transaction-id');
-
+    var _saveDiscount = function(discountPercent, discountId, transactionId, grouponCode) {
         $.ajax({
             url: 'api.php',
             method: 'POST',
             data: {
                 'call': 'saveDiscount',
                 'discount': discountPercent,
-                'discount_id': $(e.target).val(),
+                'discount_id': discountId,
                 'transaction_id': transactionId,
-                'saving_flight': 1
+                'saving_flight': 1,
+                'groupon_code': grouponCode
             },
             dataType: 'json',
             success: function (response) {
@@ -1385,6 +1381,58 @@
                 }
             }
         });
+    };
+
+    var _onDiscountPercentChange = function (e) {
+        var quantity = $(e.target).parents('tr').find('.tdQty').text();
+        var totalAmount = $(e.target).parents('tr').find('.tdAmount').text();
+        var discountPercent = $(e.target).find('option:selected').data('percent');
+        var discountAmount = discountPercent * totalAmount / 100;
+        $(e.target).parents('tr').find('.discountAmount').text('-' + discountAmount.toFixed(2));
+
+        var transactionId = $(e.target).data('transaction-id');
+        var discountId = $(e.target).val();
+
+        if(discountId > 0) {
+            bootbox.dialog({
+                title: 'Groupon Discount Code',
+                message: '<div> \
+                    <p> Enter Groupon code to avail discount: </p> \
+                    <input type="text" id="txtCode" maxlength="15" /> \
+                    <div class="error alert alert-danger hidden"></div> \
+                </div>',
+                buttons: {
+                    btn1: {
+                        label: 'Verify',
+                        className: 'btn-success',
+                        callback: function (result) {
+                            $('.error').addClass('hidden');
+                            $.ajax({
+                                url: 'api.php',
+                                method: 'POST',
+                                data: {
+                                    'call': 'verifyGroupon',
+                                    'code': $('#txtCode').val(),
+                                    'transaction_id': transactionId
+                                },
+                                dataType: 'json',
+                                success: function (response) {
+                                    if (response.success == 1) {
+                                        $('.error').removeClass('hidden, alert-danger').addClass('alert-success').html('Groupon discount applied successfully.');
+                                        _saveDiscount(discountPercent, discountId, transactionId, $('#txtCode').val());
+                                    } else {
+                                        $('.error').removeClass('hidden').html('Invalid Groupon code');
+                                    }
+                                }
+                            });
+                            return false;
+                        }
+                    }
+                }
+            });
+        } else {
+            _saveDiscount(discountPercent, discountId, transactionId);
+        }
     };
 
     $('.discountPercent').on('change', _onDiscountPercentChange);

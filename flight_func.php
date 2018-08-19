@@ -31,6 +31,12 @@ $_ROLE_ALLOWED_PAGES = [
     ROLE_ACCOUNT => ['index', 'salesreport', 'collection_other', 'revenue_liability', 'accountreceivables', 'select_customer', 'products', 'customer', 'supplier', 'partners', 'purchaseslist'],
 ];
 
+$offer_to_groupon_map = [
+    134 => 46,
+    135 => 47,
+    136 => 48
+];
+
 /**
  * @param $customer_id
  * @param $flight_purchase_id
@@ -355,22 +361,31 @@ function adjustBalanceForDeletedFlightBookings($invoice_id) {
 }
 
 /**
+ * @param string $prefix
+ * @param int $length
+ * @param bool $lowercase
  * @return string
  */
-function createRandomPassword($prefix = 'RS-') {
-    $chars = "ABC1DEF2GHI3JKL4MNO5PQR6STU7VWX8Y9Z0";
+function createRandomPassword($prefix = 'RS-', $length = 7, $lowercase = false) {
+    if($lowercase) {
+        $chars = "abc1def2ghi3jkl4mno5pqr6stu7vwx8y9z0";
+    } else {
+        $chars = "ABC1DEF2GHI3JKL4MNO5PQR6STU7VWX8Y9Z0";
+    }
     srand((double)microtime() * 1000000);
     $i    = 0;
     $pass = '';
-    while ($i <= 7) {
+    while ($i <= $length) {
         $num = rand() % strlen($chars);
         $tmp = substr($chars, $num, 1);
         $pass = $pass . $tmp;
         $i++;
     }
 
-    if(checkInvoiceNum($prefix.$pass)) {
-        return createRandomPassword();
+    if(!$lowercase) {
+        if (checkInvoiceNum($prefix . $pass)) {
+            return createRandomPassword();
+        }
     }
 
     return $pass;
