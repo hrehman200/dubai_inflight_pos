@@ -8,4 +8,5 @@
 
 require_once dirname(dirname(__DIR__)) . '/connect.php';
 
+set_time_limit(0);
 recordCustomerMonthlyLiability(true);

@@ -15,3 +15,5 @@ ALTER TABLE `customer_monthly_liability`
 
 ALTER TABLE `customer_monthly_liability`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+ALTER TABLE `customer_monthly_liability` ADD `pre_2018_minutes_used` INT(11) NOT NULL AFTER `pre_2018_amount`;

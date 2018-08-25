@@ -1201,7 +1201,7 @@ function getStartEndDateFromMonthYear($year, $month = null) {
  * @param $pre_2018_minutes
  * @param $pre_2018_amount
  */
-function saveCustomerMonthlyLiability($customer_id, $month, $year, $minutes, $amount, $pre_2018_minutes=null, $pre_2018_amount=null) {
+function saveCustomerMonthlyLiability($customer_id, $month, $year, $minutes, $amount, $pre_2018_minutes=null, $pre_2018_amount=null, $pre_2018_minutes_used=null) {
     global $db;
 
     $query = $db->prepare('SELECT id FROM customer_monthly_liability 
@@ -1218,9 +1218,10 @@ function saveCustomerMonthlyLiability($customer_id, $month, $year, $minutes, $am
         $arr = [$minutes, $amount];
 
         if($pre_2018_amount != null) {
-            $sql .= ', pre_2018_minutes=?, pre_2018_amount=?';
+            $sql .= ', pre_2018_minutes=?, pre_2018_amount=?, pre_2018_minutes_used=?';
             $arr[] = $pre_2018_minutes;
             $arr[] = $pre_2018_amount;
+            $arr[] = $pre_2018_minutes_used;
         }
 
         $sql .= ' WHERE id = ?';
@@ -1234,10 +1235,11 @@ function saveCustomerMonthlyLiability($customer_id, $month, $year, $minutes, $am
         if($pre_2018_minutes == null) {
             $pre_2018_minutes = 0;
             $pre_2018_amount = 0;
+            $pre_2018_minutes_used = 0;
         }
 
-        $query = $db->prepare('INSERT INTO customer_monthly_liability VALUES (NULL, ?, ?, ?, ?, ?, ?, ?, NULL)');
-        $query->execute([$customer_id, $month, $year, $minutes, $amount, $pre_2018_minutes, $pre_2018_amount]);
+        $query = $db->prepare('INSERT INTO customer_monthly_liability VALUES (NULL, ?, ?, ?, ?, ?, ?, ?, ?, NULL)');
+        $query->execute([$customer_id, $month, $year, $minutes, $amount, $pre_2018_minutes, $pre_2018_amount, $pre_2018_minutes_used]);
     }
 }
 
@@ -1271,14 +1273,12 @@ function recordCustomerMonthlyLiability($all_months = false) {
 
             if($all_months) {
                 foreach($months as $month) {
-                    $dt = new DateTime("last day of {$month}");
-                    $arr_liability = getCustomerLiabilityForMonth($customer['customer_id'], $dt->format('Y-m-d'));
+                    $arr_liability = getCustomerLiabilityForMonth($customer['customer_id'], $month);
                     saveCustomerMonthlyLiability($customer['customer_id'], $month, 2018, $arr_liability[0], $arr_liability[1]);
                 }
             } else {
-                $dt = new DateTime("last day of this month");
-                $arr_liability = getCustomerLiabilityForMonth($customer['customer_id'], $dt->format('Y-m-d'));
-                saveCustomerMonthlyLiability($customer['customer_id'], date('M'), date('Y'), $arr_liability[0], $arr_liability[1], $customer['credit_time'], $customer['credit_cash']);
+                $arr_liability = getCustomerLiabilityForMonth($customer['customer_id'], date('M'));
+                saveCustomerMonthlyLiability($customer['customer_id'], date('M'), date('Y'), $arr_liability[0], $arr_liability[1], $customer['credit_time'], $customer['credit_cash'], $arr_liability[2]);
             }
         }
     }
@@ -1289,13 +1289,20 @@ function recordCustomerMonthlyLiability($all_months = false) {
  * @param $end_date_of_month
  * @return array
  */
-function getCustomerLiabilityForMonth($customer_id, $end_date_of_month) {
+function getCustomerLiabilityForMonth($customer_id, $month) {
     global $db;
+
+    $dt = new DateTime("first day of {$month}");
+    $first_date_of_month = $dt->format('Y-m-d');
+    $dt = new DateTime("last day of {$month}");
+    $end_date_of_month = $dt->format('Y-m-d');
 
     $purchased_minutes = 0;
     $purchased_minutes_cost = 0;
-    $minutes_used = 0;
-    $minutes_used_cost = 0;
+    $minutes_used_from_purchase = 0;
+    $minutes_used_from_purchase_cost = 0;
+    $minutes_used_from_credit = 0;
+    $minutes_used_from_credit_cost = 0;
 
     $query = $db->prepare('SELECT fp.*, fo.duration FROM flight_purchases fp
                   INNER JOIN flight_offers fo ON fp.flight_offer_id = fo.id
@@ -1307,9 +1314,9 @@ function getCustomerLiabilityForMonth($customer_id, $end_date_of_month) {
 
         $query = $db->prepare('SELECT flight_purchase_id, from_flight_purchase_id, duration AS minutes_used 
                   FROM flight_bookings 
-                  WHERE flight_purchase_id = ? AND DATE(flight_time) <= ?');
+                  WHERE flight_purchase_id = ? AND DATE(flight_time) >= ? AND DATE(flight_time) <= ?');
 
-        $query->execute([$fp['id'], $end_date_of_month]);
+        $query->execute([$fp['id'], $first_date_of_month, $end_date_of_month]);
         $fb = $query->fetch(PDO::FETCH_ASSOC);
 
         if ($fp['deduct_from_balance'] == 0) {
@@ -1325,13 +1332,16 @@ function getCustomerLiabilityForMonth($customer_id, $end_date_of_month) {
         }
 
         if($fp['deduct_from_balance'] != 2) {
-            $minutes_used += $fb['minutes_used'];
-            $minutes_used_cost += $cost_per_minute * $fb['minutes_used'];
+            $minutes_used_from_purchase += $fb['minutes_used'];
+            $minutes_used_from_purchase_cost += $cost_per_minute * $fb['minutes_used'];
+        } else {
+            $minutes_used_from_credit += $fb['minutes_used'];
+            $minutes_used_from_credit_cost += $cost_per_minute * $fb['minutes_used'];
         }
     }
 
-    $liability_minutes = $purchased_minutes - $minutes_used;
-    $liability_minutes_cost = $purchased_minutes_cost - $minutes_used_cost;
+    $liability_minutes = $purchased_minutes - $minutes_used_from_purchase;
+    $liability_minutes_cost = $purchased_minutes_cost - $minutes_used_from_purchase_cost;
 
-    return [$liability_minutes, $liability_minutes_cost];
+    return [$liability_minutes, $liability_minutes_cost, $minutes_used_from_credit, $minutes_used_from_credit_cost];
 }

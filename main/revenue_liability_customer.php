@@ -108,9 +108,10 @@ include('header.php');
                             <tr>
                                 <th>Customer Name</th>
                                 <th>Customer ID</th>
-                                <th>Total Mins Liability</th>
+                                <th>Total Min Liability</th>
+                                <th>Pre 2018 Liability</th>
                                 <th>AED Liability</th>
-                                <th>Mins. Liability Pre 2018</th>
+                                <th>Avail. Pre 2018</th>
                                 <th>AED Value Pre 2018</th>
                                 <th>VAT on Pre 2018</th>
                             </tr>
@@ -120,14 +121,25 @@ include('header.php');
                             if($result->rowCount() > 0) {
                                 while ($row = $result->fetch(PDO::FETCH_ASSOC)) {
 
-                                    $units_remaining = $row['liability_minutes'];
-                                    $credit_minutes_liability = $row['liability_amount'];
+                                    $units_remaining = $row['liability_minutes'] + $row['pre_2018_minutes'];
+                                    $credit_minutes_liability = $row['liability_amount'] + $row['pre_2018_amount'];
                                     $total_minutes += $units_remaining;
                                     $total_price += $credit_minutes_liability;
 
-                                    if($units_remaining <= 0 && $credit_minutes_liability <= 0 && $_GET['customerId'] <= 0) {
-                                        continue;
+                                    if($row['pre_2018_minutes'] > 0) {
+                                        $per_minute_cost = $row['pre_2018_amount'] / $row['pre_2018_minutes'];
+                                    } else {
+                                        $query = $db->prepare('SELECT pre_2018_amount / pre_2018_minutes AS per_minute_cost 
+                                          FROM `customer_monthly_liability` 
+                                          WHERE pre_2018_amount / pre_2018_minutes > 0 AND customer_id = ? 
+                                          LIMIT 1');
+                                        $query->execute([$row['customer_id']]);
+                                        $per_minute_cost = $query->fetch(PDO::FETCH_ASSOC)['per_minute_cost'];
                                     }
+
+                                    /*if($units_remaining <= 0 && $credit_minutes_liability <= 0 && $_GET['customerId'] <= 0) {
+                                        continue;
+                                    }*/
 
                                     if(strcasecmp($row['customer_name'], 'inflight staff flying') == 0 ||
                                         strcasecmp($row['customer_name'], 'fdr') == 0 ||
@@ -139,18 +151,20 @@ include('header.php');
                                         <td><?= $row['customer_name'] ?></td>
                                         <td><?= $row['customer_id'] ?></td>
                                         <td><?= number_format($units_remaining) ?></td>
+                                        <td><?= $row['pre_2018_minutes'] ?></td>
                                         <td><?= number_format(round($credit_minutes_liability)) ?></td>
                                         <td><?php
-                                            echo $row['pre_2018_minutes'];
+                                            echo $row['pre_2018_minutes_used'];
                                             ?>
                                         </td>
                                         <td>
                                             <?php
-                                            echo round($row['pre_2018_amount']);
+                                            $aed_of_availed = $per_minute_cost * $row['pre_2018_minutes_used'];
+                                            echo number_format(round($aed_of_availed, 2));
                                             ?>
                                         </td>
                                         <td><?php
-                                            echo round($row['pre_2018_amount'] * 5 / 105, 2);
+                                            echo round($aed_of_availed * 5 / 105, 2);
                                             ?>
                                         </td>
                                     </tr>
@@ -160,6 +174,7 @@ include('header.php');
                                 <tr>
                                     <td colspan="2" style="text-align:right; padding-right: 50px;"><b>Total:</b></td>
                                     <td><b><?=number_format($total_minutes)?></b></td>
+                                    <td></td>
                                     <td><b><?=number_format($total_price)?></b></td>
                                     <td></td>
                                     <td></td>
