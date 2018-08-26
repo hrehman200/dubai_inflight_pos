@@ -75,6 +75,7 @@ include('header.php');
                             <th>Paid</th>
                             <th>Total Minutes</th>
                             <th>Minutes Used</th>
+                            <th>Avg/Min</th>
                             <th>AED Value</th>
                         </tr>
                         <?php
@@ -85,6 +86,10 @@ include('header.php');
                         } else {
                             /** FTF */
                             $arr_revenue = getDataAndAggregate('FTF', $_GET['d1'], $_GET['d2']);
+
+                            /** FT - Upsale */
+                            $arr2 = getDataAndAggregate('FT - Upsale', $_GET['d1'], $_GET['d2']);
+                            $arr_revenue = array_merge($arr_revenue, $arr2);
 
                             /** RF */
                             $arr2 = getDataAndAggregate('RF - Repeat Flights', $_GET['d1'], $_GET['d2']);
@@ -116,7 +121,8 @@ include('header.php');
                                 'paid' => array_sum(array_column($arr_military, 'paid')),
                                 'total_minutes' => array_sum(array_column($arr_military, 'total_minutes')),
                                 'minutes_used' => array_sum(array_column($arr_military, 'minutes_used')),
-                                'aed_value' => array_sum(array_column($arr_military, 'aed_value'))
+                                'aed_value' => array_sum(array_column($arr_military, 'aed_value')),
+                                'avg_per_min' => array_sum(array_column($arr_military, 'avg_per_min')),
                             ];
 
                             $arr_revenue = array_merge($arr_revenue, $arr_military_sum);
@@ -152,6 +158,7 @@ include('header.php');
                                 <td><?= number_format($row['paid'], 1) ?></td>
                                 <td><?= number_format($row['total_minutes']) ?></td>
                                 <td><?= number_format($row['minutes_used']) ?></td>
+                                <td><?= number_format($row['avg_per_min'], 2) ?></td>
                                 <td><?= number_format($row['aed_value'], 2) ?></td>
                             </tr>
                             <?php
@@ -170,6 +177,7 @@ include('header.php');
                             <td><b><?= number_format(array_sum(array_column($arr_revenue, 'paid')), 1) ?></b></td>
                             <td><b><?= number_format(array_sum(array_column($arr_revenue, 'total_minutes'))) ?></b></td>
                             <td><b><?= number_format(array_sum(array_column($arr_revenue, 'minutes_used'))) ?></b></td>
+                            <td><b><?= number_format(array_sum(array_column($arr_revenue, 'avg_per_min'))) ?></b></td>
                             <td><b><?= number_format(array_sum(array_column($arr_revenue, 'aed_value')), 2) ?></b></td>
                         </tr>
                     </table>

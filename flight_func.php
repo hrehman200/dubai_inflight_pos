@@ -744,6 +744,9 @@ function getQuery($package_name, $sale_date_check = true) {
     } else if($package_name == 'RF - Repeat Flights') {
         $package_check = " fpkg.package_name LIKE 'RF - Repeat Flights%'";
 
+    } else if($package_name == 'FT - Upsale') {
+        $package_check = " fp1.flight_offer_id IN (84, 97, 98, 99, 100, 101, 102, 103, 104, 105, 116)";
+
     } else {
         $package_check = " (fpkg.id IN (6, 8)";
         if($package_name == 'Military') { // we need to check whether for RF, military discount is given, in which case RF will come in Military
@@ -824,7 +827,7 @@ function getQuery($package_name, $sale_date_check = true) {
                                 (customer_name != 'FDR' AND customer_name != 'MAINTENANCE' AND customer_name != 'inflight staff flying') OR customer_name IS NULL
                             ) ", $join_with_discount, $package_check, $date_check);
 
-    if($package_name == 'Skydivers' || $package_name == 'FTF' || $package_name == 'RF - Repeat Flights') {
+    if($package_name == 'Skydivers' || $package_name == 'FTF' || $package_name == 'RF - Repeat Flights' || $package_name == 'FT - Upsale') {
         $sql .= "AND d.category NOT IN ('Presidential Guard', 'Navy Seal', 'Military', 'Sky god%') AND d.category NOT LIKE 'Navy Seal%'";
     } else if($package_name == NAVY_SEAL){
         $sql .= "AND d.category LIKE 'Navy Seal%'";
@@ -986,7 +989,8 @@ function getDataAndAggregate($package_name, $start_date, $end_date) {
         'minutes_used' => $minutes_used,
         'credit_used' => $credit_used,
         'purchased_minutes_used' => $purchased_minutes_used,
-        'aed_value' => $total_purchased_cost + $total_credit_cost
+        'aed_value' => $total_purchased_cost + $total_credit_cost,
+        'avg_per_min' => ($minutes_used>0) ? ($total_purchased_cost + $total_credit_cost) / $minutes_used : 0
     ]];
 
     return $arr2;
