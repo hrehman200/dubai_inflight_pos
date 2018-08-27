@@ -117,99 +117,69 @@ include('navfixed.php');
                     <table class="table table-striped">
                         <tr>
                             <th>Package</th>
-                            <th>Paid</th>
+                            <!--<th>Paid</th>-->
                             <th>Total Minutes</th>
                             <th>Minutes Used</th>
-                            <th>Minutes Liability</th>
+                            <!--<th>Minutes Liability</th>-->
                         </tr>
                         <?php
-                        $sql = "SELECT
-                                'FTF' AS package_name,
-                                SUM(s1.mop_amount+s1.mop1_amount) AS paid,
-                                SUM(fb1.duration) AS minutes_used,
-                                SUM(fo1.duration) AS total_minutes
-                                  FROM
-                                    sales s1
-                                  INNER JOIN
-                                    flight_purchases fp1 ON s1.invoice_number = fp1.invoice_id
-                                  INNER JOIN
-                                    flight_offers fo1 ON fp1.flight_offer_id = fo1.id
-                                  INNER JOIN 
-                                    flight_packages fpkg ON fo1.package_id = fpkg.id
-                                  LEFT JOIN
-                                    flight_bookings fb1 ON fb1.flight_purchase_id = fp1.id
-                                  INNER JOIN 
-                                    customer c ON fp1.customer_id = c.customer_id  
-                                WHERE fpkg.package_name LIKE 'FTF%'
-                                  AND (s1.mode_of_payment IN ('Cash', 'Card', 'Online', 'Account', 'credit_time', 'credit_cash') 
-                                       OR 
-                                       s1.mode_of_payment_1 IN ('Cash', 'Card', 'Online', 'Account', 'credit_time', 'credit_cash'))
-                                  AND (s1.date >= :startDate AND s1.date <= :endDate)  
-                                  AND (c.customer_name != 'FDR' OR c.customer_name IS NULL)
-                                GROUP BY package_name";
+                        /** FTF */
+                        $arr_ftf = getDataAndAggregate('FTF', $_GET['d1'], $_GET['d2']);
 
-                        $result = $db->prepare($sql);
-                        $result->execute(array(
-                            ':startDate' => $_GET['d1'],
-                            ':endDate'   => $_GET['d2']
-                        ));
+                        /** FT - Upsale */
+                        $arr2 = getDataAndAggregate('FT - Upsale', $_GET['d1'], $_GET['d2']);
+                        $arr_ftf = array_merge($arr_ftf, $arr2);
 
-                        $arr = $result->fetchAll();
-                        if(count($arr) > 1) {
-                            for ($i=1; $i<count($arr); $i++) {
-                                $arr[0]['paid'] += $arr[$i]['paid'];
-                                $arr[0]['minutes_used'] += $arr[$i]['minutes_used'];
-                                $arr[0]['total_minutes'] += $arr[$i]['total_minutes'];
-                            }
+                        $arr_ftf[0] = [
+                            'package_name' => 'FTF',
+                            'paid' => array_sum(array_column($arr_ftf, 'paid')),
+                            'total_minutes' => array_sum(array_column($arr_ftf, 'total_minutes')),
+                            'minutes_used' => array_sum(array_column($arr_ftf, 'minutes_used')),
+                            'aed_value' => array_sum(array_column($arr_ftf, 'aed_value')),
+                            'avg_per_min' => array_sum(array_column($arr_ftf, 'avg_per_min')),
+                        ];
 
-                            array_splice($arr, 1);
-                        }
+                        $arr_exp_return_flyers = [];
 
-                        $sql = "SELECT 
-                                fpkg.package_name,
-                                SUM(s1.mop_amount+s1.mop1_amount) AS paid,
-                                SUM(fb1.duration) AS minutes_used,
-                                SUM(fo1.duration) AS total_minutes
-                                  FROM
-                                    sales s1
-                                  INNER JOIN
-                                    flight_purchases fp1 ON s1.invoice_number = fp1.invoice_id
-                                  INNER JOIN
-                                    flight_offers fo1 ON fp1.flight_offer_id = fo1.id
-                                  INNER JOIN 
-                                    flight_packages fpkg ON fo1.package_id = fpkg.id
-                                  LEFT JOIN
-                                    flight_bookings fb1 ON fb1.flight_purchase_id = fp1.id
-                                  INNER JOIN 
-                                    customer c ON fp1.customer_id = c.customer_id   
-                                WHERE fpkg.id IN (6, 8)
-                                  AND (s1.mode_of_payment IN ('Cash', 'Card', 'Online', 'Account', 'credit_time', 'credit_cash') 
-                                       OR 
-                                       s1.mode_of_payment_1 IN ('Cash', 'Card', 'Online', 'Account', 'credit_time', 'credit_cash'))
-                                  AND (s1.date >= :startDate AND s1.date <= :endDate)  
-                                  AND (c.customer_name != 'FDR' OR c.customer_name IS NULL)
-                                GROUP BY fpkg.id";
+                        /** SKYDIVERS */
+                        $arr2 = getDataAndAggregate('Skydivers', $_GET['d1'], $_GET['d2']);
+                        $arr_exp_return_flyers = array_merge($arr_exp_return_flyers, $arr2);
 
-                        $result = $db->prepare($sql);
-                        $result->execute(array(
-                            ':startDate' => $_GET['d1'],
-                            ':endDate'   => $_GET['d2']
-                        ));
+                        /** Military */
+                        $arr2 = getDataAndAggregate('Military', $_GET['d1'], $_GET['d2']);
+                        $arr_exp_return_flyers = array_merge($arr_exp_return_flyers, $arr2);
 
-                        $arr = array_merge($arr, $result->fetchAll());
+                        /** Navy Seal */
+                        $arr2 = getDataAndAggregate('Navy Seal', $_GET['d1'], $_GET['d2']);
+                        $arr_exp_return_flyers = array_merge($arr_exp_return_flyers, $arr2);
 
-                        foreach ($arr as $row) {
-                            ?>
-                            <tr>
-                                <td><b><?= $row['package_name'] ?></b></td>
-                                <td><?= number_format($row['paid'], 1) ?></td>
-                                <td><?= number_format($row['total_minutes']) ?></td>
-                                <td><?= number_format($row['minutes_used']) ?></td>
-                                <td><?= number_format($row['total_minutes'] - $row['minutes_used']) ?></td>
-                            </tr>
-                            <?php
-                        }
+                        /** Presidential Guard */
+                        $arr2 = getDataAndAggregate('Presidential Guard', $_GET['d1'], $_GET['d2']);
+                        $arr_exp_return_flyers = array_merge($arr_exp_return_flyers, $arr2);
+
+                        /** Sky god */
+                        $arr2 = getDataAndAggregate('Sky god%', $_GET['d1'], $_GET['d2']);
+                        $arr_exp_return_flyers = array_merge($arr_exp_return_flyers, $arr2);
+
+                        $arr_exp_return_flyers[0] = [
+                            'package_name' => 'Experienced Return Flyers',
+                            'paid' => array_sum(array_column($arr_exp_return_flyers, 'paid')),
+                            'total_minutes' => array_sum(array_column($arr_exp_return_flyers, 'total_minutes')),
+                            'minutes_used' => array_sum(array_column($arr_exp_return_flyers, 'minutes_used')),
+                            'aed_value' => array_sum(array_column($arr_exp_return_flyers, 'aed_value')),
+                            'avg_per_min' => array_sum(array_column($arr_exp_return_flyers, 'avg_per_min')),
+                        ];
                         ?>
+                        <tr>
+                            <td><?=$arr_ftf[0]['package_name']?></td>
+                            <td><?= number_format($arr_ftf[0]['total_minutes']) ?></td>
+                            <td><?= number_format($arr_ftf[0]['minutes_used']) ?></td>
+                        </tr>
+                        <tr>
+                            <td><?=$arr_exp_return_flyers[0]['package_name']?></td>
+                            <td><?= number_format($arr_exp_return_flyers[0]['total_minutes']) ?></td>
+                            <td><?= number_format($arr_exp_return_flyers[0]['minutes_used']) ?></td>
+                        </tr>
                         <tr>
                             <td><b>Total Credit Time</b></td>
                             <td colspan="4">
