@@ -347,7 +347,7 @@ include('navfixed.php');
 
                             // for cases where user purchased flight, but didn't book time to fly
                             if($row['quantity'] === null) {
-                                $row['quantity'] = $row['total_quantity'];
+                                $row['quantity'] = 0; //$row['total_quantity'];
                             }
 
                             $booking_duration = $row['quantity'];

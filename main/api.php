@@ -1082,6 +1082,8 @@ function emailSalesReportToAdmin() {
     echo json_encode(array(
         'success' => 1
     ));
+
+    recordCustomerMonthlyLiability();
 }
 
 function verifyGroupon() {

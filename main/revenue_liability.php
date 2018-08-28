@@ -158,7 +158,14 @@ include('header.php');
                                 <td><?= number_format($row['paid'], 1) ?></td>
                                 <td><?= number_format($row['total_minutes']) ?></td>
                                 <td><?= number_format($row['minutes_used']) ?></td>
-                                <td><?= number_format($row['avg_per_min'], 2) ?></td>
+                                <td><?
+                                    if($row['package_name'] == 'Military' && $_POST['military'] != 1) {
+                                        $military_avg_min = $row['avg_per_min'];
+                                    } else {
+                                        echo number_format($row['avg_per_min'], 2);
+                                    }
+                                    ?>
+                                </td>
                                 <td><?= number_format($row['aed_value'], 2) ?></td>
                             </tr>
                             <?php
@@ -177,7 +184,11 @@ include('header.php');
                             <td><b><?= number_format(array_sum(array_column($arr_revenue, 'paid')), 1) ?></b></td>
                             <td><b><?= number_format(array_sum(array_column($arr_revenue, 'total_minutes'))) ?></b></td>
                             <td><b><?= number_format(array_sum(array_column($arr_revenue, 'minutes_used'))) ?></b></td>
-                            <td><b><?= number_format(array_sum(array_column($arr_revenue, 'avg_per_min'))) ?></b></td>
+                            <td><b><?
+                                    $avg_min_sum = array_sum(array_column($arr_revenue, 'avg_per_min'));
+                                    $avg_min_sum -= $military_avg_min;
+                                    echo number_format($avg_min_sum);
+                                    ?></b></td>
                             <td><b><?= number_format(array_sum(array_column($arr_revenue, 'aed_value')), 2) ?></b></td>
                         </tr>
                     </table>

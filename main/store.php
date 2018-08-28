@@ -217,7 +217,7 @@
                             <th> Package</th>
                             <th> Flight Offer</th>
                             <th> Price</th>
-                            <th> Discount</th>
+                            <th> Redeem Voucher</th>
                             <th> VAT</th>
                             <th> Minutes</th>
                             <th> Action</th>
