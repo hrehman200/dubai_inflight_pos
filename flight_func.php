@@ -719,8 +719,12 @@ function array_group_by(array $arr, callable $key_selector) {
  * @return bool
  */
 function isTimeInsideSearchedDate($flight_time, $date1, $date2) {
-    $date = (new DateTime($flight_time))->format('Y-m-d');
-    return (strtotime($date) >= strtotime($date1) && strtotime($date) <= strtotime($date2));
+    try {
+        $date = (new DateTime($flight_time))->format('Y-m-d');
+        return (strtotime($date) >= strtotime($date1) && strtotime($date) <= strtotime($date2));
+    } catch (Exception $e) {
+        return false;
+    }
 }
 
 /**
@@ -732,7 +736,7 @@ function isTimeInsideSearchedDate($flight_time, $date1, $date2) {
  * @return string
  */
 function getQuery($package_name, $sale_date_check = true) {
-    if($package_name == 'Skydivers' || $package_name == 'FTF' || $package_name == 'RF - Repeat Flights') {
+    if($package_name == 'Skydivers' || $package_name == 'FTF' || $package_name == 'RF - Repeat Flights' || $package_name == 'FT - Upsale') {
         $join_with_discount = 'LEFT JOIN discounts d ON fp1.discount_id = d.id OR fp1.discount_id = 0';
     } else {
         $join_with_discount = 'INNER JOIN discounts d ON fp1.discount_id = d.id';
@@ -922,8 +926,11 @@ function getDataAndAggregate($package_name, $start_date, $end_date) {
     $purchased_minutes_used = 0;
     $total_credit_cost = 0;
     $total_purchased_cost = 0;
+    // cost of minutes used from purchased minutes (that are already in search)
+    $total_credit_from_purchased_cost = 0;
 
-    $minutes_used = array_reduce($arr_minutes_used, function($carry, $item) use (&$purchased_minutes_used, &$total_credit_cost, &$total_purchased_cost, $arr_flight_purchase_ids, $package_name, $start_date, $end_date) {
+    $minutes_used = array_reduce($arr_minutes_used, function($carry, $item)
+        use (&$purchased_minutes_used, &$total_credit_cost, &$total_purchased_cost, &$total_credit_from_purchased_cost, $arr_flight_purchase_ids, $package_name, $start_date, $end_date) {
         if($item[0]['flight_taken'] == 1) {
             if ($item[0]['from_flight_purchase_id'] > 0 || $item[0]['deduct_from_balance'] == 2) {
                 if(isTimeInsideSearchedDate($item[0]['flight_time'], $start_date, $end_date)) {
@@ -942,6 +949,7 @@ function getDataAndAggregate($package_name, $start_date, $end_date) {
                     // if credit used is from the flight-purchase that is included in selected time range
                     if (in_array($item[0]['from_flight_purchase_id'], $arr_flight_purchase_ids)) {
                         $purchased_minutes_used += $item[0]['credit_used'];
+                        $total_credit_from_purchased_cost += $credit_cost_per_minute * $item[0]['credit_used'];
                     } else {
                         $total_credit_cost += $credit_cost_per_minute * $item[0]['credit_used'];
                     }
@@ -989,8 +997,8 @@ function getDataAndAggregate($package_name, $start_date, $end_date) {
         'minutes_used' => $minutes_used,
         'credit_used' => $credit_used,
         'purchased_minutes_used' => $purchased_minutes_used,
-        'aed_value' => $total_purchased_cost + $total_credit_cost,
-        'avg_per_min' => ($minutes_used>0) ? ($total_purchased_cost + $total_credit_cost) / $minutes_used : 0
+        'aed_value' => $total_purchased_cost + $total_credit_cost + $total_credit_from_purchased_cost,
+        'avg_per_min' => ($minutes_used>0) ? ($total_purchased_cost + $total_credit_cost + $total_credit_from_purchased_cost) / $minutes_used : 0
     ]];
 
     return $arr2;
@@ -1318,9 +1326,9 @@ function getCustomerLiabilityForMonth($customer_id, $month) {
 
         $query = $db->prepare('SELECT flight_purchase_id, from_flight_purchase_id, duration AS minutes_used 
                   FROM flight_bookings 
-                  WHERE flight_purchase_id = ? AND DATE(flight_time) >= ? AND DATE(flight_time) <= ?');
+                  WHERE flight_purchase_id = ?'); // AND DATE(flight_time) >= ? AND DATE(flight_time) <= ?
 
-        $query->execute([$fp['id'], $first_date_of_month, $end_date_of_month]);
+        $query->execute([$fp['id']]);
         $fb = $query->fetch(PDO::FETCH_ASSOC);
 
         if ($fp['deduct_from_balance'] == 0) {
