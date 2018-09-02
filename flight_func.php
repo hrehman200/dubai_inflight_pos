@@ -743,7 +743,7 @@ function getQuery($package_name, $sale_date_check = true) {
     }
 
     if($package_name == 'FTF') {
-        $package_check = " fpkg.package_name LIKE 'FTF%'";
+        $package_check = " fpkg.package_name LIKE 'FTF%' AND fp1.flight_offer_id NOT IN (84, 97, 98, 99, 100, 101, 102, 103, 104, 105, 116)";
 
     } else if($package_name == 'RF - Repeat Flights') {
         $package_check = " fpkg.package_name LIKE 'RF - Repeat Flights%'";
