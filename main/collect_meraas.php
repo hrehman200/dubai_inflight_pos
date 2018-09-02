@@ -132,7 +132,8 @@ include('header.php');
                     if($_SESSION['SESS_LAST_NAME'] == 'Operator') {
                         $sql .= sprintf(" AND u.name = '%s'", $_SESSION['SESS_FIRST_NAME']);
                     }
-                    $sql .= ' AND s.amount > 0 AND (s.mode_of_payment !="Account" AND s.mode_of_payment_1 != "Account") ';
+                    $sql .= ' AND s.amount > 0 AND 
+                        (s.mode_of_payment !="Account" AND s.mode_of_payment_1 != "Account" AND s.mode_of_payment !="credit_time" AND s.mode_of_payment_1 != "credit_time") ';
                     $sql .= " AND (c.customer_name != 'FDR' OR c.customer_name IS NULL)
                     ORDER by transaction_id DESC";
 
@@ -271,7 +272,7 @@ include('header.php');
                         <td colspan="1" style=""><b><?= number_format($total_account, 1) ?></b></td>
                     </tr>-->
                     <?php
-                    if(strtolower($_SESSION['SESS_LAST_NAME']) == 'admin' || strtolower($_SESSION['SESS_LAST_NAME']) == 'account'
+                    if(strtolower($_SESSION['SESS_LAST_NAME']) == 'admin' || strtolower($_SESSION['SESS_LAST_NAME']) == ROLE_ACCOUNT
                         || $_SESSION[SESS_MOCK_ROLE] == ROLE_ACCOUNT) {
                         ?>
                         <tr>
@@ -345,7 +346,7 @@ include('header.php');
     });
 
     function convertToCSV() {
-        exportTableToCSV($('#resultTable'), 'filename.csv');
+        exportTableToCSV($('#tblSalesReport'), 'filename.csv');
     }
 
     function exportTableToCSV($table, filename) {
