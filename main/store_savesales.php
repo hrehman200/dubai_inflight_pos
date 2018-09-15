@@ -32,12 +32,16 @@ $groupon_codes = $query->fetchAll(PDO::FETCH_ASSOC);
 foreach($groupon_codes as $gc) {
     $query = $db->prepare('UPDATE groupon_discount_codes SET used = NOW() WHERE code = ? LIMIT 1');
     $query->execute([$gc['groupon_code']]);
-    echo json_encode(array('success' => 1));
 }
 
 $query = $db->prepare('SELECT customer_id FROM customer WHERE email = ?');
-$query->execute([$_POST['email']]);
+$query->execute([$_POST['req_bill_to_email']]);
 $customer = $query->fetch(PDO::FETCH_ASSOC);
+if($customer && $customer['customer_id'] > 0) {
+    $customer_id = $customer['customer_id'];
+} else {
+    $customer_id = 0;
+}
 
 $query = $db->prepare('SELECT SUM(discount) AS total_discount FROM flight_purchases WHERE invoice_id=?');
 $query->execute([$invoice]);
@@ -74,7 +78,7 @@ $q->execute(array(
     ':due_date' => $_POST['req_amount'],
     ':mode_of_payment' => 'Online',
     ':discount' => $discount,
-    ':customerId' => $customer['customer_id'],
+    ':customerId' => $customer_id,
     ':Service' => $salesType,
     ':mode_of_payment_1' => '',
     ':mop_amount' => $_POST['req_amount'],
