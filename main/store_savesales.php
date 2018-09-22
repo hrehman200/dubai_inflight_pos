@@ -34,8 +34,8 @@ foreach($groupon_codes as $gc) {
     $query->execute([$gc['groupon_code']]);
 }
 
-$query = $db->prepare('SELECT customer_id FROM customer WHERE email = ?');
-$query->execute([$_POST['req_bill_to_email']]);
+$query = $db->prepare('SELECT customer_id FROM customer WHERE email = ? OR address = ?');
+$query->execute([$_POST['req_bill_to_email'], $_POST['req_bill_to_email']]);
 $customer = $query->fetch(PDO::FETCH_ASSOC);
 if($customer && $customer['customer_id'] > 0) {
     $customer_id = $customer['customer_id'];
@@ -46,7 +46,7 @@ if($customer && $customer['customer_id'] > 0) {
 $query = $db->prepare('SELECT SUM(discount) AS total_discount FROM flight_purchases WHERE invoice_id=?');
 $query->execute([$invoice]);
 $row = $query->fetch();
-$discount = $row['total_discount'];
+$discount = is_null($row['total_discount']) ? 0 : $row['total_discount'];
 
 $salesType = 'Service';
 
