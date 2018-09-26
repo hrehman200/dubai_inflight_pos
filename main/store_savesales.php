@@ -85,9 +85,10 @@ $q->execute(array(
     ':mop1_amount' => '0',
     ':discountedValue' => $_POST['req_amount']));
 
-$query = $db->prepare("UPDATE flight_purchases SET status = 1 WHERE invoice_id = :invoiceId");
+$query = $db->prepare("UPDATE flight_purchases SET status = 1, customer_id = :customerId WHERE invoice_id = :invoiceId");
 $query->execute(array(
-    ':invoiceId' => $invoice
+    ':invoiceId' => $invoice,
+    ':customerId' => $customer_id
 ));
 
 adjustBalanceForDeletedFlightBookings($invoice);
