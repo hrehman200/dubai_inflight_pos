@@ -96,7 +96,7 @@ include('header.php');
                 <table class="table table-bordered table-striped" id="tblSalesReport" style="text-align: left;">
                     <thead>
                     <tr>
-                        <th colspan="10" style="text-align: center;">
+                        <th colspan="11" style="text-align: center;">
                             <h3>End of Day Report from&nbsp;<?php echo date('M j, Y', strtotime($d1)) ?>&nbsp;to&nbsp;<?php echo date('M j, Y', strtotime($d2)) ?></h3>
                         </th>
                     </tr>

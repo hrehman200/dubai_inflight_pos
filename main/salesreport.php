@@ -229,7 +229,7 @@ require_once('auth.php');
                     $total_online = 0;
 
                     for ($i = 0; $row = $result->fetch(PDO::FETCH_ASSOC); $i++) {
-                        $current_cost = round($row['amount'], 0);
+                        $current_cost = $row['amount'];
                         $discount = $current_cost * $row['discount'] / 100.00;
 
                         $query = $db->prepare('SELECT transaction_id FROM sales_order WHERE invoice = ? AND gen_name = "Service" LIMIT 1');
@@ -241,35 +241,45 @@ require_once('auth.php');
                         } else {
                             $invoiceHref = 'flight_preview.php?invoice=' . $row['invoice_number'] . '&sale_type=' . $row['sale_type'];
                         }
-                        $total_sale += $current_cost;
                         $total_profit += $row['profit'];
 
                         if($row['mode_of_payment'] == 'Cash') {
                             $total_cash += $row['mop_amount'];
+                            $total_sale += $row['mop_amount'];
                         }
                         if($row['mode_of_payment_1'] == 'Cash') {
                             $total_cash += $row['mop1_amount'];
+                            $total_sale += $row['mop1_amount'];
                         }
 
                         if($row['mode_of_payment'] == 'Card') {
                             $total_card += $row['mop_amount'];
+                            $total_sale += $row['mop_amount'];
                         }
                         if($row['mode_of_payment_1'] == 'Card') {
                             $total_card += $row['mop1_amount'];
+                            $total_sale += $row['mop1_amount'];
                         }
 
                         if($row['mode_of_payment'] == 'Account') {
                             $total_account += $row['mop_amount'];
+                            $total_sale += $row['mop_amount'];
                         }
                         if($row['mode_of_payment_1'] == 'Account') {
                             $total_account += $row['mop1_amount'];
+                            $total_sale += $row['mop1_amount'];
                         }
 
-                        if($row['mode_of_payment'] == 'Online') {
-                            $total_online += $row['mop_amount'];
-                        }
-                        if($row['mode_of_payment_1'] == 'Online') {
-                            $total_online += $row['mop1_amount'];
+                        if(strtolower($_SESSION['SESS_LAST_NAME']) == 'admin' || $_SESSION[SESS_MOCK_ROLE] == 'admin' ||
+                            strtolower($_SESSION['SESS_LAST_NAME']) == 'account' || $_SESSION[SESS_MOCK_ROLE] == ROLE_ACCOUNT) {
+                            if ($row['mode_of_payment'] == 'Online') {
+                                $total_online += $row['mop_amount'];
+                                $total_sale += $row['mop_amount'];
+                            }
+                            if ($row['mode_of_payment_1'] == 'Online') {
+                                $total_online += $row['mop1_amount'];
+                                $total_sale += $row['mop1_amount'];
+                            }
                         }
 
                         ?>
@@ -285,7 +295,7 @@ require_once('auth.php');
 
                             <td><?php echo ($row['customer_name']) ? $row['customer_name'] : $row['name']; ?></td>
                             <td><?= $row['sale_type'] ?></td>
-                            <td><?= number_format($current_cost, 0) ?></td>
+                            <td><?= number_format($current_cost, 1) ?></td>
                             <!--<td><?= number_format($row['profilt']) ?></td>-->
                         </tr>
                         <?php
@@ -294,26 +304,27 @@ require_once('auth.php');
 
                     <tr>
                         <td colspan="9" style="text-align: right;"> <b>Total:</b></td>
-                        <td colspan="1" style=""><b><?= number_format($total_sale, 0) ?></b></td>
+                        <td colspan="1" style=""><b><?= number_format($total_sale, 1) ?></b></td>
                     </tr>
                     <tr>
                         <td colspan="9" style="text-align: right;"> <b>Cash:</b></td>
-                        <td colspan="1" style=""><b><?= number_format($total_cash, 0) ?></b></td>
+                        <td colspan="1" style=""><b><?= number_format($total_cash, 1) ?></b></td>
                     </tr>
                     <tr>
                         <td colspan="9" style="text-align: right;"> <b>Card:</b></td>
-                        <td colspan="1" style=""><b><?= number_format($total_card, 0) ?></b></td>
+                        <td colspan="1" style=""><b><?= number_format($total_card, 1) ?></b></td>
                     </tr>
                     <tr>
                         <td colspan="9" style="text-align: right;"> <b>Account:</b></td>
-                        <td colspan="1" style=""><b><?= number_format($total_account, 0) ?></b></td>
+                        <td colspan="1" style=""><b><?= number_format($total_account, 1) ?></b></td>
                     </tr>
                     <?php
-                    if(strtolower($_SESSION['SESS_LAST_NAME']) == 'admin' || strtolower($_SESSION['SESS_LAST_NAME']) == 'account') {
+                    if(strtolower($_SESSION['SESS_LAST_NAME']) == 'admin' || $_SESSION[SESS_MOCK_ROLE] == 'admin' ||
+                        strtolower($_SESSION['SESS_LAST_NAME']) == 'account' || $_SESSION[SESS_MOCK_ROLE] == ROLE_ACCOUNT) {
                         ?>
                         <tr>
                             <td colspan="9" style="text-align: right;"><b>Online:</b></td>
-                            <td colspan="1" style=""><b><?= number_format($total_online, 0) ?></b></td>
+                            <td colspan="1" style=""><b><?= number_format($total_online, 1) ?></b></td>
                         </tr>
                         <?php
                     }
@@ -351,7 +362,7 @@ require_once('auth.php');
 </body>
 <script type="text/javascript">
     function convertToCSV() {
-        exportTableToCSV($('#resultTable'), 'filename.csv');
+        exportTableToCSV($('#tblSalesReport'), 'filename.csv');
     }
 
     function exportTableToCSV($table, filename) {
