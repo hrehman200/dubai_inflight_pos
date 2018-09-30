@@ -9,6 +9,10 @@ $offer_duration     = $_POST['offerDuration'];
 $flight_duration    = $_POST['flightDuration'];
 $flight_purchase_id = $_POST['flightPurchaseId'];
 $customer_id        = $_POST['customerId'];
+if(is_null($customer_id) || $customer_id == 0) {
+    echo '<h3>No customer selected for this order. Please go back and select customer.</h3>';
+    exit();
+}
 
 $creditDuration = $_POST['creditDuration'];
 $useCredit      = $_POST['useCredit'];

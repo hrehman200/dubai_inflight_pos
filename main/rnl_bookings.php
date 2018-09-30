@@ -110,7 +110,7 @@ include('header.php');
                                     fp1.discount_id = d.id
                                 WHERE DATE(fb1.flight_time) >= ? AND DATE(fb1.flight_time) <= ?
                                 AND customer_name NOT IN ('inflight staff flying', 'FDR', 'Maintenance', 'Training Inflight', 'Blocked for special things')
-                                AND package_name NOT IN ('FDR', 'Marketing')";
+                                AND package_name NOT IN ('FDR', 'Marketing', 'Giveaways')";
 
                             $sql .= " ORDER BY fb1.flight_time ASC";
 
@@ -144,12 +144,15 @@ include('header.php');
                                         $category = $row['package_name'];
                                     }
 
+                                    $pre_2018_vat = 0;
+
                                     if ($row['from_flight_purchase_id'] > 0 || $row['deduct_from_balance'] == 2) {
                                         if ($row['deduct_from_balance'] == 2) {
                                             if ($category == NAVY_SEAL && strtotime($row['flight_time']) >= strtotime('2018-05-01')) {
                                                 $per_minute_cost = getPerMinuteCostForCustomer($row['customer_id'], $d1, $d2);
                                             } else {
                                                 $per_minute_cost = getPerMinuteCostForCustomer($row['customer_id']);
+                                                $pre_2018_vat = round($row['duration'] * $per_minute_cost * 5 / 105, 2);
                                             }
                                         } else {
                                             $per_minute_cost = getPerMinuteCostOfPurchasedPackage($row['from_flight_purchase_id']);
@@ -172,9 +175,7 @@ include('header.php');
                                         <td><?= $row['offer_name'] ?></td>
                                         <td><?= $row['duration'] ?></td>
                                         <td><?= number_format(round($current_price, 2));?></td>
-                                        <td><?php
-                                            echo round($current_price * 5 / 105, 2);
-                                            ?>
+                                        <td><?= $pre_2018_vat ?>
                                         </td>
                                     </tr>
                                     <?php
