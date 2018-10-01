@@ -89,7 +89,7 @@ include('header.php');
 
                             /** FT - Upsale */
                             $arr2 = getDataAndAggregate('FT - Upsale', $_GET['d1'], $_GET['d2']);
-                            $arr_revenue = array_merge($arr_revenue, $arr2);
+                            //$arr_revenue = array_merge($arr_revenue, $arr2);
 
                             /** RF */
                             $arr2 = getDataAndAggregate('RF - Repeat Flights', $_GET['d1'], $_GET['d2']);
@@ -140,6 +140,10 @@ include('header.php');
 
                             /** MERCHANDISE */
                             $arr2 = getMerchandiseRevenue(TYPE_MERCHANDISE, $_GET['d1'], $_GET['d2']);
+                            $arr_revenue = array_merge($arr_revenue, $arr2);
+
+                            /** OTHER e.g. Facility Rental, Sandstorm Registration Fee  */
+                            $arr2 = getOtherRevenue('Other', $_GET['d1'], $_GET['d2']);
                             $arr_revenue = array_merge($arr_revenue, $arr2);
                         }
 
