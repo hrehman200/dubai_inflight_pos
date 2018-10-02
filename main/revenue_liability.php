@@ -83,7 +83,7 @@ include('header.php');
                         if($_POST['pageType'] == 'military') {
                             $arr_revenue = json_decode(base64_decode($_POST['military_data']), true);
 
-                        } if($_POST['pageType'] == 'ftf') {
+                        } else if($_POST['pageType'] == 'ftf') {
                             $arr_revenue = json_decode(base64_decode($_POST['ftf_data']), true);
 
                         } else {
