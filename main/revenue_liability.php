@@ -24,7 +24,7 @@ include('header.php');
 
             <div>
                 <div style="margin-top: -19px; margin-bottom: 21px;">
-                    <a href="<?=($_POST['military']==1) ? $_SERVER['REQUEST_URI'] : 'index.php'?>">
+                    <a href="<?=(null !== $_POST['pageType']) ? $_SERVER['REQUEST_URI'] : 'index.php'?>">
                         <button class="btn btn-default btn-large" style="float: none;"><i
                                 class="icon icon-circle-arrow-left icon-large"></i> Back
                         </button>
@@ -80,12 +80,65 @@ include('header.php');
                         </tr>
                         <?php
 
-                        if($_POST['military'] == 1) {
+                        if($_POST['pageType'] == 'military') {
                             $arr_revenue = json_decode(base64_decode($_POST['military_data']), true);
 
+                        } if($_POST['pageType'] == 'ftf') {
+                            $arr_revenue = json_decode(base64_decode($_POST['ftf_data']), true);
+
                         } else {
-                            /** FTF */
-                            $arr_revenue = getDataAndAggregate('FTF', $_GET['d1'], $_GET['d2']);
+                            $arr_revenue = [];
+                            $arr_ftf = [];
+                            /** FTF without discounts applied */
+                            $arr2 = getDataAndAggregate('FTF', $_GET['d1'], $_GET['d2']);
+                            $arr_ftf = array_merge($arr_ftf, $arr2);
+
+                            /** ALPHA */
+                            $arr2 = getDataAndAggregate('Alpha', $_GET['d1'], $_GET['d2']);
+                            $arr_ftf = array_merge($arr_ftf, $arr2);
+
+                            /** DISCOVERY WAY */
+                            $arr2 = getDataAndAggregate('Discovery Way', $_GET['d1'], $_GET['d2']);
+                            $arr_ftf = array_merge($arr_ftf, $arr2);
+
+                            /** AROOHA */
+                            $arr2 = getDataAndAggregate('Arooha', $_GET['d1'], $_GET['d2']);
+                            $arr_ftf = array_merge($arr_ftf, $arr2);
+
+                            /** DESERT GATE */
+                            $arr2 = getDataAndAggregate('Desert Gate', $_GET['d1'], $_GET['d2']);
+                            $arr_ftf = array_merge($arr_ftf, $arr2);
+
+                            /** JustDO */
+                            $arr2 = getDataAndAggregate('JustDO', $_GET['d1'], $_GET['d2']);
+                            $arr_ftf = array_merge($arr_ftf, $arr2);
+
+                            /** HIGHWAY */
+                            $arr2 = getDataAndAggregate('Highway', $_GET['d1'], $_GET['d2']);
+                            $arr_ftf = array_merge($arr_ftf, $arr2);
+
+                            /** GROUPON */
+                            $arr2 = getDataAndAggregate('Groupon', $_GET['d1'], $_GET['d2']);
+                            $arr_ftf = array_merge($arr_ftf, $arr2);
+
+                            /** COUPON */
+                            $arr2 = getDataAndAggregate('Coupon', $_GET['d1'], $_GET['d2']);
+                            $arr_ftf = array_merge($arr_ftf, $arr2);
+
+                            /** EMIRATES AIRLINE */
+                            $arr2 = getDataAndAggregate('Emirates Airline', $_GET['d1'], $_GET['d2']);
+                            $arr_ftf = array_merge($arr_ftf, $arr2);
+
+                            $arr_ftf_sum[0] = [
+                                'package_name' => 'FTF',
+                                'paid' => array_sum(array_column($arr_ftf, 'paid')),
+                                'total_minutes' => array_sum(array_column($arr_ftf, 'total_minutes')),
+                                'minutes_used' => array_sum(array_column($arr_ftf, 'minutes_used')),
+                                'aed_value' => array_sum(array_column($arr_ftf, 'aed_value')),
+                                'avg_per_min' => array_sum(array_column($arr_ftf, 'avg_per_min')),
+                            ];
+
+                            $arr_revenue = array_merge($arr_revenue, $arr_ftf_sum);
 
                             /** FT - Upsale */
                             $arr2 = getDataAndAggregate('FT - Upsale', $_GET['d1'], $_GET['d2']);
@@ -156,14 +209,19 @@ include('header.php');
                                 <?php
                                 continue;
                             }
+
+                            $display_title = $row['package_name'];
+                            if($row['package_name']=='Military' && $_POST['pageType'] == 'military') {
+                                $display_title = 'Military Individuals';
+                            }
                             ?>
-                            <tr class="<?=$row['package_name']=='Military'?'military-row':''?>">
-                                <td><b><?= $row['package_name'] == 'Military' && $_POST['military'] == 1 ? 'Military Individuals' : $row['package_name']  ?></b></td>
+                            <tr class="<?=$row['package_name']=='Military'||$row['package_name']=='FTF'?'clickable-row':''?>" data-page-type="<?=strtolower($row['package_name'])?>">
+                                <td><b><?= $display_title  ?></b></td>
                                 <td><?= number_format($row['paid'], 1) ?></td>
                                 <td><?= number_format($row['total_minutes']) ?></td>
                                 <td><?= number_format($row['minutes_used']) ?></td>
                                 <td><?
-                                    if($row['package_name'] == 'Military' && $_POST['military'] != 1) {
+                                    if($row['package_name'] == 'Military' && $_POST['pageType'] != 'military') {
                                         $military_avg_min = $row['avg_per_min'];
                                     } else {
                                         echo number_format($row['avg_per_min'], 2);
@@ -176,7 +234,7 @@ include('header.php');
                         }
 
                         $arr_packages = json_encode(array_map(function($v) {
-                            if(isset($_POST['military']) && $v['package_name'] == 'Military') {
+                            if($_POST['pageType'] == 'military' && $v['package_name'] == 'Military') {
                                 return 'Military Individuals';
                             }
                             return $v['package_name'];
@@ -198,8 +256,9 @@ include('header.php');
                     </table>
 
                     <form id="military-form" method="POST" action="<?=$_SERVER['REQUEST_URI']?>" target="_blank">
-                        <input type="hidden" name="military" value="1" />
+                        <input type="hidden" name="pageType" value="military" />
                         <input type="hidden" name="military_data" value="<?=base64_encode(json_encode($arr_military))?>" />
+                        <input type="hidden" name="ftf_data" value="<?=base64_encode(json_encode($arr_ftf))?>" />
                     </form>
 
                     <div class="app">
@@ -209,7 +268,7 @@ include('header.php');
                     <hr/>
 
                     <?php
-                    if(!isset($_POST['military'])) {
+                    if(!isset($_POST['pageType'])) {
                         ?>
 
                         <div class="row">
@@ -342,10 +401,11 @@ include('header.php');
 
 <script type="text/javascript">
 
-    $('.military-row').click(function(e) {
+    $('.clickable-row').click(function(e) {
         /*var win = window.open("<?=$_SERVER['REQUEST_URI']?>&military=1", '_blank');
         win.focus();*/
 
+        $('input[name="pageType"]').val($(this).data('page-type'));
         $('#military-form').submit();
     });
 
@@ -457,7 +517,7 @@ include('header.php');
                     {
                         label: 'Data One',
                         data: JSON.parse('<?=$arr_paid?>'),
-                        backgroundColor: ['#F7DF00', '#ca0813', '#287AEB', '#89A366', '#9F7371', '#72D84E', '#42C4F0']
+                        backgroundColor: ['#F7DF00', '#ca0813', '#287AEB', '#89A366', '#9F7371', '#72D84E', '#42C4F0', '#f4c141', '#4286f4', '#f441e5']
                     }
                 ]
             }, {
@@ -482,7 +542,7 @@ include('header.php');
 
 <?php include('footer.php'); ?>
 <style>
-    .military-row {
+    .clickable-row {
         cursor:hand;
     }
 </style>

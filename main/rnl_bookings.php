@@ -110,7 +110,8 @@ include('header.php');
                                     fp1.discount_id = d.id
                                 WHERE DATE(fb1.flight_time) >= ? AND DATE(fb1.flight_time) <= ?
                                 AND customer_name NOT IN ('inflight staff flying', 'FDR', 'Maintenance', 'Training Inflight', 'Blocked for special things')
-                                AND package_name NOT IN ('FDR', 'Marketing', 'Giveaways')";
+                                AND package_name NOT IN ('FDR', 'Marketing', 'Giveaways')
+                                AND d.category NOT IN ('Staff Flying')";
 
                             $sql .= " ORDER BY fb1.flight_time ASC";
 

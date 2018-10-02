@@ -742,8 +742,9 @@ function getQuery($package_name, $sale_date_check = true) {
         $join_with_discount = 'INNER JOIN discounts d ON fp1.discount_id = d.id';
     }
 
-    if($package_name == 'FTF') {
-        $package_check = " fpkg.package_name LIKE 'FTF%' AND fp1.flight_offer_id NOT IN (84, 97, 98, 99, 100, 101, 102, 103, 104, 105, 116)";
+    // if FTF OR one of the discounts of FTF
+    if($package_name == 'FTF' || in_array($package_name, ['Alpha', 'Discovery Way', 'Arooha', 'Desert Gate', 'JustDo', 'Highway', 'Groupon', 'Coupon', 'Emirates Airline'])) {
+        $package_check = " fpkg.package_name LIKE 'FTF%'";
 
     } else if($package_name == 'RF - Repeat Flights') {
         $package_check = " fpkg.package_name LIKE 'RF - Repeat Flights%'";
@@ -777,6 +778,7 @@ function getQuery($package_name, $sale_date_check = true) {
                             s1.invoice_number,
                             s1.customer_id,
                             s1.date,
+                            d.category,
                             CASE WHEN(
                                 (s1.mode_of_payment = 'credit_time' OR s1.mode_of_payment_1 = 'credit_time') AND fp1.deduct_from_balance = 2
                             ) THEN (fb1.duration * c.per_minute_cost) ELSE s1.amount
@@ -828,11 +830,17 @@ function getQuery($package_name, $sale_date_check = true) {
                             ) AND(
                                 %s
                             ) AND(
-                                (customer_name != 'FDR' AND customer_name != 'MAINTENANCE' AND customer_name != 'inflight staff flying') OR customer_name IS NULL
+                                (customer_name != 'FDR' AND customer_name != 'MAINTENANCE' AND customer_name != 'inflight staff flying' AND customer_name != 'Training Inflight') OR customer_name IS NULL
                             ) ", $join_with_discount, $package_check, $date_check);
 
     if($package_name == 'Skydivers' || $package_name == 'FTF' || $package_name == 'RF - Repeat Flights' || $package_name == 'FT - Upsale') {
-        $sql .= "AND d.category NOT IN ('Presidential Guard', 'Navy Seal', 'Military', 'Sky god%') AND d.category NOT LIKE 'Navy Seal%'";
+        $sql .= "AND d.category NOT IN ('Presidential Guard', 'Navy Seal', 'Military', 'Sky god%') 
+                 AND d.category NOT LIKE 'Navy Seal%'
+                 AND d.category NOT LIKE 'Groupon%'";
+
+    } else if(in_array($package_name, ['Alpha', 'Discovery Way', 'Arooha', 'Desert Gate', 'JustDo', 'Highway', 'Groupon', 'Coupon', 'Emirates Airline'])){
+        $sql .= "AND d.category LIKE '{$package_name}%'";
+
     } else if($package_name == NAVY_SEAL){
         $sql .= "AND d.category LIKE 'Navy Seal%'";
     } else if($package_name == 'Military'){ // so that military discounts given to RF can be included in Military
@@ -851,9 +859,9 @@ function getQuery($package_name, $sale_date_check = true) {
         $sql .= "AND d.category IN ('".$package_name."')";
     }
 
-    if($package_name == 'FTF') {
+    /*if($package_name == 'FTF') {
         $sql .= " AND fpkg.package_name LIKE 'FTF%'";
-    }
+    }*/
 
     $sql .= " GROUP BY fp1.id, fb1.id";
     return $sql;
@@ -892,7 +900,8 @@ function getDataAndAggregate($package_name, $start_date, $end_date) {
     $arr_flight_purchase_ids = array_map(function($v) { return $v['flight_purchase_id'];}, $arr2);
     $arr_flight_purchase_ids = array_unique($arr_flight_purchase_ids);
 
-    if($package_name == NAVY_SEAL) {
+    // since navy seal new package started from May
+    if($package_name == NAVY_SEAL && strtotime($start_date) >= strtotime('2018-05-01')) {
         // TODO: so far there is only one Navy Seal customer and no chance of increase
         if(count($arr2) > 0) {
             $customer_yearly_purchase = getCustomerYearlyPurchase($arr2[0]['customer_id'], $start_date, $end_date);
