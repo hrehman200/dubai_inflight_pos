@@ -224,15 +224,15 @@ include('header.php');
                             echo ($row['customer_name']) ? $row['customer_name'] : $row['name']; ?></td>
                             <td><?php
                                 if($is_only_service) {
-                                    echo ($row['mop_amount'] + $row['mop1_amount']);
+                                    echo number_format(($row['mop_amount'] + $row['mop1_amount']), 0);
 
                                 } else if($is_merchandise || $is_service_merchandise) {
-                                    echo round($row2['discountedService'],2);
+                                    echo number_format(round($row2['discountedService'],2), 0);
                                 }
                             ?></td> 
                             <td><?php
                             if ($is_merchandise || $is_service_merchandise) {
-                                echo round($row3['discountedMerchandise'], 2);
+                                echo number_format(round($row3['discountedMerchandise'], 2), 0);
                             }
                             ?></td> 
                             
@@ -241,10 +241,10 @@ include('header.php');
                                         $vat_percent = "5%";
                                         $VAT = $row['amount'] *$vat_percent/105;
                                         //$vat_amount  = $vat_percent * $current_amount_w_discount / 105;
-                                        echo number_format($VAT, 2);
+                                        echo number_format($VAT, 0);
                                         ?></td>
 
-                           <td><?= number_format($current_cost-$VAT, 2); ?></td>
+                           <td><?= number_format($current_cost-$VAT, 0); ?></td>
                             
                         </tr>
                         <?php
@@ -254,22 +254,22 @@ include('header.php');
 
                     <tr>
                         <td colspan="9" style="text-align: right;"> <b>Total:</b></td>
-                        <td colspan="1" style=""><b><?= number_format($total_sale, 1) ?></b></td>
+                        <td colspan="1" style=""><b><?= number_format($total_sale, 0) ?></b></td>
                         <td></td>
                     </tr>
                     <tr>
                         <td colspan="9" style="text-align: right;"> <b>Cash:</b></td>
-                        <td colspan="1" style=""><b><?= number_format($total_cash, 1) ?></b></td>
+                        <td colspan="1" style=""><b><?= number_format($total_cash, 0) ?></b></td>
                         <td></td>
                     </tr>
                     <tr>
                         <td colspan="9" style="text-align: right;"> <b>Card:</b></td>
-                        <td colspan="1" style=""><b><?= number_format($total_card, 1) ?></b></td>
+                        <td colspan="1" style=""><b><?= number_format($total_card, 0) ?></b></td>
                         <td></td>
                     </tr>
                     <!--<tr>
                         <td colspan="9" style="text-align: right;"> <b>Account:</b></td>
-                        <td colspan="1" style=""><b><?= number_format($total_account, 1) ?></b></td>
+                        <td colspan="1" style=""><b><?= number_format($total_account, 0) ?></b></td>
                     </tr>-->
                     <?php
                     if(strtolower($_SESSION['SESS_LAST_NAME']) == 'admin' || strtolower($_SESSION['SESS_LAST_NAME']) == ROLE_ACCOUNT
@@ -277,7 +277,7 @@ include('header.php');
                         ?>
                         <tr>
                             <td colspan="9" style="text-align: right;"><b>Online:</b></td>
-                            <td colspan="1" style=""><b><?= number_format($total_online, 1) ?></b></td>
+                            <td colspan="1" style=""><b><?= number_format($total_online, 0) ?></b></td>
                             <td></td>
                         </tr>
                         <?php

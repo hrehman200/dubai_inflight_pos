@@ -295,7 +295,7 @@ require_once('auth.php');
 
                             <td><?php echo ($row['customer_name']) ? $row['customer_name'] : $row['name']; ?></td>
                             <td><?= $row['sale_type'] ?></td>
-                            <td><?= number_format($current_cost, 1) ?></td>
+                            <td><?= number_format($current_cost, 0) ?></td>
                             <!--<td><?= number_format($row['profilt']) ?></td>-->
                         </tr>
                         <?php
@@ -304,19 +304,19 @@ require_once('auth.php');
 
                     <tr>
                         <td colspan="9" style="text-align: right;"> <b>Total:</b></td>
-                        <td colspan="1" style=""><b><?= number_format($total_sale, 1) ?></b></td>
+                        <td colspan="1" style=""><b><?= number_format($total_sale, 0) ?></b></td>
                     </tr>
                     <tr>
                         <td colspan="9" style="text-align: right;"> <b>Cash:</b></td>
-                        <td colspan="1" style=""><b><?= number_format($total_cash, 1) ?></b></td>
+                        <td colspan="1" style=""><b><?= number_format($total_cash, 0) ?></b></td>
                     </tr>
                     <tr>
                         <td colspan="9" style="text-align: right;"> <b>Card:</b></td>
-                        <td colspan="1" style=""><b><?= number_format($total_card, 1) ?></b></td>
+                        <td colspan="1" style=""><b><?= number_format($total_card, 0) ?></b></td>
                     </tr>
                     <tr>
                         <td colspan="9" style="text-align: right;"> <b>Account:</b></td>
-                        <td colspan="1" style=""><b><?= number_format($total_account, 1) ?></b></td>
+                        <td colspan="1" style=""><b><?= number_format($total_account, 0) ?></b></td>
                     </tr>
                     <?php
                     if(strtolower($_SESSION['SESS_LAST_NAME']) == 'admin' || $_SESSION[SESS_MOCK_ROLE] == 'admin' ||
@@ -324,7 +324,7 @@ require_once('auth.php');
                         ?>
                         <tr>
                             <td colspan="9" style="text-align: right;"><b>Online:</b></td>
-                            <td colspan="1" style=""><b><?= number_format($total_online, 1) ?></b></td>
+                            <td colspan="1" style=""><b><?= number_format($total_online, 0) ?></b></td>
                         </tr>
                         <?php
                     }
