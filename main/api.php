@@ -32,7 +32,7 @@ function getTimeslotsForFlightDate() {
 
         $slot_time = $_POST['flight_date'] . ' ' . date("H:i:00", $tNow);
 
-        if(isset($_SESSION['CUSTOMER_ID'])) {
+        if(strpos(BASE_URL, $_SERVER['HTTP_HOST']) !== false || isset($_SESSION['CUSTOMER_ID'])) {
             $slot_timestamp = strtotime($slot_time);
             if ($current_timestamp > $slot_timestamp) {
                 $tNow = strtotime("+{$slot_increment} minutes", $tNow);
@@ -1048,7 +1048,7 @@ function askForGiveawayApproval() {
 
         $token = sha1(uniqid('g-'));
         $approve_link = sprintf('<a href="%smain/approve_giveaway.php?t=%s">Approve</a>', LOCAL_URL, $token);
-        $disapprove_link = sprintf('<a href="%smain/approve_giveaway.php?t=%s">Disapprove</a>', LOCAL_URL, $token);
+        $disapprove_link = sprintf('<a href="%smain/disapprove_giveaway.php?t=%s">Disapprove</a>', LOCAL_URL, $token);
 
         $sql = "INSERT INTO approval_requests(made_by, approved_by, token, status) 
                 VALUES (?, ?, ?, ?)";
