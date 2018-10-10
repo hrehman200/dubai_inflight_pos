@@ -1051,7 +1051,7 @@ function askForGiveawayApproval() {
         $customer = $result->fetch();
 
         $result = $db->prepare('SELECT offer_name FROM flight_offers WHERE id=?');
-        $result->execute([$_POST['customerId']]);
+        $result->execute([$_POST['offerId']]);
         $offer = $result->fetch();
 
         $token = sha1(uniqid('g-'));
