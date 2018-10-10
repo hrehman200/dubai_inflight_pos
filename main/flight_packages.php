@@ -152,41 +152,4 @@ $position = $_SESSION['SESS_LAST_NAME'];
 </style>
 
 <script type="text/javascript">
-    $('.btnInternalPackages').on('click', function(e) {
-        if($(this).data('package') == 'Giveaways') {
-            e.preventDefault();
-
-            bootbox.prompt({
-                title: "Select manager to get approval from!",
-                inputType: 'select',
-                inputOptions: [
-                    {
-                        text: 'Carlos',
-                        value: '4',
-                    },
-                    {
-                        text: 'Freedy',
-                        value: '16',
-                    }
-                ],
-                callback: function (userId) {
-                    $.ajax({
-                        url: 'api.php',
-                        method: 'POST',
-                        data: {
-                            'call': 'askForGiveawayApproval',
-                            'userId': userId,
-                        },
-                        dataType: 'json',
-                        success: function (response) {
-                            if (response.success == 1) {
-                                alert(response.msg);
-                            }
-                        }
-                    });
-                }
-            });
-
-        }
-    });
 </script>

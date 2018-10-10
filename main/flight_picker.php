@@ -102,7 +102,12 @@
 <?php
 $position = $_SESSION['SESS_LAST_NAME'];
 
-
+if(isset($_GET['customer_id'])) {
+    $query = $db->prepare('SELECT TRIM(customer_name) AS customer_name FROM customer WHERE customer_id = ?');
+    $query->execute([$_GET['customer_id']]);
+    $customer = $query->fetch(PDO::FETCH_ASSOC);
+    $_GET['customer_name'] = $customer['customer_name'];
+}
 ?>
 
 <div class="container-fluid">
@@ -177,7 +182,7 @@ $position = $_SESSION['SESS_LAST_NAME'];
 
                 <?php
                 // for giveaways, make sure operator has the valid token
-                if($row['package_name'] == 'Giveaways') {
+                if($row['package_name'] == 'Giveaways' && isset($_GET['t'])) {
                     $query = $db->prepare('SELECT * FROM approval_requests WHERE token = ? AND status = ?');
                     $query->execute([$_GET['t'], GIVEAWAY_APPROVAL_APPROVED]);
                     if ($query->rowCount() == 0) {
@@ -462,9 +467,12 @@ $position = $_SESSION['SESS_LAST_NAME'];
     </div>
 </div>
 
+<div class="loading-gif" style="display: none;"></div>
 </body>
 
 <script type="text/javascript">
+
+    let urlParams = new URLSearchParams(window.location.search);
 
     var _setMinutes = function() {
         var minutes = $('#flightOffer').find('option:selected').data('duration');
@@ -523,6 +531,50 @@ $position = $_SESSION['SESS_LAST_NAME'];
         onSelect: function(item) {
             $('#customerId').val(item.value);
             _getCustomerBookings(item.value);
+
+            if(!urlParams.has('t')) {
+                bootbox.prompt({
+                    title: "Select manager to get approval of package<br/><hr/> " + $('#flightOffer option:selected').text() + " <br/> " + $('#customer').val(),
+                    inputType: 'select',
+                    inputOptions: [
+                        {
+                            text: 'Select...',
+                            value: '',
+                        },
+                        {
+                            text: 'Carlos',
+                            value: '4',
+                        },
+                        {
+                            text: 'Freedy',
+                            value: '16',
+                        }
+                    ],
+                    callback: function (userId) {
+                        $('.loading-gif').show();
+                        if (userId > 0) {
+                            $.ajax({
+                                url: 'api.php',
+                                method: 'POST',
+                                data: {
+                                    'call': 'askForGiveawayApproval',
+                                    'userId': userId,
+                                    'customerId': $('#customerId').val(),
+                                    'offerId': $('#flightOffer').val()
+                                },
+                                dataType: 'json',
+                                success: function (response) {
+                                    $('.loading-gif').hide();
+                                    if (response.success == 1) {
+                                        alert(response.msg);
+                                        window.location.href = 'flight_packages.php';
+                                    }
+                                }
+                            });
+                        }
+                    }
+                });
+            }
         },
         ajax: {
             url: "api.php",
@@ -1248,6 +1300,9 @@ $position = $_SESSION['SESS_LAST_NAME'];
 
     $('.discountPercent').on('change', _onDiscountPercentChange);
 
+    if(urlParams.has('flight_offer_id')) {
+        $('#flightOffer').val(urlParams.get('flight_offer_id'));
+    }
 
 </script>
 

@@ -1046,18 +1046,26 @@ function askForGiveawayApproval() {
         $result->execute([$_POST['userId']]);
         $row = $result->fetch();
 
+        $result = $db->prepare('SELECT customer_name FROM customer WHERE customer_id=?');
+        $result->execute([$_POST['customerId']]);
+        $customer = $result->fetch();
+
+        $result = $db->prepare('SELECT offer_name FROM flight_offers WHERE id=?');
+        $result->execute([$_POST['customerId']]);
+        $offer = $result->fetch();
+
         $token = sha1(uniqid('g-'));
         $approve_link = sprintf('<a href="%smain/approve_giveaway.php?t=%s">Approve</a>', LOCAL_URL, $token);
         $disapprove_link = sprintf('<a href="%smain/disapprove_giveaway.php?t=%s">Disapprove</a>', LOCAL_URL, $token);
 
-        $sql = "INSERT INTO approval_requests(made_by, approved_by, token, status) 
-                VALUES (?, ?, ?, ?)";
+        $sql = "INSERT INTO approval_requests(made_by, approved_by, token, status, flight_offer_id, customer_id) 
+                VALUES (?, ?, ?, ?, ?, ?)";
         $query = $db->prepare($sql);
-        $query->execute([$_SESSION['SESS_MEMBER_ID'], $_POST['userId'], $token, GIVEAWAY_APPROVAL_PENDING]);
+        $query->execute([$_SESSION['SESS_MEMBER_ID'], $_POST['userId'], $token, GIVEAWAY_APPROVAL_PENDING, $_POST['offerId'], $_POST['customerId']]);
 
         $body = '<div>
             <img src="' . BASE_URL . 'main/img/inflight_logo.png" width="200" />
-            <p>An approval request for giveaway flight has been made. Please respond: </p>
+            <p>An approval request for giveaway flight of package <b>'.$offer['offer_name'].'</b> has been made for customer <b>'.$customer['customer_name'].'</b>. Please respond: </p>
             <p>' . $approve_link . '&nbsp;'.$disapprove_link.'</p>
         </div>';
         $response = sendEmail($row['email'], 'Approval Request for Giveaway', $body);

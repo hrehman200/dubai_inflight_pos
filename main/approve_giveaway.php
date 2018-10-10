@@ -19,8 +19,8 @@ include('header.php');
             $query->execute([$row['made_by']]);
             $user = $query->fetch();
 
-            $link = sprintf('<a href="%smain/flight_picker.php?pkg_id=%d&invoice=%s&t=%s">Proceed to Giveaway</a>',
-                LOCAL_URL, 16, 'RS-' . createRandomPassword(), $row['token']);
+            $link = sprintf('<a href="%smain/flight_picker.php?pkg_id=%d&invoice=%s&t=%s&flight_offer_id=%d&customer_id=%d">Proceed to Giveaway</a>',
+                LOCAL_URL, 16, 'RS-' . createRandomPassword(), $row['token'], $row['flight_offer_id'], $row['customer_id']);
             $body = '<div>
                 <img src="' . BASE_URL . 'main/img/inflight_logo.png" width="200" />
                 <p>The approval request you made has been granted. Please go to the following link for giveaways: </p>
