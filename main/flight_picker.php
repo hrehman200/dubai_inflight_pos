@@ -532,7 +532,7 @@ if(isset($_GET['customer_id'])) {
             $('#customerId').val(item.value);
             _getCustomerBookings(item.value);
 
-            if(!urlParams.has('t')) {
+            if(!urlParams.has('t') && urlParams.get('pkg_id') == 16) {
                 bootbox.prompt({
                     title: "Select manager to get approval of package<br/><hr/> " + $('#flightOffer option:selected').text() + " <br/> " + $('#customer').val(),
                     inputType: 'select',
@@ -571,6 +571,8 @@ if(isset($_GET['customer_id'])) {
                                     }
                                 }
                             });
+                        } else {
+                            window.location.href = window.location.href;
                         }
                     }
                 });
@@ -676,7 +678,7 @@ if(isset($_GET['customer_id'])) {
 
     $("#datePicker").datepicker({
         format: 'yyyy-mm-dd',
-        startDate: new Date()
+        /*startDate: new Date()*/
     }).on('changeDate', function(e) {
         var pickedDate = $("#datePicker").data('datepicker').getFormattedDate('yyyy-mm-dd');
         $('#flightDate').val(pickedDate);
