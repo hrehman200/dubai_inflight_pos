@@ -465,6 +465,18 @@ function getFlightOffer($flight_offer_id) {
 }
 
 /**
+ * @param $flight_purchase_id
+ * @return bool|mixed
+ */
+function getFlightPurchase($flight_purchase_id) {
+    global $db;
+    $query = $db->prepare('SELECT * FROM flight_purchases WHERE id=? LIMIT 1');
+    $query->execute([$flight_purchase_id]);
+    $row = $query->fetch(PDO::FETCH_ASSOC);
+    return $row;
+}
+
+/**
  * @param $discounted_amount
  * @param $invoice_no
  * @param $saving_flight
@@ -1048,6 +1060,36 @@ function getMerchandiseRevenue($product_name, $date1, $date2) {
 
     $arr2 = [[
         'package_name' => $product_name == 'Video' ? 'Videos/Photos' : $product_name,
+        'paid' => $row['paid'],
+        'aed_value' => $row['paid']
+    ]];
+
+    return $arr2;
+}
+
+/**
+ * @param $product_name
+ * @param $date1
+ * @param $date2
+ * @return array
+ */
+function getOtherRevenue($product_name, $date1, $date2) {
+    global $db;
+
+    $others = ['"Facility Rental"', '"Sandstorm Registration Fee"'];
+    $sql = sprintf('SELECT SUM(so.amount - (so.discount * so.amount / 100)) AS paid
+                        FROM sales s
+                        INNER JOIN sales_order so ON s.invoice_number = so.invoice
+                        WHERE 
+                        (so.name IN (%s))
+                        AND (s.date >= ? AND s.date <= ?)
+                        AND so.invoice != ""', implode(',', $others));
+    $query = $db->prepare($sql);
+    $query->execute([$date1, $date2]);
+    $row = $query->fetch(PDO::FETCH_ASSOC);
+
+    $arr2 = [[
+        'package_name' => $product_name,
         'paid' => $row['paid'],
         'aed_value' => $row['paid']
     ]];

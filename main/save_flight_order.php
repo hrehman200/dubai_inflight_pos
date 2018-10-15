@@ -41,6 +41,13 @@ if ($_POST['useBalance'] == 1 && $_POST['useCredit'] == 0) {
 } else {
 
     if ($flight_purchase_id > 0) {
+
+        // if we are deducting from credit (from same purchase)
+        $fp = getFlightPurchase($flight_purchase_id);
+        if($fp['deduct_from_balance'] == 2) {
+            updateCustomerCredits($customer_id, $flight_duration);
+        }
+
         insertFlightBooking($flight_purchase_id, $flight_time, $flight_duration);
 
     } else {
