@@ -121,8 +121,8 @@ include('header.php');
                             $arr2 = getDataAndAggregate('Groupon', $_GET['d1'], $_GET['d2']);
                             $arr_ftf = array_merge($arr_ftf, $arr2);
 
-                            /** COUPON */
-                            $arr2 = getDataAndAggregate('Coupon', $_GET['d1'], $_GET['d2']);
+                            /** COBONE */
+                            $arr2 = getDataAndAggregate('Cobone', $_GET['d1'], $_GET['d2']);
                             $arr_ftf = array_merge($arr_ftf, $arr2);
 
                             /** EMIRATES AIRLINE */

@@ -748,6 +748,9 @@ function isTimeInsideSearchedDate($flight_time, $date1, $date2) {
  * @return string
  */
 function getQuery($package_name, $sale_date_check = true) {
+
+    global $_FTF_DISCOUNTS;
+
     if($package_name == 'Skydivers' || $package_name == 'FTF' || $package_name == 'RF - Repeat Flights' || $package_name == 'FT - Upsale') {
         $join_with_discount = 'LEFT JOIN discounts d ON fp1.discount_id = d.id OR fp1.discount_id = 0';
     } else {
@@ -755,7 +758,7 @@ function getQuery($package_name, $sale_date_check = true) {
     }
 
     // if FTF OR one of the discounts of FTF
-    if($package_name == 'FTF' || in_array($package_name, ['Alpha', 'Discovery Way', 'Arooha', 'Desert Gate', 'JustDo', 'Highway', 'Groupon', 'Coupon', 'Emirates Airline'])) {
+    if($package_name == 'FTF' || in_array($package_name, $_FTF_DISCOUNTS)) {
         $package_check = " fpkg.package_name LIKE 'FTF%'";
 
     } else if($package_name == 'RF - Repeat Flights') {
@@ -850,7 +853,7 @@ function getQuery($package_name, $sale_date_check = true) {
                  AND d.category NOT LIKE 'Navy Seal%'
                  AND d.category NOT LIKE 'Groupon%'";
 
-    } else if(in_array($package_name, ['Alpha', 'Discovery Way', 'Arooha', 'Desert Gate', 'JustDo', 'Highway', 'Groupon', 'Coupon', 'Emirates Airline'])){
+    } else if(in_array($package_name, $_FTF_DISCOUNTS)){
         $sql .= "AND d.category LIKE '{$package_name}%'";
 
     } else if($package_name == NAVY_SEAL){
