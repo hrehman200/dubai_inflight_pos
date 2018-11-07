@@ -284,8 +284,9 @@ include('navfixed.php');
                             customer c1 ON s1.customer_id = c1.customer_id
                         )
                           ) result
-                        WHERE result.transaction_date >= :startDate AND result.transaction_date <= :endDate
-                        AND (result.customer_name != 'FDR' OR result.customer_name IS NULL)
+                        WHERE 
+                          ((result.transaction_date >= :startDate AND result.transaction_date <= :endDate) OR (result.flight_time >= :startDate AND result.flight_time <= :endDate))
+                        AND ((result.customer_name != 'FDR' AND customer_name != 'MAINTENANCE' AND  customer_name != 'inflight_staff_flying')   OR result.customer_name IS NULL)
                         ORDER BY
                           result.transaction_date DESC, result.invoice_number";
 
@@ -369,7 +370,12 @@ include('navfixed.php');
                                 $remaining_units = $row['total_quantity'] - $units_consumed;
                             }
 
-                            if($row['sale_type'] == 'Merchandise') {
+                            $is_flying_merchandise = (strpos($row['product_name'], 'Helmet Rent') !== false ||
+                                strpos($row['product_name'], 'Video') !== false ||
+                                strpos($row['product_name'], 'Photo') !== false
+                            );
+
+                            if($row['sale_type'] == 'Merchandise' || $is_flying_merchandise) {
                                 $unit_price = round($row['unit_price'], 2);
                             } else if($row['class_people'] > 0 && $booking_duration == 0) {
                                 $unit_price = CLASS_SESSION_COST;
