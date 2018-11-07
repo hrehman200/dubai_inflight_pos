@@ -37,6 +37,8 @@ $offer_to_groupon_map = [
     136 => 48
 ];
 
+$_FTF_DISCOUNTS = ['Alpha', 'Discovery Way', 'Arooha', 'Desert Gate', 'JustDo', 'Highway', 'Groupon', 'Cobone', 'Emirates Airline'];
+
 /**
  * @param $customer_id
  * @param $flight_purchase_id
@@ -758,7 +760,8 @@ function getQuery($package_name, $sale_date_check = true) {
     }
 
     // if FTF OR one of the discounts of FTF
-    if($package_name == 'FTF' || in_array($package_name, $_FTF_DISCOUNTS)) {
+    $package_check = '';
+    if($package_name == 'FTF' /*|| in_array($package_name, $_FTF_DISCOUNTS)*/) {
         $package_check = " fpkg.package_name LIKE 'FTF%'";
 
     } else if($package_name == 'RF - Repeat Flights') {
@@ -767,7 +770,7 @@ function getQuery($package_name, $sale_date_check = true) {
     } else if($package_name == 'FT - Upsale') {
         $package_check = " fp1.flight_offer_id IN (84, 97, 98, 99, 100, 101, 102, 103, 104, 105, 116)";
 
-    } else {
+    } else if(!in_array($package_name, $_FTF_DISCOUNTS)) {
         $package_check = " (fpkg.id IN (6, 8)";
         if($package_name == 'Military') { // we need to check whether for RF, military discount is given, in which case RF will come in Military
             $package_check .= " OR fpkg.package_name LIKE 'RF - Repeat Flights%'
@@ -775,6 +778,10 @@ function getQuery($package_name, $sale_date_check = true) {
 
         }
         $package_check .= ')';
+    }
+
+    if($package_check != '') {
+        $package_check .= ' AND ';
     }
 
     if($sale_date_check) {
@@ -826,7 +833,7 @@ function getQuery($package_name, $sale_date_check = true) {
                         %s
                         WHERE
                             %s 
-                            AND(
+                            (
                                 s1.mode_of_payment IN(
                                     'Cash',
                                     'Card',
@@ -849,15 +856,23 @@ function getQuery($package_name, $sale_date_check = true) {
                             ) ", $join_with_discount, $package_check, $date_check);
 
     if($package_name == 'Skydivers' || $package_name == 'FTF' || $package_name == 'RF - Repeat Flights' || $package_name == 'FT - Upsale') {
+
+        $ftf_discount_check = '';
+        foreach($_FTF_DISCOUNTS as $ftf_discount) {
+            $ftf_discount_check .= "AND d.category NOT LIKE '" . $ftf_discount . "%'";
+        }
+
         $sql .= "AND d.category NOT IN ('Presidential Guard', 'Navy Seal', 'Military', 'Sky god%') 
                  AND d.category NOT LIKE 'Navy Seal%'
-                 AND d.category NOT LIKE 'Groupon%'";
+                 AND d.category NOT LIKE 'Groupon%'
+                 ".$ftf_discount_check;
 
     } else if(in_array($package_name, $_FTF_DISCOUNTS)){
         $sql .= "AND d.category LIKE '{$package_name}%'";
 
     } else if($package_name == NAVY_SEAL){
         $sql .= "AND d.category LIKE 'Navy Seal%'";
+
     } else if($package_name == 'Military'){ // so that military discounts given to RF can be included in Military
         $sql .= "AND (
                     (
@@ -889,7 +904,7 @@ function getQuery($package_name, $sale_date_check = true) {
  * @return array
  */
 function getDataAndAggregate($package_name, $start_date, $end_date) {
-    global $db;
+    global $db, $_FTF_DISCOUNTS;
 
     $sql_w_sale_date = getQuery($package_name);
     $result = $db->prepare($sql_w_sale_date);
