@@ -111,7 +111,6 @@ include('header.php');
                                 WHERE DATE(fb1.flight_time) >= ? AND DATE(fb1.flight_time) <= ?
                                 AND customer_name NOT IN ('inflight staff flying', 'FDR', 'Maintenance', 'Training Inflight', 'Blocked for special things')
                                 AND package_name NOT IN ('FDR', 'Marketing', 'Giveaways', 'Staff Flying')";
-                                //AND d.category NOT IN ('Staff Flying')";
 
                             $sql .= " ORDER BY fb1.flight_time ASC";
 
@@ -175,7 +174,7 @@ include('header.php');
                                         <td><?= $row['code'] ?></td>
                                         <td><?= $row['offer_name'] ?></td>
                                         <td><?= $row['duration'] ?></td>
-                                        <td><?= number_format(round($current_price, 2));?></td>
+                                        <td><?= number_format($current_price, 2);?></td>
                                         <td><?= $pre_2018_vat ?>
                                         </td>
                                     </tr>
@@ -185,7 +184,7 @@ include('header.php');
                                 <tr>
                                     <td colspan="7" style="text-align:right; padding-right: 50px;"><b>Total:</b></td>
                                     <td><b><?=number_format($total_minutes)?></b></td>
-                                    <td><b><?=number_format($total_price)?></b></td>
+                                    <td><b><?=number_format($total_price, 2)?></b></td>
                                     <td></td>
                                 </tr>
                                 <?php

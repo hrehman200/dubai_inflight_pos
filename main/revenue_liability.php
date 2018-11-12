@@ -217,7 +217,7 @@ include('header.php');
                             ?>
                             <tr class="<?=$row['package_name']=='Military'||$row['package_name']=='FTF'?'clickable-row':''?>" data-page-type="<?=strtolower($row['package_name'])?>">
                                 <td><b><?= $display_title  ?></b></td>
-                                <td><?= number_format($row['paid'], 1) ?></td>
+                                <td><?= number_format($row['paid']) ?></td>
                                 <td><?= number_format($row['total_minutes']) ?></td>
                                 <td><?= number_format($row['minutes_used']) ?></td>
                                 <td><?
@@ -243,7 +243,7 @@ include('header.php');
                         ?>
                         <tr>
                             <td><b>Total:</b></td>
-                            <td><b><?= number_format(array_sum(array_column($arr_revenue, 'paid')), 1) ?></b></td>
+                            <td><b><?= number_format(array_sum(array_column($arr_revenue, 'paid'))) ?></b></td>
                             <td><b><?= number_format(array_sum(array_column($arr_revenue, 'total_minutes'))) ?></b></td>
                             <td><b><?= number_format(array_sum(array_column($arr_revenue, 'minutes_used'))) ?></b></td>
                             <td><b><?
