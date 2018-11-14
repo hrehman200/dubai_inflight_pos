@@ -1,0 +1,1 @@
+ALTER TABLE `business_plan_entities` CHANGE `target_table` `gl_code` VARCHAR(255) CHARACTER SET latin1 COLLATE latin1_bin NOT NULL;

@@ -30,8 +30,9 @@ if(isset($_FILES['csvFile']) && $_FILES['csvFile']['error'] == 0){
 
                         } else if($data[0] != '') {
                             $entity_name = $data[0];
+                            $gl_code = $data[1];
                             for ($col = 2; $col <= 13; $col++) {
-                                $entity_id = getBusinessEntityId($entity_name, $parent_entity_id);
+                                $entity_id = getBusinessEntityId($entity_name, $parent_entity_id, $gl_code);
                                 $month = date("M", mktime(0, 0, 0, $col - 1, 10));
                                 updateBusinessEntityValue($entity_id, $year, $month, $data[$col]);
                             }
@@ -155,8 +156,22 @@ if(isset($_FILES['csvFile']) && $_FILES['csvFile']['error'] == 0){
                     $start_end_dates[] = getStartEndDateFromMonthYear($year, $m);
                 }
                 $year_start_date    = "{$year}-01-01";
-                $year_end_date      = "{$year}-12-31";
+                $year_end_date      = "{$year}-12-30";
 
+                function getPurchaseOfEntityInMonthYear($gl_code, $entity_name, $month, $year) {
+                    global $db, $all_months;
+
+                    $month_index = array_search($month, $all_months) + 1;
+
+                    $query = "SELECT SUM(invoice_amount) AS amount FROM purchases 
+                      WHERE gl != '' 
+                        AND (gl = ? OR item_name = ?)
+                        AND MONTH(date) = ? AND YEAR(date) = ?";
+                    $result = $db->prepare($query);
+                    $result->execute([$gl_code, $entity_name, $month_index, $year]);
+                    $row = $result->fetch(PDO::FETCH_ASSOC);
+                    return round($row['amount'], 2);
+                }
 
                 function getFYEstimatedForEntity($entity_name, $entity_id = null) {
 
@@ -291,12 +306,12 @@ if(isset($_FILES['csvFile']) && $_FILES['csvFile']['error'] == 0){
                 <tbody>
                 <?php
 
-                function getMonthValue($needle, $arr) {
+                function getMonthRow($needle, $arr) {
                     $index = array_search($needle, array_map(function ($v) {
                         return $v['month'];
                     }, $arr));
 
-                    return $index !== false ? $arr[$index]['value'] : 0;
+                    return $index !== false ? $arr[$index] : 0;
                 }
 
                 function getNPercentOf($n, $total) {
@@ -305,7 +320,7 @@ if(isset($_FILES['csvFile']) && $_FILES['csvFile']['error'] == 0){
 
                 $stmt_merchandise = $db->prepare("SELECT * FROM business_plan_entities WHERE parent_id = 0");
                 $stmt_merchandise->execute();
-                while ($row = $stmt_merchandise->fetch()) {
+                while ($row = $stmt_merchandise->fetch(PDO::FETCH_ASSOC)) {
                     ?>
                     <tr class="rowParent">
                         <td>
@@ -326,7 +341,7 @@ if(isset($_FILES['csvFile']) && $_FILES['csvFile']['error'] == 0){
                         <td></td>
                     </tr>
                     <?php
-                    $sql     = "SELECT bpe.id, bpe.parent_id, bpe.name, bpy.month, bpy.value
+                    $sql     = "SELECT bpe.id, bpe.parent_id, bpe.name, bpe.gl_code, bpy.month, bpy.year, bpy.value
                       FROM business_plan_entities bpe
                       LEFT JOIN business_plan_yearly bpy ON bpy.business_plan_entity_id = bpe.id AND bpy.year = :years
                       WHERE bpe.parent_id = :parentId";
@@ -338,12 +353,17 @@ if(isset($_FILES['csvFile']) && $_FILES['csvFile']['error'] == 0){
                     $result2->execute($arr);
 
                     $arr_to_display = array();
-                    while ($row2 = $result2->fetch()) {
+                    while ($row2 = $result2->fetch(PDO::FETCH_ASSOC)) {
+
+                        $actual = getPurchaseOfEntityInMonthYear($row2['gl_code'], $row2['name'], $row2['month'], $row2['year']);
+
                         $arr_to_display[$row2['name']][] = array(
                             'month'     => $row2['month'],
                             'value'     => $row2['value'],
                             'id'        => $row2['id'],
-                            'parent_id' => $row2['parent_id']
+                            'parent_id' => $row2['parent_id'],
+                            'gl_code'   => $row2['gl_code'],
+                            'actual_value' => $actual
                         );
                     }
 
@@ -356,22 +376,27 @@ if(isset($_FILES['csvFile']) && $_FILES['csvFile']['error'] == 0){
 
                             <?php
                             for($i=0; $i<count($months); $i++) {
+                                $month_row = getMonthRow($months[$i], $arr_monthwise_data);
                                 ?>
                                 <td class="budget">
-                                    <?= getMonthValue($months[$i], $arr_monthwise_data) ?>
+                                    <?= $month_row['value'] ?>
                                 </td>
                                 <td class="actual">
                                     <?php
-                                    switch ($entity_name) {
-                                        case 'Merchandise':
-                                            if ($is_cogs) {
-                                                echo getNPercentOf(30, $arr_merhandise[$i]);
-                                            } else {
-                                                echo $arr_merhandise[$i];
-                                            }
-                                            break;
-                                        default:
-                                            echo $arr_values[$entity_name][$i];
+                                    if($month_row['gl_code'] > 0) {
+                                        echo $month_row['actual_value'];
+                                    } else {
+                                        switch ($entity_name) {
+                                            case 'Merchandise':
+                                                if ($is_cogs) {
+                                                    echo getNPercentOf(30, $arr_merhandise[$i]);
+                                                } else {
+                                                    echo $arr_merhandise[$i];
+                                                }
+                                                break;
+                                            default:
+                                                echo $arr_values[$entity_name][$i];
+                                        }
                                     }
                                     ?>
                                 </td>

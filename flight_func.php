@@ -651,9 +651,10 @@ function getParentEntityId($entity) {
 /**
  * @param $entity
  * @param $parent_entity_id
+ * @param $gl_code
  * @return int
  */
-function getBusinessEntityId($entity, $parent_entity_id) {
+function getBusinessEntityId($entity, $parent_entity_id, $gl_code) {
     global $db;
 
     $query = $db->prepare('SELECT id FROM business_plan_entities WHERE name = ?');
@@ -663,8 +664,8 @@ function getBusinessEntityId($entity, $parent_entity_id) {
         return $row['id'];
 
     } else {
-        $query = $db->prepare("INSERT INTO business_plan_entities(parent_id, name) VALUES(?, ?)");
-        $query->execute([$parent_entity_id, $entity]);
+        $query = $db->prepare("INSERT INTO business_plan_entities(parent_id, name, gl_code) VALUES(?, ?, ?)");
+        $query->execute([$parent_entity_id, $entity, $gl_code]);
         return $db->lastInsertId();
     }
 }
@@ -1029,6 +1030,8 @@ function getDataAndAggregate($package_name, $start_date, $end_date) {
         $package_name = 'US Navy';
     }
 
+    $aed_value = $total_purchased_cost + $total_credit_cost + $total_credit_from_purchased_cost;
+
     $arr2 = [[
         'package_name' => $package_name,
         'paid' => $paid,
@@ -1036,8 +1039,8 @@ function getDataAndAggregate($package_name, $start_date, $end_date) {
         'minutes_used' => $minutes_used,
         'credit_used' => $credit_used,
         'purchased_minutes_used' => $purchased_minutes_used,
-        'aed_value' => $total_purchased_cost + $total_credit_cost + $total_credit_from_purchased_cost,
-        'avg_per_min' => ($minutes_used>0) ? ($total_purchased_cost + $total_credit_cost + $total_credit_from_purchased_cost) / $minutes_used : 0
+        'aed_value' => $aed_value,
+        'avg_per_min' => ($minutes_used>0) ? ($aed_value) / $minutes_used : 0
     ]];
 
     return $arr2;
