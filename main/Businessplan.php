@@ -290,6 +290,7 @@ if(isset($_FILES['csvFile']) && $_FILES['csvFile']['error'] == 0){
                 <tr>
                     <th>
                     </th>
+                    <th>GL Code</th>
                     <?php
                     foreach($months as $m) {
                         ?>
@@ -328,6 +329,7 @@ if(isset($_FILES['csvFile']) && $_FILES['csvFile']['error'] == 0){
                                 +
                             </button>
                             <b><span><?= $row['name'] ?></span></b></td>
+                        <td></td>
                         <?php
                         foreach($months as $m) {
                             ?>
@@ -373,7 +375,7 @@ if(isset($_FILES['csvFile']) && $_FILES['csvFile']['error'] == 0){
                         ?>
                         <tr class="row_<?= $arr_monthwise_data[0]['parent_id'] ?>">
                             <td><?= $entity_name ?></td>
-
+                            <td><?= $arr_monthwise_data[0]['gl_code']?></td>
                             <?php
                             for($i=0; $i<count($months); $i++) {
                                 $month_row = getMonthRow($months[$i], $arr_monthwise_data);
