@@ -255,35 +255,8 @@ if(isset($_FILES['csvFile']) && $_FILES['csvFile']['error'] == 0){
 
                 $arr_values = [];
 
-                // --------------- FTF ----------------
-                foreach($months as $m) {
-                    $arr_values['FTF'][] = getFlightSaleForMonth('FTF', $m, $year);
-                }
-                $arr_values['FTF']['total'] = getFlightSaleForYear('FTF', $year);
-                $arr_values['FTF']['totalEstimated'] = getFYEstimatedForEntity('FTF');
-
                 // --------------- COGS Merchandise ----------------
                 $fy_estimated_merchandise_cogs = getFYEstimatedForEntity(null, 24);
-
-                // --------------- SKyDivers ----------------
-                foreach($months as $m) {
-                    $arr_values['Skydivers'][] = getFlightSaleForMonth('Skydivers', $m, $year);
-                }
-                $arr_values['Skydivers']['total'] = getFlightSaleForYear('Skydivers', $year);
-                $arr_values['Skydivers']['totalEstimated'] = getFYEstimatedForEntity('SkyDivers');
-
-                // Presidential Guard
-                for($i=0; $i<count($start_end_dates); $i++) {
-                    $arr_values[PRESIDENTIAL_GUARD][] = getDataAndAggregate(PRESIDENTIAL_GUARD, $start_end_dates[$i]['start'], $start_end_dates[$i]['end'])[0]['paid'];
-                    $arr_values[NAVY_SEAL][] = getDataAndAggregate(NAVY_SEAL, $start_end_dates[$i]['start'], $start_end_dates[$i]['end'])[0]['paid'];
-                    $arr_values[MILITARY_INDIVIDUALS][] = getDataAndAggregate(MILITARY_INDIVIDUALS, $start_end_dates[$i]['start'], $start_end_dates[$i]['end'])[0]['paid'];
-                }
-                $arr_values[PRESIDENTIAL_GUARD]['total'] = getDataAndAggregate(PRESIDENTIAL_GUARD, $year_start_date, $year_end_date)[0]['paid'];
-                $arr_values[PRESIDENTIAL_GUARD]['totalEstimated'] = getFYEstimatedForEntity(PRESIDENTIAL_GUARD);
-                $arr_values[NAVY_SEAL]['total'] = getDataAndAggregate(NAVY_SEAL, $year_start_date, $year_end_date)[0]['paid'];
-                $arr_values[NAVY_SEAL]['totalEstimated'] = getFYEstimatedForEntity(NAVY_SEAL);
-                $arr_values[MILITARY_INDIVIDUALS]['total'] = getDataAndAggregate(MILITARY_INDIVIDUALS, $year_start_date, $year_end_date)[0]['paid'];
-                $arr_values[MILITARY_INDIVIDUALS]['totalEstimated'] = getFYEstimatedForEntity(MILITARY_INDIVIDUALS);
                 ?>
 
                 <thead id="tblHead">
@@ -383,7 +356,7 @@ if(isset($_FILES['csvFile']) && $_FILES['csvFile']['error'] == 0){
                                 <td class="budget">
                                     <?= $month_row['value'] ?>
                                 </td>
-                                <td class="actual">
+                                <td class="actual" data-entity="<?=$entity_name?>" data-month="<?=$months[$i]?>">
                                     <?php
                                     if($month_row['gl_code'] > 0) {
                                         echo $month_row['actual_value'];
@@ -397,7 +370,7 @@ if(isset($_FILES['csvFile']) && $_FILES['csvFile']['error'] == 0){
                                                 }
                                                 break;
                                             default:
-                                                echo $arr_values[$entity_name][$i];
+                                                echo '-'; //$arr_values[$entity_name][$i];
                                         }
                                     }
                                     ?>
@@ -456,6 +429,7 @@ if(isset($_FILES['csvFile']) && $_FILES['csvFile']['error'] == 0){
                     ?>
                     <tr class="rowTotal" data-parent-id="<?= $row['id'] ?>">
                         <td data-index="0"><b>Total</b></td>
+                        <td></td>
                         <?php
                         $count = 0;
                         for($i=0; $i<count($months)*2; $i+=2) {
@@ -650,7 +624,6 @@ if(isset($_FILES['csvFile']) && $_FILES['csvFile']['error'] == 0){
                     } else {
                         value = $(obj2).html();
                     }
-                    console.log(obj2);
                     value = Number(value);
                     sum += value;
                 });
@@ -665,7 +638,6 @@ if(isset($_FILES['csvFile']) && $_FILES['csvFile']['error'] == 0){
         .siblings().css('background-color', 'yellow');
 
     $('input[name="chkSheetFormat"]').on('change', function(e) {
-        console.log($(this).val());
         switch(Number($(this).val())) {
             case 1:
                 $('.budget').show();
@@ -693,4 +665,72 @@ if(isset($_FILES['csvFile']) && $_FILES['csvFile']['error'] == 0){
         }
     });
 
+    $('.actual').each(function(index) {
+
+        var item = $(this);
+        var entity = $(this).data('entity');
+        var month = $(this).data('month');
+        var year = $('#year').val();
+
+        if(typeof entity != 'undefined' && typeof month != 'undefined' && $(item).html().trim() == '-') {
+
+            $(item).html('<div class="spinner"></div>');
+
+            $.ajax({
+                url: 'api.php',
+                method: 'POST',
+                data: {
+                    'call': 'getBusinessPlanRevenueCellData',
+                    'entity': entity,
+                    'month': month,
+                    'year': year
+                },
+                dataType: 'json',
+                success: function (response) {
+                    console.log(response);
+                    if (response.success && response.data) {
+                        $(item).html(response.data);
+                    } else {
+                        $(item).html(0);
+                    }
+                },
+                error: function() {
+                    $(item).html(0);
+                }
+            });
+        }
+    });
+
 </script>
+
+<style>
+    .spinner {
+        width: 20px;
+        height: 20px;
+        margin: 1px;
+        background-color: #333;
+
+        border-radius: 100%;
+        -webkit-animation: sk-scaleout 1.0s infinite ease-in-out;
+        animation: sk-scaleout 1.0s infinite ease-in-out;
+    }
+
+    @-webkit-keyframes sk-scaleout {
+        0% { -webkit-transform: scale(0) }
+        100% {
+            -webkit-transform: scale(1.0);
+            opacity: 0;
+        }
+    }
+
+    @keyframes sk-scaleout {
+        0% {
+            -webkit-transform: scale(0);
+            transform: scale(0);
+        } 100% {
+              -webkit-transform: scale(1.0);
+              transform: scale(1.0);
+              opacity: 0;
+          }
+    }
+</style>

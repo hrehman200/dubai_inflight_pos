@@ -1112,4 +1112,30 @@ function verifyGroupon() {
     }
 }
 
+function getBusinessPlanRevenueCellData() {
+
+    $paid = 0;
+    $start_end_dates = getStartEndDateFromMonthYear($_POST['year'], $_POST['month']);
+    $start = $start_end_dates['start'];
+    $end = $start_end_dates['end'];
+
+    if(strtolower($_POST['entity']) == 'military individuals') {
+        $_POST['entity'] = 'Military';
+    }
+
+    if(in_array($_POST['entity'], [
+        'FTF',
+        'Skydivers',
+        'Navy Seals',
+        PRESIDENTIAL_GUARD,
+        'Military'
+    ])) {
+        $paid = getDataAndAggregate($_POST['entity'], $start, $end)[0]['paid'];
+
+    } else if(strpos($_POST['entity'], 'Video') !== false) {
+        $paid = getMerchandiseRevenue('Video', $start, $end)[0]['paid'];
+    }
+    echo json_encode(['success' => 1, 'data' => number_format($paid)]);
+}
+
 call_user_func($_POST['call']);

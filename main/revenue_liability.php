@@ -88,56 +88,8 @@ include('header.php');
 
                         } else {
                             $arr_revenue = [];
-                            $arr_ftf = [];
-                            /** FTF without discounts applied */
-                            $arr2 = getDataAndAggregate('FTF', $_GET['d1'], $_GET['d2']);
-                            $arr_ftf = array_merge($arr_ftf, $arr2);
 
-                            /** ALPHA */
-                            $arr2 = getDataAndAggregate('Alpha', $_GET['d1'], $_GET['d2']);
-                            $arr_ftf = array_merge($arr_ftf, $arr2);
-
-                            /** DISCOVERY WAY */
-                            $arr2 = getDataAndAggregate('Discovery Way', $_GET['d1'], $_GET['d2']);
-                            $arr_ftf = array_merge($arr_ftf, $arr2);
-
-                            /** AROOHA */
-                            $arr2 = getDataAndAggregate('Arooha', $_GET['d1'], $_GET['d2']);
-                            $arr_ftf = array_merge($arr_ftf, $arr2);
-
-                            /** DESERT GATE */
-                            $arr2 = getDataAndAggregate('Desert Gate', $_GET['d1'], $_GET['d2']);
-                            $arr_ftf = array_merge($arr_ftf, $arr2);
-
-                            /** JustDO */
-                            $arr2 = getDataAndAggregate('JustDO', $_GET['d1'], $_GET['d2']);
-                            $arr_ftf = array_merge($arr_ftf, $arr2);
-
-                            /** HIGHWAY */
-                            $arr2 = getDataAndAggregate('Highway', $_GET['d1'], $_GET['d2']);
-                            $arr_ftf = array_merge($arr_ftf, $arr2);
-
-                            /** GROUPON */
-                            $arr2 = getDataAndAggregate('Groupon', $_GET['d1'], $_GET['d2']);
-                            $arr_ftf = array_merge($arr_ftf, $arr2);
-
-                            /** COBONE */
-                            $arr2 = getDataAndAggregate('Cobone', $_GET['d1'], $_GET['d2']);
-                            $arr_ftf = array_merge($arr_ftf, $arr2);
-
-                            /** EMIRATES AIRLINE */
-                            $arr2 = getDataAndAggregate('Emirates Airline', $_GET['d1'], $_GET['d2']);
-                            $arr_ftf = array_merge($arr_ftf, $arr2);
-
-                            $arr_ftf_sum[0] = [
-                                'package_name' => 'FTF',
-                                'paid' => array_sum(array_column($arr_ftf, 'paid')),
-                                'total_minutes' => array_sum(array_column($arr_ftf, 'total_minutes')),
-                                'minutes_used' => array_sum(array_column($arr_ftf, 'minutes_used')),
-                                'aed_value' => array_sum(array_column($arr_ftf, 'aed_value')),
-                                'avg_per_min' => array_sum(array_column($arr_ftf, 'avg_per_min')),
-                            ];
-
+                            $arr_ftf_sum = getFTFRevenue($_GET['d1'], $_GET['d2']);
                             $arr_revenue = array_merge($arr_revenue, $arr_ftf_sum);
 
                             /** FT - Upsale */

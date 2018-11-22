@@ -1318,7 +1318,11 @@ function saveCustomerMonthlyLiability($customer_id, $month, $year, $minutes, $am
 
         if($pre_2018_minutes == null) {
             $pre_2018_minutes = 0;
+        }
+        if($pre_2018_amount == null) {
             $pre_2018_amount = 0;
+        }
+        if($pre_2018_minutes_used == null) {
             $pre_2018_minutes_used = 0;
         }
 
@@ -1390,7 +1394,7 @@ function getCustomerLiabilityForMonth($customer_id, $month) {
 
     $query = $db->prepare('SELECT fp.*, fo.duration FROM flight_purchases fp
                   INNER JOIN flight_offers fo ON fp.flight_offer_id = fo.id
-                  WHERE fp.created <= ? AND fp.customer_id = ?');
+                  WHERE fp.created >= "2018-01-01" AND fp.created <= ? AND fp.customer_id = ?');
     $query->execute([$end_date_of_month, $customer_id]);
     $result2 = $query->fetchAll(PDO::FETCH_ASSOC);
 
@@ -1416,6 +1420,7 @@ function getCustomerLiabilityForMonth($customer_id, $month) {
         }
 
         if($fp['deduct_from_balance'] != 2) {
+            // check here if the minutes used are from purchase of 2017...if yes then cut deduct from credit instead of 2017 purchase
             $minutes_used_from_purchase += $fb['minutes_used'];
             $minutes_used_from_purchase_cost += $cost_per_minute * $fb['minutes_used'];
         } else {
@@ -1428,4 +1433,58 @@ function getCustomerLiabilityForMonth($customer_id, $month) {
     $liability_minutes_cost = $purchased_minutes_cost - $minutes_used_from_purchase_cost;
 
     return [$liability_minutes, $liability_minutes_cost, $minutes_used_from_credit, $minutes_used_from_credit_cost];
+}
+
+function getFTFRevenue($start_date, $end_date) {
+    $arr_ftf = [];
+    /** FTF without discounts applied */
+    $arr2 = getDataAndAggregate('FTF', $start_date, $end_date);
+    $arr_ftf = array_merge($arr_ftf, $arr2);
+
+    /** ALPHA */
+    $arr2 = getDataAndAggregate('Alpha', $start_date, $end_date);
+    $arr_ftf = array_merge($arr_ftf, $arr2);
+
+    /** DISCOVERY WAY */
+    $arr2 = getDataAndAggregate('Discovery Way', $start_date, $end_date);
+    $arr_ftf = array_merge($arr_ftf, $arr2);
+
+    /** AROOHA */
+    $arr2 = getDataAndAggregate('Arooha', $start_date, $end_date);
+    $arr_ftf = array_merge($arr_ftf, $arr2);
+
+    /** DESERT GATE */
+    $arr2 = getDataAndAggregate('Desert Gate', $start_date, $end_date);
+    $arr_ftf = array_merge($arr_ftf, $arr2);
+
+    /** JustDO */
+    $arr2 = getDataAndAggregate('JustDO', $start_date, $end_date);
+    $arr_ftf = array_merge($arr_ftf, $arr2);
+
+    /** HIGHWAY */
+    $arr2 = getDataAndAggregate('Highway', $start_date, $end_date);
+    $arr_ftf = array_merge($arr_ftf, $arr2);
+
+    /** GROUPON */
+    $arr2 = getDataAndAggregate('Groupon', $start_date, $end_date);
+    $arr_ftf = array_merge($arr_ftf, $arr2);
+
+    /** COBONE */
+    $arr2 = getDataAndAggregate('Cobone', $start_date, $end_date);
+    $arr_ftf = array_merge($arr_ftf, $arr2);
+
+    /** EMIRATES AIRLINE */
+    $arr2 = getDataAndAggregate('Emirates Airline', $start_date, $end_date);
+    $arr_ftf = array_merge($arr_ftf, $arr2);
+
+    $arr_ftf_sum[0] = [
+        'package_name' => 'FTF',
+        'paid' => array_sum(array_column($arr_ftf, 'paid')),
+        'total_minutes' => array_sum(array_column($arr_ftf, 'total_minutes')),
+        'minutes_used' => array_sum(array_column($arr_ftf, 'minutes_used')),
+        'aed_value' => array_sum(array_column($arr_ftf, 'aed_value')),
+        'avg_per_min' => array_sum(array_column($arr_ftf, 'avg_per_min')),
+    ];
+    
+    return $arr_ftf_sum;
 }
