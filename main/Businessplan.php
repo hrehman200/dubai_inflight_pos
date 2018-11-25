@@ -109,7 +109,7 @@ if(isset($_FILES['csvFile']) && $_FILES['csvFile']['error'] == 0){
                 <select id="toMonth" name="toMonth">
                     <option>Jan</option>
                     <option>Feb</option>
-                    <option>Mar</option>
+                    <option selected>Mar</option>
                     <option>Apr</option>
                     <option>May</option>
                     <option>Jun</option>
@@ -207,20 +207,6 @@ if(isset($_FILES['csvFile']) && $_FILES['csvFile']['error'] == 0){
                         ':month' => $month,
                         ':year'  => $year
                     ));
-                    $row = $stmt->fetch();
-
-                    return round($row['amount'], 1);
-                }
-
-                function getFlightSaleForYear($offer_name, $year) {
-                    global $db, $month_placeholders, $all_months;
-                    $stmt = $db->prepare("SELECT SUM(s.amount) AS amount FROM sales s
-                        INNER JOIN flight_purchases fp ON s.invoice_number = fp.invoice_id
-                        INNER JOIN flight_offers fo ON fp.flight_offer_id = fo.id
-                        WHERE fo.offer_name LIKE '%" . $offer_name . "%'
-                        AND s.month IN ($month_placeholders)
-                        AND s.year = ?");
-                    $stmt->execute(array_merge($all_months, array($year)));
                     $row = $stmt->fetch();
 
                     return round($row['amount'], 1);
@@ -566,7 +552,7 @@ if(isset($_FILES['csvFile']) && $_FILES['csvFile']['error'] == 0){
 
 <script type="text/javascript">
 
-    $('#year, #fromMonth, #toMonth').on('change', function (e) {
+    $('#year, #toMonth').on('change', function (e) {
         $(e.target).parent().submit();
     });
 
@@ -674,7 +660,7 @@ if(isset($_FILES['csvFile']) && $_FILES['csvFile']['error'] == 0){
 
         if(typeof entity != 'undefined' && typeof month != 'undefined' && $(item).html().trim() == '-') {
 
-            $(item).html('<div class="spinner"></div>');
+            $(item).html('-');
 
             $.ajax({
                 url: 'api.php',
@@ -702,35 +688,3 @@ if(isset($_FILES['csvFile']) && $_FILES['csvFile']['error'] == 0){
     });
 
 </script>
-
-<style>
-    .spinner {
-        width: 20px;
-        height: 20px;
-        margin: 1px;
-        background-color: #333;
-
-        border-radius: 100%;
-        -webkit-animation: sk-scaleout 1.0s infinite ease-in-out;
-        animation: sk-scaleout 1.0s infinite ease-in-out;
-    }
-
-    @-webkit-keyframes sk-scaleout {
-        0% { -webkit-transform: scale(0) }
-        100% {
-            -webkit-transform: scale(1.0);
-            opacity: 0;
-        }
-    }
-
-    @keyframes sk-scaleout {
-        0% {
-            -webkit-transform: scale(0);
-            transform: scale(0);
-        } 100% {
-              -webkit-transform: scale(1.0);
-              transform: scale(1.0);
-              opacity: 0;
-          }
-    }
-</style>

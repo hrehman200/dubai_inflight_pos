@@ -1119,6 +1119,8 @@ function getBusinessPlanRevenueCellData() {
     $start = $start_end_dates['start'];
     $end = $start_end_dates['end'];
 
+    $entity_id = getBusinessEntityId($_POST['entity'], 0, '');
+
     if(strtolower($_POST['entity']) == 'military individuals') {
         $_POST['entity'] = 'Military';
     }
@@ -1130,10 +1132,18 @@ function getBusinessPlanRevenueCellData() {
         PRESIDENTIAL_GUARD,
         'Military'
     ])) {
-        $paid = getDataAndAggregate($_POST['entity'], $start, $end)[0]['paid'];
+
+        $paid = getBusinessEntityActualValue($entity_id, $_POST['year'], $_POST['month']);
+        if($paid <= 0) {
+            $paid = getDataAndAggregate($_POST['entity'], $start, $end)[0]['paid'];
+            updateBusinessEntityValue($entity_id, $_POST['year'], $_POST['month'], null, $paid);
+        }
 
     } else if(strpos($_POST['entity'], 'Video') !== false) {
         $paid = getMerchandiseRevenue('Video', $start, $end)[0]['paid'];
+
+    } else if(strpos($_POST['entity'], 'Block hours purchase') !== false) {
+        $paid = getFlightSaleViaDiscountName('Block hours', $start, $end);
     }
     echo json_encode(['success' => 1, 'data' => number_format($paid)]);
 }

@@ -674,22 +674,53 @@ function getBusinessEntityId($entity, $parent_entity_id, $gl_code) {
  * @param $entity_id
  * @param $year
  * @param $month
- * @param $value
+ * @return float|bool
  */
-function updateBusinessEntityValue($entity_id, $year, $month, $value) {
+function getBusinessEntityActualValue($entity_id, $year, $month) {
+    global $db;
+    $query = $db->prepare('SELECT actual FROM business_plan_yearly WHERE business_plan_entity_id = ? AND month = ? AND year = ?');
+    $query->execute([$entity_id, $month, $year]);
+    $start_end_dates = getStartEndDateFromMonthYear($year, $month);
+    // if row exists and its a row of THE PAST (i.e. we don't need to update it)
+    $end_timestamp = strtotime($start_end_dates['end']);
+    $now_timestamp = time();
+    if($query->rowCount() > 0 && $end_timestamp < $now_timestamp) {
+        $row = $query->fetch(PDO::FETCH_ASSOC);
+        return $row['actual'];
+    }
+    return false;
+}
+
+/**
+ * @param $entity_id
+ * @param $year
+ * @param $month
+ * @param $estimated_value float The value that is injected when we parse the yearly csv
+ * @param $actual_value float The value that is calculated and injected when we open business plan report
+ */
+function updateBusinessEntityValue($entity_id, $year, $month, $estimated_value, $actual_value = 0.0) {
     global $db;
 
     $query = $db->prepare('SELECT id FROM business_plan_yearly WHERE business_plan_entity_id = ? AND month = ? AND year = ?');
     $query->execute([$entity_id, $month, $year]);
     if($query->rowCount() > 0) {
-        $query = $db->prepare('UPDATE business_plan_yearly SET value = ? 
+
+        $arr = [$actual_value, $entity_id, $month, $year];
+        $set_string = '';
+        if($estimated_value != null) {
+            $set_string = 'value = ?,';
+            array_unshift($arr, $estimated_value);
+        }
+
+        $query = $db->prepare('UPDATE business_plan_yearly SET '.$set_string.' actual = ? 
           WHERE business_plan_entity_id = ? AND month = ? AND year = ?');
-        $query->execute([$value, $entity_id, $month, $year]);
+        $query->execute($arr);
 
     } else {
-        $query = $db->prepare("INSERT INTO business_plan_yearly(business_plan_entity_id, month, year, value) 
-          VALUES(?, ?, ?, ?)");
-        $query->execute([$entity_id, $month, $year, $value]);
+        // TODO:
+        $query = $db->prepare("INSERT INTO business_plan_yearly(business_plan_entity_id, month, year, value, actual) 
+          VALUES(?, ?, ?, ?, ?)");
+        $query->execute([$entity_id, $month, $year, $estimated_value, $actual_value]);
     }
 }
 
@@ -1487,4 +1518,23 @@ function getFTFRevenue($start_date, $end_date) {
     ];
     
     return $arr_ftf_sum;
+}
+
+/**
+ * @param $discount_name
+ * @param $start_date
+ * @param $end_date
+ * @return float
+ */
+function getFlightSaleViaDiscountName($discount_name, $start_date, $end_date) {
+    global $db;
+    $stmt = $db->prepare("SELECT SUM(s.amount) AS amount FROM sales s
+                        INNER JOIN flight_purchases fp ON s.invoice_number = fp.invoice_id
+                        INNER JOIN discounts d ON fp.discount_id = d.id
+                        WHERE d.category = ?
+                        AND s.date >= ? AND s.date <= ?");
+    $stmt->execute([$discount_name, $start_date, $end_date]);
+    $row = $stmt->fetch();
+
+    return round($row['amount'], 1);
 }
