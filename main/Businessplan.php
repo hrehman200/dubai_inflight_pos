@@ -415,10 +415,10 @@ if(isset($_FILES['csvFile']) && $_FILES['csvFile']['error'] == 0){
                     ?>
                     <tr class="rowTotal" data-parent-id="<?= $row['id'] ?>">
                         <td data-index="0"><b>Total</b></td>
-                        <td></td>
+                        <td data-index="1"></td>
                         <?php
-                        $count = 0;
-                        for($i=0; $i<count($months)*2; $i+=2) {
+                        $count = 1;
+                        for($i=$count; $i<count($months)*2; $i+=2) {
                             echo sprintf('<td data-index="%d" class="budget"></td>', $i+1);
                             echo sprintf('<td data-index="%d" class="actual"></td>', $i+2);
                             $count+=2;
@@ -559,6 +559,11 @@ if(isset($_FILES['csvFile']) && $_FILES['csvFile']['error'] == 0){
     $('#fromMonth').prop('selectedIndex', <?=$from_month_index?>);
     $('#toMonth').prop('selectedIndex', <?=$to_month_index?>);
 
+    var currentYear = '<?=date('Y')?>';
+    if($('#year').val() != currentYear) {
+        $('#year').val(currentYear);
+    }
+
     $('.btnParentRow').on('click', function (e) {
         var parentId = $(this).data('parent-id');
         $('.row_' + parentId).toggleClass('hidden');
@@ -597,7 +602,7 @@ if(isset($_FILES['csvFile']) && $_FILES['csvFile']['error'] == 0){
     var _recalculate = function () {
         $('.rowTotal td').each(function (index, obj) {
             var _index = $(this).data('index');
-            if (_index != 0) {
+            if (_index > 1) {
                 var rowTotal = $(this).parent();
                 var parentId = rowTotal.data('parent-id');
                 var prevRows = rowTotal.prevAll('.row_' + parentId);

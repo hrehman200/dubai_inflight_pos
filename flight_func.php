@@ -705,19 +705,22 @@ function updateBusinessEntityValue($entity_id, $year, $month, $estimated_value, 
     $query->execute([$entity_id, $month, $year]);
     if($query->rowCount() > 0) {
 
-        $arr = [$actual_value, $entity_id, $month, $year];
+        $arr = [$entity_id, $month, $year];
         $set_string = '';
         if($estimated_value != null) {
-            $set_string = 'value = ?,';
+            $set_string = 'value = ?';
             array_unshift($arr, $estimated_value);
+
+        } else if($actual_value != 0) {
+            $set_string .= 'actual = ?';
+            array_unshift($arr, $actual_value);
         }
 
-        $query = $db->prepare('UPDATE business_plan_yearly SET '.$set_string.' actual = ? 
-          WHERE business_plan_entity_id = ? AND month = ? AND year = ?');
+        $query = $db->prepare('UPDATE business_plan_yearly SET '.$set_string.' 
+           WHERE business_plan_entity_id = ? AND month = ? AND year = ?');
         $query->execute($arr);
 
     } else {
-        // TODO:
         $query = $db->prepare("INSERT INTO business_plan_yearly(business_plan_entity_id, month, year, value, actual) 
           VALUES(?, ?, ?, ?, ?)");
         $query->execute([$entity_id, $month, $year, $estimated_value, $actual_value]);

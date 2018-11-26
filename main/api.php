@@ -1119,28 +1119,41 @@ function getBusinessPlanRevenueCellData() {
     $start = $start_end_dates['start'];
     $end = $start_end_dates['end'];
 
+    if(strtotime($end) > time() && $end != date('Y-m-t')) {
+        echo json_encode(['success' => 1, 'data' => 0]);
+        return;
+    }
+
     $entity_id = getBusinessEntityId($_POST['entity'], 0, '');
 
     if(strtolower($_POST['entity']) == 'military individuals') {
         $_POST['entity'] = 'Military';
     }
 
+    if(strtolower($_POST['entity']) == 'navy seals') {
+        $_POST['entity'] = 'Navy Seal';
+    }
+
     if(in_array($_POST['entity'], [
         'FTF',
         'Skydivers',
-        'Navy Seals',
+        'Navy Seal',
         PRESIDENTIAL_GUARD,
         'Military'
     ])) {
 
         $paid = getBusinessEntityActualValue($entity_id, $_POST['year'], $_POST['month']);
         if($paid <= 0) {
-            $paid = getDataAndAggregate($_POST['entity'], $start, $end)[0]['paid'];
+            if($_POST['entity'] == 'FTF') {
+                $paid = getFTFRevenue($start, $end)[0]['aed_value'];
+            } else {
+                $paid = getDataAndAggregate($_POST['entity'], $start, $end)[0]['aed_value'];
+            }
             updateBusinessEntityValue($entity_id, $_POST['year'], $_POST['month'], null, $paid);
         }
 
     } else if(strpos($_POST['entity'], 'Video') !== false) {
-        $paid = getMerchandiseRevenue('Video', $start, $end)[0]['paid'];
+        $paid = getMerchandiseRevenue('Video', $start, $end)[0]['aed_value'];
 
     } else if(strpos($_POST['entity'], 'Block hours purchase') !== false) {
         $paid = getFlightSaleViaDiscountName('Block hours', $start, $end);
