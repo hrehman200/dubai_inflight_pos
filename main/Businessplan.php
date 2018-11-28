@@ -83,8 +83,8 @@ if(isset($_FILES['csvFile']) && $_FILES['csvFile']['error'] == 0){
                 <input type="hidden" name="monthIndex" id="monthIndex" value="<?= $_REQUEST['monthIndex'] ?>"/>
                 <select id="year" name="year">
                     <?php
-                    for ($year = 2017; $year <= 2027; $year++) {
-                        echo sprintf('<option %s>%d</option>', $_REQUEST['year'] == $year ? 'selected' : '', $year);
+                    for ($y = 2018; $y <= 2027; $y++) {
+                        echo sprintf('<option %s>%d</option>', $year == $y ? 'selected' : '', $y);
                     }
                     ?>
                 </select>
@@ -253,14 +253,14 @@ if(isset($_FILES['csvFile']) && $_FILES['csvFile']['error'] == 0){
                     <?php
                     foreach($months as $m) {
                         ?>
-                        <th class="budget"><?= $_REQUEST['year'] ?><br/><?= $m ?></th>
-                        <th class="actual"><?= $_REQUEST['year'] ?><br/><?= $m ?></th>
+                        <th class="budget"><?= $year ?><br/><?= $m ?></th>
+                        <th class="actual"><?= $year ?><br/><?= $m ?></th>
                     <?php
                     }
                     ?>
-                    <th class="budget"><?= $_REQUEST['year'] ?><br/>FY Total Estimated</th>
-                    <th class="actual"><?= $_REQUEST['year'] ?><br/>FY Total</th>
-                    <th><?= $_REQUEST['year'] ?><br/>Deviation</th>
+                    <th class="budget"><?= $year ?><br/>FY Total Estimated</th>
+                    <th class="actual"><?= $year ?><br/>FY Total</th>
+                    <th><?= $year ?><br/>Deviation</th>
                 </tr>
                 </thead>
                 <tbody>
@@ -309,7 +309,7 @@ if(isset($_FILES['csvFile']) && $_FILES['csvFile']['error'] == 0){
                     $result2 = $db->prepare($sql);
                     $arr     = array(
                         ':parentId' => $row['id'],
-                        ':years'    => $_REQUEST['year']
+                        ':years'    => $year
                     );
                     $result2->execute($arr);
 
@@ -365,7 +365,7 @@ if(isset($_FILES['csvFile']) && $_FILES['csvFile']['error'] == 0){
                             }
                             ?>
 
-                            <td class="fyEstimted budget">
+                            <td class="fy-budget">
                                 <?php
                                 switch ($entity_name) {
                                     case 'Merchandise':
@@ -380,7 +380,7 @@ if(isset($_FILES['csvFile']) && $_FILES['csvFile']['error'] == 0){
                                 }
                                 ?>
                             </td>
-                            <td class="actual">
+                            <td class="fy-actual">
                                 <?php
                                 switch ($entity_name) {
                                     case 'Merchandise':
@@ -394,7 +394,7 @@ if(isset($_FILES['csvFile']) && $_FILES['csvFile']['error'] == 0){
                                 }
                                 ?>
                             </td>
-                            <td class="derivation">
+                            <td class="fy-derivation">
                                 <?php
                                 switch ($entity_name) {
                                     case 'Merchandise':
@@ -559,11 +559,6 @@ if(isset($_FILES['csvFile']) && $_FILES['csvFile']['error'] == 0){
     $('#fromMonth').prop('selectedIndex', <?=$from_month_index?>);
     $('#toMonth').prop('selectedIndex', <?=$to_month_index?>);
 
-    var currentYear = '<?=date('Y')?>';
-    if($('#year').val() != currentYear) {
-        $('#year').val(currentYear);
-    }
-
     $('.btnParentRow').on('click', function (e) {
         var parentId = $(this).data('parent-id');
         $('.row_' + parentId).toggleClass('hidden');
@@ -623,6 +618,24 @@ if(isset($_FILES['csvFile']) && $_FILES['csvFile']['error'] == 0){
         });
     };
 
+    var _calculateRowTotals = function(row) {
+
+        var budgetTotal = 0;
+        var actualTotal = 0;
+
+        $(row).find('.budget').each(function(index) {
+            budgetTotal += Number($(this).html());
+        });
+
+        $(row).find('.actual').each(function(index) {
+            actualTotal += Number($(this).html().replace(',', ''));
+        });
+
+        $(row).find('.fy-budget').html(budgetTotal);
+        $(row).find('.fy-actual').html(actualTotal);
+        $(row).find('.fy-derivation').html(budgetTotal - actualTotal);
+    };
+
     _recalculate();
 
     $('td:contains("EBITDA")').css('background-color', 'yellow')
@@ -665,6 +678,10 @@ if(isset($_FILES['csvFile']) && $_FILES['csvFile']['error'] == 0){
 
         if(typeof entity != 'undefined' && typeof month != 'undefined' && $(item).html().trim() == '-') {
 
+            var row = $(this).parent();
+            var lastCellOfRow = row.find('td.actual:visible:last');
+            var isLastCellOfRow = lastCellOfRow[0] == item[0];
+
             $(item).html('-');
 
             $.ajax({
@@ -678,12 +695,16 @@ if(isset($_FILES['csvFile']) && $_FILES['csvFile']['error'] == 0){
                 },
                 dataType: 'json',
                 success: function (response) {
-                    console.log(response);
                     if (response.success && response.data) {
                         $(item).html(response.data);
                     } else {
                         $(item).html(0);
                     }
+
+                    if(isLastCellOfRow) {
+                        _calculateRowTotals(row);
+                    }
+
                 },
                 error: function() {
                     $(item).html(0);
