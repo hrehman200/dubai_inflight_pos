@@ -83,7 +83,7 @@ if(isset($_FILES['csvFile']) && $_FILES['csvFile']['error'] == 0){
                 <input type="hidden" name="monthIndex" id="monthIndex" value="<?= $_REQUEST['monthIndex'] ?>"/>
                 <select id="year" name="year">
                     <?php
-                    for ($y = 2018; $y <= 2027; $y++) {
+                    for ($y = 2018; $y <= date('Y'); $y++) {
                         echo sprintf('<option %s>%d</option>', $year == $y ? 'selected' : '', $y);
                     }
                     ?>
@@ -610,7 +610,7 @@ if(isset($_FILES['csvFile']) && $_FILES['csvFile']['error'] == 0){
                     } else {
                         value = $(obj2).html();
                     }
-                    value = Number(value);
+                    value = Number(value.replace(',', ''));
                     sum += value;
                 });
                 $(obj).html(sum.toFixed(1));
@@ -634,6 +634,10 @@ if(isset($_FILES['csvFile']) && $_FILES['csvFile']['error'] == 0){
         $(row).find('.fy-budget').html(budgetTotal);
         $(row).find('.fy-actual').html(actualTotal);
         $(row).find('.fy-derivation').html(budgetTotal - actualTotal);
+
+        if($(row).next('tr').hasClass('rowTotal')) {
+            _recalculate();
+        }
     };
 
     _recalculate();

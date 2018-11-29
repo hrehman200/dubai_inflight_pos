@@ -716,6 +716,10 @@ function updateBusinessEntityValue($entity_id, $year, $month, $estimated_value, 
             array_unshift($arr, $actual_value);
         }
 
+        if($set_string == '') {
+            return;
+        }
+
         $query = $db->prepare('UPDATE business_plan_yearly SET '.$set_string.' 
            WHERE business_plan_entity_id = ? AND month = ? AND year = ?');
         $query->execute($arr);
@@ -1469,7 +1473,7 @@ function getCustomerLiabilityForMonth($customer_id, $month) {
     return [$liability_minutes, $liability_minutes_cost, $minutes_used_from_credit, $minutes_used_from_credit_cost];
 }
 
-function getFTFRevenue($start_date, $end_date) {
+function getFTFRevenue($start_date, $end_date, $include_rf_in_ftf = false) {
     $arr_ftf = [];
     /** FTF without discounts applied */
     $arr2 = getDataAndAggregate('FTF', $start_date, $end_date);
@@ -1510,6 +1514,12 @@ function getFTFRevenue($start_date, $end_date) {
     /** EMIRATES AIRLINE */
     $arr2 = getDataAndAggregate('Emirates Airline', $start_date, $end_date);
     $arr_ftf = array_merge($arr_ftf, $arr2);
+
+    if($include_rf_in_ftf) {
+        /** RF */
+        $arr2 = getDataAndAggregate('RF - Repeat Flights', $start_date, $end_date);
+        $arr_ftf = array_merge($arr_ftf, $arr2);
+    }
 
     $arr_ftf_sum[0] = [
         'package_name' => 'FTF',

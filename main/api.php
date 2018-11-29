@@ -1139,13 +1139,14 @@ function getBusinessPlanRevenueCellData() {
         'Skydivers',
         'Navy Seal',
         PRESIDENTIAL_GUARD,
-        'Military'
+        'Military',
+        'Sky god%'
     ])) {
 
         $paid = getBusinessEntityActualValue($entity_id, $_POST['year'], $_POST['month']);
         if($paid <= 0) {
             if($_POST['entity'] == 'FTF') {
-                $paid = getFTFRevenue($start, $end)[0]['aed_value'];
+                $paid = getFTFRevenue($start, $end, true)[0]['aed_value'];
             } else {
                 $paid = getDataAndAggregate($_POST['entity'], $start, $end)[0]['aed_value'];
             }
