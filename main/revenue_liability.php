@@ -89,7 +89,17 @@ include('header.php');
                         } else {
                             $arr_revenue = [];
 
-                            $arr_ftf_sum = getFTFRevenue($_GET['d1'], $_GET['d2']);
+                            $arr_ftf = getFTFRevenue($_GET['d1'], $_GET['d2'], false, false);
+
+                            $arr_ftf_sum[0] = [
+                                'package_name' => 'FTF',
+                                'paid' => array_sum(array_column($arr_ftf, 'paid')),
+                                'total_minutes' => array_sum(array_column($arr_ftf, 'total_minutes')),
+                                'minutes_used' => array_sum(array_column($arr_ftf, 'minutes_used')),
+                                'aed_value' => array_sum(array_column($arr_ftf, 'aed_value')),
+                                'avg_per_min' => array_sum(array_column($arr_ftf, 'avg_per_min')),
+                            ];
+
                             $arr_revenue = array_merge($arr_revenue, $arr_ftf_sum);
 
                             /** FT - Upsale */

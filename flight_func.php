@@ -1473,7 +1473,7 @@ function getCustomerLiabilityForMonth($customer_id, $month) {
     return [$liability_minutes, $liability_minutes_cost, $minutes_used_from_credit, $minutes_used_from_credit_cost];
 }
 
-function getFTFRevenue($start_date, $end_date, $include_rf_in_ftf = false) {
+function getFTFRevenue($start_date, $end_date, $include_rf_in_ftf = false, $return_sum = true) {
     $arr_ftf = [];
     /** FTF without discounts applied */
     $arr2 = getDataAndAggregate('FTF', $start_date, $end_date);
@@ -1521,16 +1521,20 @@ function getFTFRevenue($start_date, $end_date, $include_rf_in_ftf = false) {
         $arr_ftf = array_merge($arr_ftf, $arr2);
     }
 
-    $arr_ftf_sum[0] = [
-        'package_name' => 'FTF',
-        'paid' => array_sum(array_column($arr_ftf, 'paid')),
-        'total_minutes' => array_sum(array_column($arr_ftf, 'total_minutes')),
-        'minutes_used' => array_sum(array_column($arr_ftf, 'minutes_used')),
-        'aed_value' => array_sum(array_column($arr_ftf, 'aed_value')),
-        'avg_per_min' => array_sum(array_column($arr_ftf, 'avg_per_min')),
-    ];
+    if($return_sum) {
+        $arr_ftf_sum[0] = [
+            'package_name' => 'FTF',
+            'paid' => array_sum(array_column($arr_ftf, 'paid')),
+            'total_minutes' => array_sum(array_column($arr_ftf, 'total_minutes')),
+            'minutes_used' => array_sum(array_column($arr_ftf, 'minutes_used')),
+            'aed_value' => array_sum(array_column($arr_ftf, 'aed_value')),
+            'avg_per_min' => array_sum(array_column($arr_ftf, 'avg_per_min')),
+        ];
+
+        return $arr_ftf_sum;
+    }
     
-    return $arr_ftf_sum;
+    return $arr_ftf;
 }
 
 /**
