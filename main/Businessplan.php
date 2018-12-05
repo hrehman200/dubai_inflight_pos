@@ -329,7 +329,8 @@ if(isset($_FILES['csvFile']) && $_FILES['csvFile']['error'] == 0){
                     }
 
                     $is_cogs = ($row['name'] == 'Cost of Goods Sold (COGS)');
-
+                    $fy_budget_total = 0;
+                    $fy_actual_total = 0;
                     foreach ($arr_to_display as $entity_name => $arr_monthwise_data) {
                         ?>
                         <tr class="row_<?= $arr_monthwise_data[0]['parent_id'] ?>">
@@ -340,12 +341,16 @@ if(isset($_FILES['csvFile']) && $_FILES['csvFile']['error'] == 0){
                                 $month_row = getMonthRow($months[$i], $arr_monthwise_data);
                                 ?>
                                 <td class="budget">
-                                    <?= $month_row['value'] ?>
+                                    <?php 
+                                    echo $month_row['value']; 
+                                    $fy_budget_total += $month_row['value'];
+                                    ?>
                                 </td>
                                 <td class="actual" data-entity="<?=$entity_name?>" data-month="<?=$months[$i]?>">
                                     <?php
                                     if($month_row['gl_code'] > 0) {
                                         echo $month_row['actual_value'];
+                                        $fy_actual_total += $month_row['actual_value'];
                                     } else {
                                         switch ($entity_name) {
                                             case 'Merchandise':
@@ -367,45 +372,57 @@ if(isset($_FILES['csvFile']) && $_FILES['csvFile']['error'] == 0){
 
                             <td class="fy-budget">
                                 <?php
-                                switch ($entity_name) {
-                                    case 'Merchandise':
-                                        if ($is_cogs) {
-                                            echo $fy_estimated_merchandise_cogs;
-                                        } else {
-                                            echo $fy_estimated_merchandise;
-                                        }
-                                        break;
-                                    default:
-                                        echo $arr_values[$entity_name]['totalEstimated'];
+                                if($arr_monthwise_data[0]['gl_code'] > 0) {
+                                    echo $fy_budget_total;
+                                } else {
+                                    switch ($entity_name) {
+                                        case 'Merchandise':
+                                            if ($is_cogs) {
+                                                echo $fy_estimated_merchandise_cogs;
+                                            } else {
+                                                echo $fy_estimated_merchandise;
+                                            }
+                                            break;
+                                        default:
+                                            echo $arr_values[$entity_name]['totalEstimated'];
+                                    }
                                 }
                                 ?>
                             </td>
                             <td class="fy-actual">
                                 <?php
-                                switch ($entity_name) {
-                                    case 'Merchandise':
-                                        if ($is_cogs) {
-                                            $total_merchandise = getNPercentOf(30, $total_merchandise);
-                                        }
-                                        echo $total_merchandise;
-                                        break;
-                                    default:
-                                        echo $arr_values[$entity_name]['total'];
+                                if($arr_monthwise_data[0]['gl_code']) {
+                                    echo $fy_actual_total;
+                                } else {
+                                    switch ($entity_name) {
+                                        case 'Merchandise':
+                                            if ($is_cogs) {
+                                                $total_merchandise = getNPercentOf(30, $total_merchandise);
+                                            }
+                                            echo $total_merchandise;
+                                            break;
+                                        default:
+                                            echo $arr_values[$entity_name]['total'];
+                                    }
                                 }
                                 ?>
                             </td>
                             <td class="fy-derivation">
                                 <?php
-                                switch ($entity_name) {
-                                    case 'Merchandise':
-                                        if ($is_cogs) {
-                                            echo round($fy_estimated_merchandise_cogs - $total_merchandise, 1);
-                                        } else {
-                                            echo round($fy_estimated_merchandise - $total_merchandise, 1);
-                                        }
-                                        break;
-                                    default:
-                                        echo $arr_values[$entity_name]['totalEstimated'] - $arr_values[$entity_name]['total'];
+                                if($arr_monthwise_data[0]['gl_code']) {
+                                    echo $fy_actual_total - $fy_budget_total;
+                                } else {
+                                    switch ($entity_name) {
+                                        case 'Merchandise':
+                                            if ($is_cogs) {
+                                                echo round($fy_estimated_merchandise_cogs - $total_merchandise, 1);
+                                            } else {
+                                                echo round($fy_estimated_merchandise - $total_merchandise, 1);
+                                            }
+                                            break;
+                                        default:
+                                            echo $arr_values[$entity_name]['totalEstimated'] - $arr_values[$entity_name]['total'];
+                                    }
                                 }
                                 ?>
                             </td>
@@ -633,7 +650,7 @@ if(isset($_FILES['csvFile']) && $_FILES['csvFile']['error'] == 0){
 
         $(row).find('.fy-budget').html(budgetTotal);
         $(row).find('.fy-actual').html(actualTotal);
-        $(row).find('.fy-derivation').html(budgetTotal - actualTotal);
+        $(row).find('.fy-derivation').html(actualTotal - budgetTotal);
 
         if($(row).next('tr').hasClass('rowTotal')) {
             _recalculate();
