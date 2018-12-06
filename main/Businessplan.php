@@ -150,7 +150,7 @@ if(isset($_FILES['csvFile']) && $_FILES['csvFile']['error'] == 0){
                 $to_month           = isset($_REQUEST['toMonth']) ? $_REQUEST['toMonth'] : 'Dec';
                 $from_month_index   = array_search($from_month, $all_months);
                 $to_month_index     = array_search($to_month, $all_months);
-                $months             = array_slice($all_months, $from_month_index, $to_month_index+1);
+                $months             = array_slice($all_months, $from_month_index, $to_month_index - $from_month_index + 1);
                 $start_end_dates    = [];
                 foreach($months as $m) {
                     $start_end_dates[] = getStartEndDateFromMonthYear($year, $m);
@@ -430,7 +430,7 @@ if(isset($_FILES['csvFile']) && $_FILES['csvFile']['error'] == 0){
                         <?php
                     }
                     ?>
-                    <tr class="rowTotal" data-parent-id="<?= $row['id'] ?>">
+                    <tr class="rowTotal row-<?=strtolower(str_replace(' ', '-', $row['name']))?>" data-parent-id="<?= $row['id'] ?>">
                         <td data-index="0"><b>Total</b></td>
                         <td data-index="1"></td>
                         <?php
@@ -657,6 +657,54 @@ if(isset($_FILES['csvFile']) && $_FILES['csvFile']['error'] == 0){
         }
     };
 
+    var _calculateGrossProfit = function(row) {
+
+        var totalRevenueBudget = 0;
+        var totalRevenueActual = 0;
+
+        var grossProfitBudget = 0;
+        var grossProfitActual = 0;
+
+        var grossProfitPercentBudget = 0;
+        var grossProfitPercentActual = 0;
+
+        $('.row-revenues .budget').each(function(index) {
+            var revenueBudget = Number($(this).html());
+            var otherRevenueBudget = Number($('.row-other-service-revenue .budget:eq('+index+')').html());
+            var additionalRevenueBudget = Number($('.row-additional-revenue .budget:eq('+index+')').html());
+            totalRevenueBudget = revenueBudget + otherRevenueBudget + additionalRevenueBudget;
+
+            var revenueActual = Number($('.row-revenues .actual:eq('+index+')').html());
+            var otherRevenueActual = Number($('.row-other-service-revenue .actual:eq('+index+')').html());
+            var additionalRevenueActual = Number($('.row-additional-revenue .actual:eq('+index+')').html());
+            totalRevenueActual = revenueActual + otherRevenueActual + additionalRevenueActual;
+
+            var operatingExpensesBudgetTotal = Number($('.row-operating-expenses .budget:eq('+index+')').html());
+            var operatingExpensesActualTotal = Number($('.row-operating-expenses .actual:eq('+index+')').html());
+
+            grossProfitBudget = totalRevenueBudget - operatingExpensesBudgetTotal;
+            grossProfitActual = totalRevenueActual - operatingExpensesActualTotal;
+
+            grossProfitPercentBudget = Math.round(grossProfitBudget / totalRevenueBudget * 100);
+            grossProfitPercentActual = Math.round(grossProfitActual / totalRevenueActual * 100);
+
+            $(row).find('.budget:eq('+index+')').html(grossProfitBudget);
+            $(row).find('.actual:eq('+index+')').html(grossProfitActual);
+
+            var rowGrossProfitPercent = $(row).next('tr');
+            $(rowGrossProfitPercent).find('.budget:eq('+index+')').html(grossProfitPercentBudget);
+            $(rowGrossProfitPercent).find('.actual:eq('+index+')').html(grossProfitPercentActual);
+
+            /*var rowEbitda = $(row).prev('tr').prev('tr');
+            $(rowEbitda).find('.budget:eq('+index+')').html(grossProfitPercentBudget);
+            $(rowEbitda).find('.actual:eq('+index+')').html(grossProfitPercentActual);
+
+            var rowEbitdaPercent = $(row).next('tr');
+            $(rowGrossProfitPercent).find('.budget:eq('+index+')').html(grossProfitPercentBudget);
+            $(rowGrossProfitPercent).find('.actual:eq('+index+')').html(grossProfitPercentActual);*/
+        });
+    };
+
     _recalculate();
 
     $('td:contains("EBITDA")').css('background-color', 'yellow')
@@ -723,6 +771,9 @@ if(isset($_FILES['csvFile']) && $_FILES['csvFile']['error'] == 0){
                     }
 
                     if(isLastCellOfRow) {
+                        if(entity.trim() == 'Gross Profit') {
+                            _calculateGrossProfit(row);
+                        }
                         _calculateRowTotals(row);
                     }
 

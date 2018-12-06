@@ -1124,17 +1124,17 @@ function getBusinessPlanRevenueCellData() {
         return;
     }
 
-    $entity_id = getBusinessEntityId($_POST['entity'], 0, '');
-
-    if(strtolower($_POST['entity']) == 'military individuals') {
-        $_POST['entity'] = 'Military';
+    $entity = trim($_POST['entity']);
+    $entity_id = getBusinessEntityId($entity, 0, '');
+    if(strtolower($entity) == 'military individuals') {
+        $entity = 'Military';
     }
 
-    if(strtolower($_POST['entity']) == 'navy seals') {
-        $_POST['entity'] = 'Navy Seal';
+    if(strtolower($entity) == 'navy seals') {
+        $entity = 'Navy Seal';
     }
 
-    if(in_array($_POST['entity'], [
+    if(in_array($entity, [
         'FTF',
         'Skydivers',
         'Navy Seal',
@@ -1145,18 +1145,21 @@ function getBusinessPlanRevenueCellData() {
 
         $paid = getBusinessEntityActualValue($entity_id, $_POST['year'], $_POST['month']);
         if($paid <= 0) {
-            if($_POST['entity'] == 'FTF') {
+            if($entity == 'FTF') {
                 $paid = getFTFRevenue($start, $end, true)[0]['aed_value'];
             } else {
-                $paid = getDataAndAggregate($_POST['entity'], $start, $end)[0]['aed_value'];
+                $paid = getDataAndAggregate($entity, $start, $end)[0]['aed_value'];
             }
             updateBusinessEntityValue($entity_id, $_POST['year'], $_POST['month'], null, $paid);
         }
 
-    } else if(strpos($_POST['entity'], 'Video') !== false) {
+    } else if(strpos($entity, 'Video') !== false) {
         $paid = getMerchandiseRevenue('Video', $start, $end)[0]['aed_value'];
 
-    } else if(strpos($_POST['entity'], 'Block hours purchase') !== false) {
+    } else if($entity == TYPE_MERCHANDISE) {
+        $paid = getMerchandiseRevenue(TYPE_MERCHANDISE, $start, $end)[0]['aed_value'];
+
+    } else if(strpos($entity, 'Block hours purchase') !== false) {
         $paid = getFlightSaleViaDiscountName('Block hours', $start, $end);
     }
     echo json_encode(['success' => 1, 'data' => number_format($paid)]);
