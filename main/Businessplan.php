@@ -695,13 +695,18 @@ if(isset($_FILES['csvFile']) && $_FILES['csvFile']['error'] == 0){
             $(rowGrossProfitPercent).find('.budget:eq('+index+')').html(grossProfitPercentBudget);
             $(rowGrossProfitPercent).find('.actual:eq('+index+')').html(grossProfitPercentActual);
 
-            /*var rowEbitda = $(row).prev('tr').prev('tr');
-            $(rowEbitda).find('.budget:eq('+index+')').html(grossProfitPercentBudget);
-            $(rowEbitda).find('.actual:eq('+index+')').html(grossProfitPercentActual);
+            var ebitdaBudget = grossProfitBudget - operatingExpensesBudgetTotal;
+            var ebitdaActual = grossProfitActual - operatingExpensesActualTotal;
+            var ebitdaBudgetPercent = Math.round(ebitdaBudget / operatingExpensesBudgetTotal * 100);
+            var ebitdaActualPercent = Math.round(ebitdaActual / operatingExpensesActualTotal * 100);
 
-            var rowEbitdaPercent = $(row).next('tr');
-            $(rowGrossProfitPercent).find('.budget:eq('+index+')').html(grossProfitPercentBudget);
-            $(rowGrossProfitPercent).find('.actual:eq('+index+')').html(grossProfitPercentActual);*/
+            var rowEbitda = $(row).prev('tr').prev('tr');
+            $(rowEbitda).find('.budget:eq('+index+')').html(ebitdaBudget);
+            $(rowEbitda).find('.actual:eq('+index+')').html(ebitdaActual);
+
+            var rowEbitdaPercent = $(rowEbitda).next('tr');
+            $(rowEbitdaPercent).find('.budget:eq('+index+')').html(ebitdaBudgetPercent);
+            $(rowEbitdaPercent).find('.actual:eq('+index+')').html(ebitdaActualPercent);
         });
     };
 
