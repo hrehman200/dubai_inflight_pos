@@ -89,36 +89,20 @@ if(isset($_FILES['csvFile']) && $_FILES['csvFile']['error'] == 0){
                     ?>
                 </select>
 
-                From:
-                <select id="fromMonth" name="fromMonth">
-                    <option>Jan</option>
-                    <option>Feb</option>
-                    <option>Mar</option>
-                    <option>Apr</option>
-                    <option>May</option>
-                    <option>Jun</option>
-                    <option>Jul</option>
-                    <option>Aug</option>
-                    <option>Sep</option>
-                    <option>Oct</option>
-                    <option>Nov</option>
-                    <option>Dec</option>
-                </select>
-
-                To:
-                <select id="toMonth" name="toMonth">
-                    <option>Jan</option>
-                    <option>Feb</option>
+                Months:
+                <select class="form-control" id="fromMonth" name="fromMonth[]" multiple="multiple" style="width:30%;">
+                    <option selected>Jan</option>
+                    <option selected>Feb</option>
                     <option selected>Mar</option>
-                    <option>Apr</option>
-                    <option>May</option>
-                    <option>Jun</option>
-                    <option>Jul</option>
-                    <option>Aug</option>
-                    <option>Sep</option>
-                    <option>Oct</option>
-                    <option>Nov</option>
-                    <option>Dec</option>
+                    <option selected>Apr</option>
+                    <option selected>May</option>
+                    <option selected>Jun</option>
+                    <option selected>Jul</option>
+                    <option selected>Aug</option>
+                    <option selected>Sep</option>
+                    <option selected>Oct</option>
+                    <option selected>Nov</option>
+                    <option selected>Dec</option>
                 </select>
 
                 <div class="pull-right">
@@ -253,13 +237,13 @@ if(isset($_FILES['csvFile']) && $_FILES['csvFile']['error'] == 0){
                     <?php
                     foreach($months as $m) {
                         ?>
-                        <th class="budget"><?= $year ?><br/><?= $m ?></th>
-                        <th class="actual"><?= $year ?><br/><?= $m ?></th>
+                        <th class="budget <?=$m?>"><?= $year ?><br/><?= $m ?></th>
+                        <th class="actual <?=$m?>"><?= $year ?><br/><?= $m ?></th>
                     <?php
                     }
                     ?>
-                    <th class="budget"><?= $year ?><br/>FY Total Estimated</th>
-                    <th class="actual"><?= $year ?><br/>FY Total</th>
+                    <th class="fy-budget"><?= $year ?><br/>FY Total Estimated</th>
+                    <th class="fy-actual"><?= $year ?><br/>FY Total</th>
                     <th><?= $year ?><br/>Deviation</th>
                 </tr>
                 </thead>
@@ -292,8 +276,8 @@ if(isset($_FILES['csvFile']) && $_FILES['csvFile']['error'] == 0){
                         <?php
                         foreach($months as $m) {
                             ?>
-                            <td class="budget"></td>
-                            <td class="actual"></td>
+                            <td class="budget <?=$m?>"></td>
+                            <td class="actual <?=$m?>"></td>
                             <?php
                         }
                         ?>
@@ -340,13 +324,13 @@ if(isset($_FILES['csvFile']) && $_FILES['csvFile']['error'] == 0){
                             for($i=0; $i<count($months); $i++) {
                                 $month_row = getMonthRow($months[$i], $arr_monthwise_data);
                                 ?>
-                                <td class="budget">
+                                <td class="budget <?=$months[$i]?>">
                                     <?php 
                                     echo $month_row['value']; 
                                     $fy_budget_total += $month_row['value'];
                                     ?>
                                 </td>
-                                <td class="actual" data-entity="<?=$entity_name?>" data-month="<?=$months[$i]?>">
+                                <td class="actual <?=$months[$i]?>" data-entity="<?=$entity_name?>" data-month="<?=$months[$i]?>">
                                     <?php
                                     if($month_row['gl_code'] > 0) {
                                         echo $month_row['actual_value'];
@@ -533,7 +517,8 @@ if(isset($_FILES['csvFile']) && $_FILES['csvFile']['error'] == 0){
 
 </body>
 <?php include('footer.php'); ?>
-
+<link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.6-rc.0/css/select2.min.css" rel="stylesheet" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.6-rc.0/js/select2.min.js"></script>
 </html>
 
 <style>
@@ -565,16 +550,39 @@ if(isset($_FILES['csvFile']) && $_FILES['csvFile']['error'] == 0){
         background-color: lightgrey;
         font-weight: bold;
     }
+
+    .select2-container {
+        position: inherit;
+    }
 </style>
 
 <script type="text/javascript">
 
-    $('#year, #toMonth').on('change', function (e) {
-        $(e.target).parent().submit();
+    $('#fromMonth').select2();
+
+    $('#fromMonth').on('change', function(e) {
+         var selectedMonths = $(this).val();
+         var allMonths = ["<?=implode('","', $all_months)?>"];
+         var unselectedMonths = jQuery.grep(allMonths, function (item) {
+            return jQuery.inArray(item, selectedMonths) < 0;
+         });
+
+        for(var i in selectedMonths) {
+            $('.'+selectedMonths[i]).show();
+        }
+
+        for(var i in unselectedMonths) {
+            $('.'+unselectedMonths[i]).hide();
+        }
+
+        $('tr[class*="row_"]').each(function(index, row) {
+            _calculateRowTotals($(row));
+        });
     });
 
-    $('#fromMonth').prop('selectedIndex', <?=$from_month_index?>);
-    $('#toMonth').prop('selectedIndex', <?=$to_month_index?>);
+    $('#year').on('change', function (e) {
+        $(e.target).parent().submit();
+    });
 
     $('.btnParentRow').on('click', function (e) {
         var parentId = $(this).data('parent-id');
@@ -640,11 +648,11 @@ if(isset($_FILES['csvFile']) && $_FILES['csvFile']['error'] == 0){
         var budgetTotal = 0;
         var actualTotal = 0;
 
-        $(row).find('.budget').each(function(index) {
+        $(row).find('.budget:visible').each(function(index) {
             budgetTotal += Number($(this).html());
         });
 
-        $(row).find('.actual').each(function(index) {
+        $(row).find('.actual:visible').each(function(index) {
             actualTotal += Number($(this).html().replace(',', ''));
         });
 
