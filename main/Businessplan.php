@@ -157,7 +157,7 @@ if(isset($_FILES['csvFile']) && $_FILES['csvFile']['error'] == 0){
 
             </form>
 
-            <table class="table table-bordered">
+            <table class="table table-bordered" id="tblBP">
 
                 <?php
                 $year               = isset($_REQUEST['year']) ? $_REQUEST['year'] : date('Y');
@@ -481,7 +481,7 @@ if(isset($_FILES['csvFile']) && $_FILES['csvFile']['error'] == 0){
 <script type="text/javascript">
 
     function convertToCSV() {
-        exportTableToCSV($('#resultTable'), 'filename.csv');
+        exportTableToCSV($('#tblBP'), 'businessplan.csv');
     }
 
     function exportTableToCSV($table, filename) {
@@ -728,18 +728,18 @@ if(isset($_FILES['csvFile']) && $_FILES['csvFile']['error'] == 0){
         var grossProfitPercentActual = 0;
 
         $('.row-revenues .budget').each(function(index) {
-            var revenueBudget = Number($(this).html());
-            var otherRevenueBudget = Number($('.row-other-service-revenue .budget:eq('+index+')').html());
-            var additionalRevenueBudget = Number($('.row-additional-revenue .budget:eq('+index+')').html());
+            var revenueBudget = Number($(this).html().replace(',', ''));
+            var otherRevenueBudget = Number($('.row-other-service-revenue .budget:eq('+index+')').html().replace(',', ''));
+            var additionalRevenueBudget = Number($('.row-additional-revenue .budget:eq('+index+')').html().replace(',', ''));
             totalRevenueBudget = revenueBudget + otherRevenueBudget + additionalRevenueBudget;
 
-            var revenueActual = Number($('.row-revenues .actual:eq('+index+')').html());
-            var otherRevenueActual = Number($('.row-other-service-revenue .actual:eq('+index+')').html());
-            var additionalRevenueActual = Number($('.row-additional-revenue .actual:eq('+index+')').html());
+            var revenueActual = Number($('.row-revenues .actual:eq('+index+')').html().replace(',', ''));
+            var otherRevenueActual = Number($('.row-other-service-revenue .actual:eq('+index+')').html().replace(',', ''));
+            var additionalRevenueActual = Number($('.row-additional-revenue .actual:eq('+index+')').html().replace(',', ''));
             totalRevenueActual = revenueActual + otherRevenueActual + additionalRevenueActual;
 
-            var operatingExpensesBudgetTotal = Number($('.row-operating-expenses .budget:eq('+index+')').html());
-            var operatingExpensesActualTotal = Number($('.row-operating-expenses .actual:eq('+index+')').html());
+            var operatingExpensesBudgetTotal = Number($('.row-operating-expenses .budget:eq('+index+')').html().replace(',', ''));
+            var operatingExpensesActualTotal = Number($('.row-operating-expenses .actual:eq('+index+')').html().replace(',', ''));
 
             grossProfitBudget = totalRevenueBudget - operatingExpensesBudgetTotal;
             grossProfitActual = totalRevenueActual - operatingExpensesActualTotal;
@@ -747,12 +747,12 @@ if(isset($_FILES['csvFile']) && $_FILES['csvFile']['error'] == 0){
             grossProfitPercentBudget = Math.round(grossProfitBudget / totalRevenueBudget * 100);
             grossProfitPercentActual = Math.round(grossProfitActual / totalRevenueActual * 100);
 
-            $(row).find('.budget:eq('+index+')').html(grossProfitBudget);
-            $(row).find('.actual:eq('+index+')').html(grossProfitActual);
+            $(row).find('.budget:eq('+index+')').html(grossProfitBudget.toLocaleString('us'));
+            $(row).find('.actual:eq('+index+')').html(grossProfitActual.toLocaleString('us'));
 
             var rowGrossProfitPercent = $(row).next('tr');
-            $(rowGrossProfitPercent).find('.budget:eq('+index+')').html(grossProfitPercentBudget);
-            $(rowGrossProfitPercent).find('.actual:eq('+index+')').html(grossProfitPercentActual);
+            $(rowGrossProfitPercent).find('.budget:eq('+index+')').html(grossProfitPercentBudget.toLocaleString('us'));
+            $(rowGrossProfitPercent).find('.actual:eq('+index+')').html(grossProfitPercentActual.toLocaleString('us'));
 
             var ebitdaBudget = grossProfitBudget - operatingExpensesBudgetTotal;
             var ebitdaActual = grossProfitActual - operatingExpensesActualTotal;
@@ -760,12 +760,12 @@ if(isset($_FILES['csvFile']) && $_FILES['csvFile']['error'] == 0){
             var ebitdaActualPercent = Math.round(ebitdaActual / operatingExpensesActualTotal * 100);
 
             var rowEbitda = $(row).prev('tr').prev('tr');
-            $(rowEbitda).find('.budget:eq('+index+')').html(ebitdaBudget);
-            $(rowEbitda).find('.actual:eq('+index+')').html(ebitdaActual);
+            $(rowEbitda).find('.budget:eq('+index+')').html(ebitdaBudget.toLocaleString('us'));
+            $(rowEbitda).find('.actual:eq('+index+')').html(ebitdaActual.toLocaleString('us'));
 
             var rowEbitdaPercent = $(rowEbitda).next('tr');
-            $(rowEbitdaPercent).find('.budget:eq('+index+')').html(ebitdaBudgetPercent);
-            $(rowEbitdaPercent).find('.actual:eq('+index+')').html(ebitdaActualPercent);
+            $(rowEbitdaPercent).find('.budget:eq('+index+')').html(ebitdaBudgetPercent.toLocaleString('us'));
+            $(rowEbitdaPercent).find('.actual:eq('+index+')').html(ebitdaActualPercent.toLocaleString('us'));
         });
     };
 
