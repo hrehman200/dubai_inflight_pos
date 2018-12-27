@@ -89,20 +89,36 @@ if(isset($_FILES['csvFile']) && $_FILES['csvFile']['error'] == 0){
                     ?>
                 </select>
 
-                Months:
-                <select class="form-control" id="fromMonth" name="fromMonth[]" multiple="multiple" style="width:30%;">
+                From:
+                <select class="form-control" id="fromMonth" name="fromMonth">
                     <option selected>Jan</option>
-                    <option selected>Feb</option>
-                    <option selected>Mar</option>
-                    <option selected>Apr</option>
-                    <option selected>May</option>
-                    <option selected>Jun</option>
-                    <option selected>Jul</option>
-                    <option selected>Aug</option>
-                    <option selected>Sep</option>
-                    <option selected>Oct</option>
-                    <option selected>Nov</option>
-                    <option selected>Dec</option>
+                    <option>Feb</option>
+                    <option>Mar</option>
+                    <option>Apr</option>
+                    <option>May</option>
+                    <option>Jun</option>
+                    <option>Jul</option>
+                    <option>Aug</option>
+                    <option>Sep</option>
+                    <option>Oct</option>
+                    <option>Nov</option>
+                    <option>Dec</option>
+                </select>
+
+                To:
+                <select class="form-control" id="toMonth" name="toMonth">
+                    <option>Jan</option>
+                    <option>Feb</option>
+                    <option>Mar</option>
+                    <option>Apr</option>
+                    <option>May</option>
+                    <option>Jun</option>
+                    <option>Jul</option>
+                    <option>Aug</option>
+                    <option>Sep</option>
+                    <option>Oct</option>
+                    <option>Nov</option>
+                    <option>Dec</option>
                 </select>
 
                 <div class="pull-right">
@@ -119,6 +135,24 @@ if(isset($_FILES['csvFile']) && $_FILES['csvFile']['error'] == 0){
                     <Button type="button" onclick="convertToCSV()" id="exportCSV" class="btn btn-info">
                         <i class="icon-plus-sign icon-large"></i> Export
                     </button>
+                </div>
+
+                <div>
+                    Toggle Months:
+                    <select class="form-control" id="months" name="months" multiple="multiple" style="width: 50%;">
+                        <option>Jan</option>
+                        <option>Feb</option>
+                        <option>Mar</option>
+                        <option>Apr</option>
+                        <option>May</option>
+                        <option>Jun</option>
+                        <option>Jul</option>
+                        <option>Aug</option>
+                        <option>Sep</option>
+                        <option>Oct</option>
+                        <option>Nov</option>
+                        <option>Dec</option>
+                    </select>
                 </div>
 
             </form>
@@ -326,14 +360,14 @@ if(isset($_FILES['csvFile']) && $_FILES['csvFile']['error'] == 0){
                                 ?>
                                 <td class="budget <?=$months[$i]?>">
                                     <?php 
-                                    echo $month_row['value']; 
+                                    echo number_format($month_row['value']);
                                     $fy_budget_total += $month_row['value'];
                                     ?>
                                 </td>
                                 <td class="actual <?=$months[$i]?>" data-entity="<?=$entity_name?>" data-month="<?=$months[$i]?>">
                                     <?php
                                     if($month_row['gl_code'] > 0) {
-                                        echo $month_row['actual_value'];
+                                        echo number_format($month_row['actual_value']);
                                         $fy_actual_total += $month_row['actual_value'];
                                     } else {
                                         switch ($entity_name) {
@@ -419,10 +453,12 @@ if(isset($_FILES['csvFile']) && $_FILES['csvFile']['error'] == 0){
                         <td data-index="1"></td>
                         <?php
                         $count = 1;
+                        $month_index = 0;
                         for($i=$count; $i<count($months)*2; $i+=2) {
-                            echo sprintf('<td data-index="%d" class="budget"></td>', $i+1);
-                            echo sprintf('<td data-index="%d" class="actual"></td>', $i+2);
+                            echo sprintf('<td data-index="%d" class="budget %s"></td>', $i+1, $months[$month_index]);
+                            echo sprintf('<td data-index="%d" class="actual %s"></td>', $i+2, $months[$month_index]);
                             $count+=2;
+                            $month_index++;
                         }
                         ?>
                         <td data-index="<?=$count+1?>"></td>
@@ -558,11 +594,12 @@ if(isset($_FILES['csvFile']) && $_FILES['csvFile']['error'] == 0){
 
 <script type="text/javascript">
 
-    $('#fromMonth').select2();
+    var allMonths = ["<?=implode('","', $all_months)?>"];
 
-    $('#fromMonth').on('change', function(e) {
+    $('#months').select2();
+
+    $('#months').on('change', function(e) {
          var selectedMonths = $(this).val();
-         var allMonths = ["<?=implode('","', $all_months)?>"];
          var unselectedMonths = jQuery.grep(allMonths, function (item) {
             return jQuery.inArray(item, selectedMonths) < 0;
          });
@@ -579,6 +616,17 @@ if(isset($_FILES['csvFile']) && $_FILES['csvFile']['error'] == 0){
             _calculateRowTotals($(row));
         });
     });
+
+    $('#toMonth').on('change', function(e) {
+        var startIndex = allMonths.indexOf($('#fromMonth').val());
+        var endIndex = allMonths.indexOf($('#toMonth').val());
+        var selectedMonths = allMonths.slice(startIndex, endIndex+1);
+        $('#months').val(selectedMonths)
+            .trigger('change');
+    });
+
+    $('#fromMonth').prop('selectedIndex', <?=$from_month_index?>);
+    $('#toMonth').prop('selectedIndex', <?=$to_month_index?>);
 
     $('#year').on('change', function (e) {
         $(e.target).parent().submit();
@@ -636,9 +684,12 @@ if(isset($_FILES['csvFile']) && $_FILES['csvFile']['error'] == 0){
                         value = $(obj2).html();
                     }
                     value = Number(value.replace(',', ''));
+                    if(isNaN(value)) {
+                        value = 0;
+                    }
                     sum += value;
                 });
-                $(obj).html(sum.toFixed(1));
+                $(obj).html(sum.toLocaleString('us'));
             }
         });
     };
@@ -649,16 +700,16 @@ if(isset($_FILES['csvFile']) && $_FILES['csvFile']['error'] == 0){
         var actualTotal = 0;
 
         $(row).find('.budget:visible').each(function(index) {
-            budgetTotal += Number($(this).html());
+            budgetTotal += Number($(this).html().replace(',', ''));
         });
 
         $(row).find('.actual:visible').each(function(index) {
             actualTotal += Number($(this).html().replace(',', ''));
         });
 
-        $(row).find('.fy-budget').html(budgetTotal);
-        $(row).find('.fy-actual').html(actualTotal);
-        $(row).find('.fy-derivation').html(actualTotal - budgetTotal);
+        $(row).find('.fy-budget').html(budgetTotal.toLocaleString('us'));
+        $(row).find('.fy-actual').html(actualTotal.toLocaleString('us'));
+        $(row).find('.fy-derivation').html((actualTotal - budgetTotal).toLocaleString('us'));
 
         if($(row).next('tr').hasClass('rowTotal')) {
             _recalculate();
@@ -797,5 +848,7 @@ if(isset($_FILES['csvFile']) && $_FILES['csvFile']['error'] == 0){
             });
         }
     });
+
+    $('#toMonth').change();
 
 </script>
