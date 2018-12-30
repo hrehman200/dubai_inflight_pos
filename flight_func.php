@@ -1105,6 +1105,17 @@ function getMerchandiseRevenue($product_name, $date1, $date2) {
         $query->execute([TYPE_MERCHANDISE, $date1, $date2]);
         $row = $query->fetch(PDO::FETCH_ASSOC);
 
+    } else if($product_name == 'Helmet Rent') {
+        $query = $db->prepare('SELECT SUM(so.amount - (so.discount * so.amount / 100)) AS paid
+                            FROM sales s
+                            INNER JOIN sales_order so ON s.invoice_number = so.invoice
+                            INNER JOIN products p ON so.product = p.product_id 
+                            WHERE 
+                            (p.product_name LIKE "%Helmet Rent%")
+                            AND (s.date >= ? AND s.date <= ?)');
+        $query->execute([$date1, $date2]);
+        $row = $query->fetch(PDO::FETCH_ASSOC);
+
     } else {
         // since video phots are being displayed collectively
         $query = $db->prepare(sprintf('SELECT SUM(so.amount - (so.discount * so.amount / 100))  AS paid
