@@ -1597,7 +1597,7 @@ function markPurchasesExpired() {
     $query = $db->prepare('SELECT s.date, s.invoice_number, c.email, c.address, c.customer_name 
       FROM sales s
       INNER JOIN customer c ON s.customer_id = c.customer_id
-      WHERE s.expiry = DATE(NOW()) OR s.date <= DATE_SUB(NOW(),INTERVAL 1 YEAR)
+      WHERE s.expiry = DATE(NOW()) OR s.date = DATE_SUB(NOW(),INTERVAL 1 YEAR)
       AND c.customer_id NOT IN (
         SELECT customer_id FROM customer_yearly_purchases
       )');
