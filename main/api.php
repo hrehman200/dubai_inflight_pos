@@ -1159,6 +1159,9 @@ function getBusinessPlanRevenueCellData() {
     } else if($entity == TYPE_MERCHANDISE) {
         $paid = getMerchandiseRevenue(TYPE_MERCHANDISE, $start, $end)[0]['aed_value'];
 
+    } else if($entity == 'Rental Service') {
+        $paid = getMerchandiseRevenue('Helmet Rent', $start, $end)[0]['aed_value'];
+
     } else if(strpos($entity, 'Block hours purchase') !== false) {
         $paid = getFlightSaleViaDiscountName('Block hours', $start, $end);
     }

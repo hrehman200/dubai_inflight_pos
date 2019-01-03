@@ -1423,7 +1423,7 @@ function recordCustomerMonthlyLiability($all_months = false) {
 
 /**
  * @param $customer_id
- * @param $end_date_of_month
+ * @param $month
  * @return array
  */
 function getCustomerLiabilityForMonth($customer_id, $month) {
@@ -1469,7 +1469,6 @@ function getCustomerLiabilityForMonth($customer_id, $month) {
         }
 
         if($fp['deduct_from_balance'] != 2) {
-            // check here if the minutes used are from purchase of 2017...if yes then cut deduct from credit instead of 2017 purchase
             $minutes_used_from_purchase += $fb['minutes_used'];
             $minutes_used_from_purchase_cost += $cost_per_minute * $fb['minutes_used'];
         } else {
@@ -1565,4 +1564,130 @@ function getFlightSaleViaDiscountName($discount_name, $start_date, $end_date) {
     $row = $stmt->fetch();
 
     return round($row['amount'], 1);
+}
+
+/**
+ * @param $customer_id
+ * @param $flight_purchase_id
+ * @param $year
+ * @param $minutes
+ * @param $cost
+ */
+function saveUnconsumedRevenue($customer_id, $flight_purchase_id, $year, $minutes, $cost) {
+    global $db;
+
+    $query = $db->prepare(sprintf(
+            'SELECT * FROM unconsumed_revenue WHERE customer_id=? AND year=? AND flight_purchase_id %s', $flight_purchase_id==null?'IS NULL':"={$flight_purchase_id}")
+    );
+    $query->execute([$customer_id, $year]);
+    $result = $query->fetchAll(PDO::FETCH_ASSOC);
+    if (count($result) > 0) {
+        $query = $db->prepare('UPDATE unconsumed_revenue SET minutes = ?, cost = ? WHERE customer_id=? AND flight_purchase_id=? AND year=?');
+        $query->execute([$minutes, $cost, $customer_id, $flight_purchase_id, $year]);
+    } else {
+        $query = $db->prepare('INSERT INTO unconsumed_revenue VALUES (?, ?, ?, ?, ?, NULL)');
+        $query->execute([$customer_id, $flight_purchase_id, $year, $minutes, $cost]);
+    }
+}
+
+function markPurchasesExpired() {
+    global $db;
+
+    $query = $db->prepare('SELECT s.date, s.invoice_number, c.email, c.address, c.customer_name 
+      FROM sales s
+      INNER JOIN customer c ON s.customer_id = c.customer_id
+      WHERE s.expiry = DATE(NOW()) OR s.date <= DATE_SUB(NOW(),INTERVAL 1 YEAR)
+      AND c.customer_name LIKE "%Mohammed Sultan Alkaabi%" ');
+
+    $query->execute();
+    $result = $query->fetchAll(PDO::FETCH_ASSOC);
+
+    foreach ($result as $row) {
+        // select only those invoices which company is liable to pay
+        $query2 = $db->prepare('SELECT * FROM flight_purchases fp 
+          INNER JOIN flight_credits fc ON fp.id = fc.flight_purchase_id
+          INNER JOIN flight_offers fo ON fp.flight_offer_id = fo.id
+          WHERE fp.invoice_id = ? AND fc.minutes > 0 AND fc.expired_on IS NULL AND fp.customer_id > 0');
+        $query2->execute([$row['invoice_number']]);
+
+        $result2 = $query2->fetchAll(PDO::FETCH_ASSOC);
+        $flight_purchase_ids = [];
+        foreach($result2 as $row2) {
+            $minutes_unconsumed = $row2['minutes'];
+            $discount_percent = $row2['discount'];
+            $discount = $discount_percent * $row2['price'] / 100;
+            $price_unconsumed = $row2['price'] - $discount;
+            saveUnconsumedRevenue($row2['customer_id'], $row2['flight_purchase_id'], date('Y', strtotime($row['date'])), $minutes_unconsumed, $price_unconsumed);
+
+            $email = (filter_var($row['email'], FILTER_VALIDATE_EMAIL)) ? $row['email'] : $row['address'];
+            sendFlightPurchaseExpiredEmail($row['invoice_number'], $row['customer_name'], $email);
+
+            $flight_purchase_ids[] = $row2['flight_purchase_id'];
+        }
+
+        if(count($flight_purchase_ids) > 0) {
+            $query3 = $db->prepare('UPDATE flight_credits SET expired_on = DATE(NOW()) WHERE flight_purchase_id IN (?)');
+            $str = implode(',', $flight_purchase_ids);
+            $query3->execute([$str]);
+        }
+    }
+}
+
+/**
+ * @param $invoice_number
+ * @param $customer_name
+ * @param $customer_email
+ */
+function sendFlightPurchaseExpiredEmail($invoice_number, $customer_name, $customer_email) {
+    $body = sprintf('<div>
+                <img src="%s" width="200" />
+                <p>Hi <b>%s</b>, </p>
+                <p>This is to notify you that your flight purchase against invoice no: <b>%s</b> has expired today. For more info, kindly send an email to <b>info@inflightdubai.com</b>.</p>
+            </div>', BASE_URL.'main/img/inflight_logo.png', $customer_name, $invoice_number);
+
+    //sendEmail($customer_email, 'Expiration of Purchased Flights', $body, true);
+}
+
+function sendFlightExpiryReminder() {
+    global $db;
+
+    $query = $db->prepare('SELECT s.date, s.invoice_number, c.email, c.address, c.customer_name, s.expiry
+      FROM sales s
+      INNER JOIN customer c ON s.customer_id = c.customer_id
+      WHERE s.expiry = DATE(NOW() + INTERVAL 30 DAY) ');
+
+    $query->execute();
+    $result = $query->fetchAll(PDO::FETCH_ASSOC);
+
+    foreach ($result as $row) {
+
+        // select only those invoices which company is liable to pay
+        $query2 = $db->prepare('SELECT * FROM flight_purchases fp 
+          INNER JOIN flight_credits fc ON fp.id = fc.flight_purchase_id
+          INNER JOIN flight_offers fo ON fp.flight_offer_id = fo.id
+          WHERE fp.invoice_id = ? AND fc.minutes > 0 AND fc.expired_on IS NULL');
+        $query2->execute([$row['invoice_number']]);
+
+        $result2 = $query2->fetchAll(PDO::FETCH_ASSOC);
+        $flight_offers = [];
+        foreach($result2 as $row2) {
+            $flight_offers[] = $row2['flight_purchase_id'] .' - '. $row2['offer_name'];
+        }
+
+        if(count($flight_offers) > 0) {
+            $body = sprintf('<div>
+                <img src="' . BASE_URL . 'main/img/inflight_logo.png" width="200" />
+                <p>Hi <b>' . $row['customer_name'] . '</b>:, </p>
+                <p>This is to notify you that the following flight offers you purchased on <b>%s</b> against invoice no: <b>%s</b> will be expiring within a month.
+                    <br><br>
+                    %s
+                    <br><br>
+                    Kindly utilize the flight offers or send an email to <b>info@inflightdubai.com</b> for more information. After 30 days from now, these purchases will be expired.
+                </p>
+            </div>', $row['date'], $row['invoice_number'], implode("<br>", $flight_offers));
+
+            $email = (filter_var($row['email'], FILTER_VALIDATE_EMAIL)) ? $row['email'] : $row['address'];
+            //sendEmail($email, 'Expiration of Purchased Offers', $body, true);
+        }
+    }
 }
