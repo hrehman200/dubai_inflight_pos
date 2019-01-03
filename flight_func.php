@@ -1441,9 +1441,10 @@ function getCustomerLiabilityForMonth($customer_id, $month) {
     $minutes_used_from_credit = 0;
     $minutes_used_from_credit_cost = 0;
 
+    // get records starting from 1 year before date, as credit from records older than 1 year will be marked expired
     $query = $db->prepare('SELECT fp.*, fo.duration FROM flight_purchases fp
                   INNER JOIN flight_offers fo ON fp.flight_offer_id = fo.id
-                  WHERE fp.created >= "2018-01-01" AND fp.created <= ? AND fp.customer_id = ?');
+                  WHERE fp.created >= DATE_SUB(NOW(), INTERVAL 1 YEAR) AND fp.created <= ? AND fp.customer_id = ?');
     $query->execute([$end_date_of_month, $customer_id]);
     $result2 = $query->fetchAll(PDO::FETCH_ASSOC);
 
@@ -1597,7 +1598,9 @@ function markPurchasesExpired() {
       FROM sales s
       INNER JOIN customer c ON s.customer_id = c.customer_id
       WHERE s.expiry = DATE(NOW()) OR s.date <= DATE_SUB(NOW(),INTERVAL 1 YEAR)
-      AND c.customer_name LIKE "%Mohammed Sultan Alkaabi%" ');
+      AND c.customer_id NOT IN (
+        SELECT customer_id FROM customer_yearly_purchases
+      )');
 
     $query->execute();
     $result = $query->fetchAll(PDO::FETCH_ASSOC);
@@ -1616,7 +1619,8 @@ function markPurchasesExpired() {
             $minutes_unconsumed = $row2['minutes'];
             $discount_percent = $row2['discount'];
             $discount = $discount_percent * $row2['price'] / 100;
-            $price_unconsumed = $row2['price'] - $discount;
+            $per_minute_cost = ($row2['price'] - $discount) / $row2['duration'];
+            $price_unconsumed = round($minutes_unconsumed * $per_minute_cost, 2);
             saveUnconsumedRevenue($row2['customer_id'], $row2['flight_purchase_id'], date('Y', strtotime($row['date'])), $minutes_unconsumed, $price_unconsumed);
 
             $email = (filter_var($row['email'], FILTER_VALIDATE_EMAIL)) ? $row['email'] : $row['address'];
@@ -1645,7 +1649,7 @@ function sendFlightPurchaseExpiredEmail($invoice_number, $customer_name, $custom
                 <p>This is to notify you that your flight purchase against invoice no: <b>%s</b> has expired today. For more info, kindly send an email to <b>info@inflightdubai.com</b>.</p>
             </div>', BASE_URL.'main/img/inflight_logo.png', $customer_name, $invoice_number);
 
-    //sendEmail($customer_email, 'Expiration of Purchased Flights', $body, true);
+    sendEmail($customer_email, 'Expiration of Purchased Flights', $body, true);
 }
 
 function sendFlightExpiryReminder() {
@@ -1679,15 +1683,12 @@ function sendFlightExpiryReminder() {
                 <img src="' . BASE_URL . 'main/img/inflight_logo.png" width="200" />
                 <p>Hi <b>' . $row['customer_name'] . '</b>:, </p>
                 <p>This is to notify you that the following flight offers you purchased on <b>%s</b> against invoice no: <b>%s</b> will be expiring within a month.
-                    <br><br>
-                    %s
-                    <br><br>
                     Kindly utilize the flight offers or send an email to <b>info@inflightdubai.com</b> for more information. After 30 days from now, these purchases will be expired.
                 </p>
-            </div>', $row['date'], $row['invoice_number'], implode("<br>", $flight_offers));
+            </div>', $row['date'], $row['invoice_number']);
 
             $email = (filter_var($row['email'], FILTER_VALIDATE_EMAIL)) ? $row['email'] : $row['address'];
-            //sendEmail($email, 'Expiration of Purchased Offers', $body, true);
+            sendEmail($email, 'Expiration of Purchased Offers', $body, true);
         }
     }
 }

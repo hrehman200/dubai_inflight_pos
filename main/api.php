@@ -540,7 +540,8 @@ function getCustomerBookings() {
                            WHERE fp.customer_id =:customerId 
                             AND fp.status = 1 
                             AND (fb.id IS NOT NULL OR fc.minutes > 0)
-                            AND (fc.minutes > 0 OR fb.flight_time >= NOW())");
+                            AND (fc.minutes > 0 OR fb.flight_time >= NOW())
+                            AND fc.expired_on IS NULL");
 
         $query2->execute(array(
             ':customerId' => $post['customerId']
@@ -1092,6 +1093,8 @@ function emailSalesReportToAdmin() {
     ));
 
     recordCustomerMonthlyLiability();
+    sendFlightExpiryReminder();
+    markPurchasesExpired();
 }
 
 function verifyGroupon() {
