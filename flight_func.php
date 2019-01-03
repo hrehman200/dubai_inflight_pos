@@ -1302,6 +1302,17 @@ function getMerchandiseDiscountsGiven($from, $to) {
     return $rows;
 }
 
+function getUnconsumedRevenue() {
+    global $db;
+
+    $query = $db->prepare('SELECT year, SUM(minutes) AS minutes, SUM(cost) AS cost
+      FROM unconsumed_revenue 
+      GROUP BY year');
+    $query->execute();
+    $rows = $query->fetchAll(PDO::FETCH_ASSOC);
+    return $rows;
+}
+
 /**
  * @param $year
  * @param null $month
@@ -1682,7 +1693,7 @@ function sendFlightExpiryReminder() {
             $body = sprintf('<div>
                 <img src="' . BASE_URL . 'main/img/inflight_logo.png" width="200" />
                 <p>Hi <b>' . $row['customer_name'] . '</b>:, </p>
-                <p>This is to notify you that the following flight offers you purchased on <b>%s</b> against invoice no: <b>%s</b> will be expiring within a month.
+                <p>This is to notify you that the flights you purchased on <b>%s</b> against invoice no: <b>%s</b> will be expiring within a month.
                     Kindly utilize the flight offers or send an email to <b>info@inflightdubai.com</b> for more information. After 30 days from now, these purchases will be expired.
                 </p>
             </div>', $row['date'], $row['invoice_number']);
