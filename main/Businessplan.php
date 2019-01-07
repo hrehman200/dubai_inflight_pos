@@ -611,16 +611,18 @@ if(isset($_FILES['csvFile']) && $_FILES['csvFile']['error'] == 0){
             $('.'+unselectedMonths[i]).hide();
         }
 
-        $('tr[class*="row_"]').each(function(index, row) {
-            _calculateRowTotals($(row));
-        });
+        setTimeout(function() {
+            $('tr[class*="row_"]').each(function (index, row) {
+                _calculateRowTotals($(row));
+            });
+        }, 1000);
     });
 
     $('#toMonth').on('change', function(e) {
         var startIndex = allMonths.indexOf($('#fromMonth').val());
         var endIndex = allMonths.indexOf($('#toMonth').val());
         var selectedMonths = allMonths.slice(startIndex, endIndex+1);
-        $('#months').val(selectedMonths)
+        $('input[name="months[]"]').val(selectedMonths)
             .trigger('change');
     });
 
