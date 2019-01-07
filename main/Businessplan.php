@@ -83,6 +83,7 @@ if(isset($_FILES['csvFile']) && $_FILES['csvFile']['error'] == 0){
                 <input type="hidden" name="monthIndex" id="monthIndex" value="<?= $_REQUEST['monthIndex'] ?>"/>
                 <select id="year" name="year">
                     <?php
+                    $year = isset($_POST['year']) ? $_POST['year'] : date('Y');
                     for ($y = 2018; $y <= date('Y'); $y++) {
                         echo sprintf('<option %s>%d</option>', $year == $y ? 'selected' : '', $y);
                     }
@@ -139,20 +140,18 @@ if(isset($_FILES['csvFile']) && $_FILES['csvFile']['error'] == 0){
 
                 <div>
                     Toggle Months:
-                    <select class="form-control" id="months" name="months" multiple="multiple" style="width: 50%;">
-                        <option>Jan</option>
-                        <option>Feb</option>
-                        <option>Mar</option>
-                        <option>Apr</option>
-                        <option>May</option>
-                        <option>Jun</option>
-                        <option>Jul</option>
-                        <option>Aug</option>
-                        <option>Sep</option>
-                        <option>Oct</option>
-                        <option>Nov</option>
-                        <option>Dec</option>
-                    </select>
+                    <label><input type="checkbox" value="Jan" name="months[]" checked /> Jan</label>
+                    <label><input type="checkbox" value="Feb" name="months[]" checked /> Feb</label>
+                    <label><input type="checkbox" value="Mar" name="months[]" checked /> Mar</label>
+                    <label><input type="checkbox" value="Apr" name="months[]" checked /> Apr</label>
+                    <label><input type="checkbox" value="May" name="months[]" checked /> May</label>
+                    <label><input type="checkbox" value="Jun" name="months[]" checked /> Jun</label>
+                    <label><input type="checkbox" value="Jul" name="months[]" checked /> Jul</label>
+                    <label><input type="checkbox" value="Aug" name="months[]" checked /> Aug</label>
+                    <label><input type="checkbox" value="Sep" name="months[]" checked /> Sep</label>
+                    <label><input type="checkbox" value="Oct" name="months[]" checked /> Oct</label>
+                    <label><input type="checkbox" value="Nov" name="months[]" checked /> Nov</label>
+                    <label><input type="checkbox" value="Dec" name="months[]" checked /> Dec</label>
                 </div>
 
             </form>
@@ -553,8 +552,6 @@ if(isset($_FILES['csvFile']) && $_FILES['csvFile']['error'] == 0){
 
 </body>
 <?php include('footer.php'); ?>
-<link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.6-rc.0/css/select2.min.css" rel="stylesheet" />
-<script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.6-rc.0/js/select2.min.js"></script>
 </html>
 
 <style>
@@ -574,11 +571,11 @@ if(isset($_FILES['csvFile']) && $_FILES['csvFile']['error'] == 0){
         background-color: white;
     }
 
-    .actual {
+    .actual, .fy-actual {
         background-color: #ceffc2
     }
 
-    .budget {
+    .budget, .fy-budget {
         background-color: #fff6b4
     }
 
@@ -596,10 +593,12 @@ if(isset($_FILES['csvFile']) && $_FILES['csvFile']['error'] == 0){
 
     var allMonths = ["<?=implode('","', $all_months)?>"];
 
-    $('#months').select2();
+    $('input[name="months[]"]').on('change', function(e) {
+         var selectedMonths = [];
+         $('input[name="months[]"]:checked').each(function(i){
+             selectedMonths.push($(this).val());
+         });
 
-    $('#months').on('change', function(e) {
-         var selectedMonths = $(this).val();
          var unselectedMonths = jQuery.grep(allMonths, function (item) {
             return jQuery.inArray(item, selectedMonths) < 0;
          });
