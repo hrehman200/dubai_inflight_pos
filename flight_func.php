@@ -1671,10 +1671,12 @@ function sendFlightPurchaseExpiredEmail($invoice_number, $customer_name, $custom
 function sendFlightExpiryReminder() {
     global $db;
 
+    // get purchases which are expiring after 30 days OR which were purchased 1 year minus 30 days prior (for cases where expiry is null)
     $query = $db->prepare('SELECT s.date, s.invoice_number, c.email, c.address, c.customer_name, s.expiry
       FROM sales s
       INNER JOIN customer c ON s.customer_id = c.customer_id
-      WHERE s.expiry = DATE(NOW() + INTERVAL 30 DAY) ');
+      WHERE s.expiry = DATE(NOW() + INTERVAL 30 DAY) 
+        OR s.date = DATE_ADD(DATE_SUB(NOW(),INTERVAL 1 YEAR), INTERVAL 30 DAY)');
 
     $query->execute();
     $result = $query->fetchAll(PDO::FETCH_ASSOC);
