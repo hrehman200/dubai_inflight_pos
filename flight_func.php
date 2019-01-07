@@ -1305,9 +1305,14 @@ function getMerchandiseDiscountsGiven($from, $to) {
 function getUnconsumedRevenue() {
     global $db;
 
-    $query = $db->prepare('SELECT year, SUM(minutes) AS minutes, SUM(cost) AS cost
-      FROM unconsumed_revenue 
-      GROUP BY year');
+    $query = $db->prepare('SELECT 
+        CASE 
+            WHEN year < 2018 OR flight_purchase_id IS NULL THEN "Pre 2018"
+            ELSE year
+        END AS year1,
+        SUM(minutes) AS minutes, SUM(cost) AS cost
+          FROM unconsumed_revenue 
+          GROUP BY year1');
     $query->execute();
     $rows = $query->fetchAll(PDO::FETCH_ASSOC);
     return $rows;

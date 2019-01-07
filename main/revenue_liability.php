@@ -1,5 +1,6 @@
 <?php
 include('header.php');
+ini_set('max_execution_time', 1800);
 ?>
 
 <div class="container-fluid">
@@ -371,8 +372,8 @@ include('header.php');
                                     foreach($unconsumed_revenue_rows as $row) {
                                         ?>
                                         <tr>
-                                            <td><?=$row['year']?></td>
-                                            <td><?=$row['minutes']?></td>
+                                            <td><?=$row['year1']?></td>
+                                            <td><?=number_format($row['minutes'])?></td>
                                             <td><?=number_format($row['cost'], 2)?></td>
                                         </tr>
                                         <?php
