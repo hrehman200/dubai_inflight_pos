@@ -1,6 +1,7 @@
 <?php
 include('header.php');
 ini_set('max_execution_time', 1800);
+set_time_limit(1800);
 ?>
 
 <div class="container-fluid">
@@ -81,11 +82,19 @@ ini_set('max_execution_time', 1800);
                         </tr>
                         <?php
 
+                        $cache_filename = sprintf('uploads/%s_%s.txt', $_GET['d1'], $_GET['d2']);
+
                         if($_POST['pageType'] == 'military') {
                             $arr_revenue = json_decode(base64_decode($_POST['military_data']), true);
 
                         } else if($_POST['pageType'] == 'ftf') {
                             $arr_revenue = json_decode(base64_decode($_POST['ftf_data']), true);
+
+                        } else if(file_exists($cache_filename)) {
+                            $arr_to_read = json_decode(file_get_contents($cache_filename), true);
+                            $arr_ftf = $arr_to_read['arr_ftf'];
+                            $arr_military = $arr_to_read['arr_military'];
+                            $arr_revenue = $arr_to_read['arr_revenue'];
 
                         } else {
                             $arr_revenue = [];
@@ -161,6 +170,15 @@ ini_set('max_execution_time', 1800);
                             /** OTHER e.g. Facility Rental, Sandstorm Registration Fee  */
                             $arr2 = getOtherRevenue('Other', $_GET['d1'], $_GET['d2']);
                             $arr_revenue = array_merge($arr_revenue, $arr2);
+
+                            if(strtotime($_GET['d2']) < strtotime(date('Y-m-d'))) {
+                                $arr_to_write = [
+                                    'arr_ftf' => $arr_ftf,
+                                    'arr_military' => $arr_military,
+                                    'arr_revenue' => $arr_revenue
+                                ];
+                                file_put_contents($cache_filename, json_encode($arr_to_write));
+                            }
                         }
 
                         foreach ($arr_revenue as $row) {

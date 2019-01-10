@@ -811,7 +811,7 @@ function getQuery($package_name, $sale_date_check = true) {
 
     } else if(!in_array($package_name, $_FTF_DISCOUNTS)) {
         $package_check = " (fpkg.id IN (6, 8)";
-        if($package_name == 'Military') { // we need to check whether for RF, military discount is given, in which case RF will come in Military
+        if(strpos($package_name, 'Military') === 0) { // we need to check whether for RF, military discount is given, in which case RF will come in Military
             $package_check .= " OR fpkg.package_name LIKE 'RF - Repeat Flights%'
                 OR fpkg.package_name LIKE 'FTF%' ";
 
@@ -904,6 +904,7 @@ function getQuery($package_name, $sale_date_check = true) {
         $sql .= "AND d.category NOT IN ('Presidential Guard', 'Navy Seal', 'Military', 'Sky god%') 
                  AND d.category NOT LIKE 'Navy Seal%'
                  AND d.category NOT LIKE 'Groupon%'
+                 AND d.category NOT LIKE 'Military%'
                  ".$ftf_discount_check;
 
     } else if(in_array($package_name, $_FTF_DISCOUNTS)){
@@ -912,16 +913,16 @@ function getQuery($package_name, $sale_date_check = true) {
     } else if($package_name == NAVY_SEAL){
         $sql .= "AND d.category LIKE 'Navy Seal%'";
 
-    } else if($package_name == 'Military'){ // so that military discounts given to RF can be included in Military
+    } else if(strpos($package_name, 'Military') === 0){ // so that military discounts given to RF can be included in Military
         $sql .= "AND (
                     (
-                        (fpkg.package_name LIKE 'RF - Repeat Flights%' AND d.category IN ('Presidential Guard', 'Military', 'Sky god%'))
+                        (fpkg.package_name LIKE 'RF - Repeat Flights%' AND d.category IN ('Presidential Guard', 'Military', 'Sky god%', 'Military Spc'))
                         OR 
-                        (fpkg.package_name NOT LIKE 'RF - Repeat Flights%' AND d.category IN ('Military'))
+                        (fpkg.package_name NOT LIKE 'RF - Repeat Flights%' AND d.category IN ('Military', 'Military Spc'))
                     ) OR (
-                        (fpkg.package_name LIKE 'FTF%' AND d.category IN ('Presidential Guard', 'Military', 'Sky god%'))
+                        (fpkg.package_name LIKE 'FTF%' AND d.category IN ('Presidential Guard', 'Military', 'Sky god%', 'Military Spc'))
                         OR 
-                        (fpkg.package_name NOT LIKE 'FTF%' AND d.category IN ('Military'))
+                        (fpkg.package_name NOT LIKE 'FTF%' AND d.category IN ('Military', 'Military Spc'))
                     )
                 )";
     } else {
@@ -1201,9 +1202,9 @@ function getMinutesFlownInPackages($packages, $from, $to, $search_days = false) 
         }
 
         if($packages == ['Skydivers'] || $packages == ['FTF']) {
-            $discount_category_check = "AND d.category NOT IN ('Presidential Guard', 'Navy Seal', 'Military')";
+            $discount_category_check = "AND (d.category NOT IN ('Presidential Guard', 'Navy Seal', 'Military') AND d.category NOT LIKE 'Military%')";
         } else {
-            $discount_category_check = "AND d.category IN ('Presidential Guard', 'Navy Seal', 'Military')";
+            $discount_category_check = "AND (d.category IN ('Presidential Guard', 'Navy Seal', 'Military') OR d.category LIKE 'Military%')";
         }
     }
 
@@ -1252,7 +1253,7 @@ function getMinutesFlownInPackages($packages, $from, $to, $search_days = false) 
                 if($packages[$i] == 'Skydivers' && strpos($package_full_name, 'Experienced') !== false) {
                     $arr2[$packages[$i]] += $minutes_used;
 
-                } else if($packages[$i] == 'Military' && strpos($package_full_name, 'Experienced') !== false) {
+                } else if(strpos($packages[$i], 'Military') === 0 && strpos($package_full_name, 'Experienced') !== false) {
                     $arr2[$packages[$i]] += $minutes_used;
 
                 } else if(strpos($package_full_name, $packages[$i]) !== false) {
