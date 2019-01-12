@@ -11,3 +11,4 @@ ini_set('max_execution_time', 1800);
 require_once dirname(dirname(__DIR__)).'/connect.php';
 
 markPurchasesExpired();
+sendFlightExpiryReminder();
