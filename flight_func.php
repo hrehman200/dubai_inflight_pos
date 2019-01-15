@@ -1650,6 +1650,17 @@ function markPurchasesExpired() {
             $query3 = $db->prepare('UPDATE flight_credits SET expired_on = DATE(NOW()) WHERE flight_purchase_id IN (?)');
             $str = implode(',', $flight_purchase_ids);
             $query3->execute([$str]);
+
+            if($query3->affected_rows == 0) {
+                try {
+                    $query4 = $db->prepare('INSERT INTO flight_credits VALUES (?, ?, ?, NOW())');
+                    $query4->execute([
+                        $row['customer_id'], $row2['id'], $minutes_unconsumed
+                    ]);
+                } catch (Exception $e) {
+                    // so that code continues to execute
+                }
+            }
         }
     }
 }
