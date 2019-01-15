@@ -22,6 +22,10 @@ session_start();
         .table tr {
             background-color: #ffffff;
         }
+
+        .row-expired td {
+            background-color: lightcoral !important;
+        }
     </style>
     <link href="css/bootstrap-responsive.css" rel="stylesheet">
 
@@ -175,11 +179,14 @@ session_start();
                         $sql = "SELECT fp.id AS flight_purchase_id, fp.deduct_from_balance, fo.code, fpkg.package_name, fo.offer_name, fp.price, fo.duration, c.customer_name, DATE_FORMAT(fp.created,'%b %d, %Y') AS created,
                               fb.duration AS booking_duration,
                               s.after_dis,
-                              s.invoice_number
+                              s.invoice_number,
+                              fc.expired_on, 
+                              fc.minutes AS expired_minutes
                               FROM flight_purchases fp
                               INNER JOIN flight_offers fo ON fp.flight_offer_id = fo.id
                               INNER JOIN flight_packages fpkg ON fo.package_id = fpkg.id
                               LEFT JOIN flight_bookings fb ON fb.flight_purchase_id = fp.id
+                              LEFT JOIN flight_credits fc ON fp.id = fc.flight_purchase_id
                               INNER JOIN sales s ON fp.invoice_id = s.invoice_number
                               INNER JOIN customer c ON fp.customer_id = c.customer_id ";
 
@@ -221,11 +228,24 @@ session_start();
                                 $total_paid += $row['after_dis'];
                             }
                             ?>
-                            <tr>
-                                <td><a href="flight_preview.php?invoice=<?=$row['invoice_number']?>" target="_blank"><?=$row['invoice_number']?></a></td>
+                            <tr class="<?=$row['expired_on'] != null ? 'row-expired' : ''?>">
+                                <td><a href="flight_preview.php?invoice=<?=$row['invoice_number']?>" target="_blank"><b><?=$row['invoice_number']?></b></a></td>
                                 <td><?php echo $row['customer_name']; ?></td>
-                                <td><?php echo $row['package_name']; ?></td>
-                                <td><?php echo $row['deduct_from_balance']>0 ? $row['offer_name'].' (Deduct from balance)' : $row['offer_name'] ; ?></td>
+                                <td><?php
+                                    echo $row['package_name'];
+                                    if($row['expired_on'] != null) {
+
+                                    }
+                                    ?></td>
+                                <td><?php
+                                    echo $row['deduct_from_balance']>0 ? $row['offer_name'].' (Deduct from balance)' : $row['offer_name'] ;
+                                    if($row['expired_on'] != null) {
+                                        echo sprintf('<br><small><b>Expired on:<b> %s 
+                                            <br>
+                                            <b>Expired minutes:</b> %s
+                                        </small>', $row['expired_on'], $row['expired_minutes']);
+                                    }
+                                    ?></td>
                                 <td><?php echo $row['deduct_from_balance']>0 ? '-' : number_format($row['price']); ?></td>
                                 <td><?=$row['after_dis']?></td>
                                 <td><?php echo $row['deduct_from_balance']>0 ? $row['booking_duration'] :$row['duration']; ?></td>
@@ -379,4 +399,4 @@ session_start();
     }
 </script>
 <?php include('footer.php'); ?>
-</html>
+</html>
