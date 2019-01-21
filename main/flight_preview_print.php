@@ -87,7 +87,8 @@ $secondPaymentOption = $_GET['paysecond'];
         }
 
         li {
-            line-height: 11px;
+            line-height: 12px;
+            font-weight: bold;
         }
 
         #footer {
@@ -257,11 +258,10 @@ $secondPaymentOption = $_GET['paysecond'];
 
                 <tr>
                     <td colspan="2" align="left" style="padding-top:20px;">
-                        Inflight Terms:
+                        <b>Inflight Terms:</b>
                         <ul>
-                            <li>Items can be exchange with in 14 days, and exchange is possible only for same product</li>
-                            <li>All purchases are Not Refundable</li>
-                            <li>Inflight Terms and Condition Inflight Terms and Condition will be applicable on all Inflight Packages and Products</li>
+                            <li>Non Refundable, Not Transferable,  Valid to fly, with in 1 year from the date of Purchase</li>
+                            <li>Inflight Terms and Conditions are applied on all Transactions</li>
                         </ul>
 
                     </td>

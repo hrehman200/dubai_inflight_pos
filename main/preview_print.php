@@ -30,6 +30,10 @@
             position: relative;
         }
 
+        li {
+            line-height: 11px;
+        }
+
         #footer {
             position: absolute;
             bottom: 0;
@@ -220,6 +224,19 @@
                 ?>
             </td>
         </tr>
+
+        <tr>
+            <td colspan="3" align="left" style="padding-top:20px;">
+                Inflight Terms:
+                <ul>
+                    <li>Items can be exchange with in 14 days, and exchange is possible only for same product</li>
+                    <li>All purchases are Not Refundable</li>
+                    <li>Inflight Terms and Condition Inflight Terms and Condition will be applicable on all Inflight Packages and Products</li>
+                </ul>
+
+            </td>
+        </tr>
+
         </tbody>
     </table>
 
