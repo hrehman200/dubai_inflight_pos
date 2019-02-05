@@ -1611,7 +1611,7 @@ function saveUnconsumedRevenue($customer_id, $flight_purchase_id, $year, $minute
 function markPurchasesExpired() {
     global $db;
 
-    $query = $db->prepare('SELECT s.date, s.invoice_number, c.email, c.address, c.customer_name 
+    $query = $db->prepare('SELECT s.date, s.invoice_number, c.email, c.address, c.customer_name, c.customer_id 
       FROM sales s
       INNER JOIN customer c ON s.customer_id = c.customer_id
       WHERE s.expiry = DATE(NOW()) OR s.date = DATE_SUB(NOW(),INTERVAL 1 YEAR)

@@ -109,7 +109,7 @@ if (@$_POST['savingflight'] == 1) {
             <p>Regards, <br> Operation - Inflight Dubai</p>
         </div>';
     $email = (filter_var($customer['email'], FILTER_VALIDATE_EMAIL)) ? $customer['email'] : $customer['address'];
-    $response = sendEmail($email, 'Thanks for Flying with InflightDubai', $body);
+    $response = sendEmail($email, 'Thanks for Flying with InflightDubai', $body, true);
 
     header("location: flight_preview.php?invoice=$invoice_id&payfirst=$cash&paysecond=$remaining_cash");
 
