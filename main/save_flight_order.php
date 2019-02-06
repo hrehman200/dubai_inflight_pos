@@ -2,7 +2,12 @@
 session_start();
 include_once('../connect.php');
 
-$invoice            = $_POST['invoice'];
+$invoice            = trim($_POST['invoice']);
+if($invoice == '') {
+    echo '<h3>No invoice number (RS-.....) set. Go back to select flight package.</h3>';
+    exit();
+}
+
 $flight_offer_id    = $_POST['flightOffer'];
 $flight_time        = $_POST['flightDate'] . " " . $_POST['flightTime'] . ":00";
 $offer_duration     = $_POST['offerDuration'];

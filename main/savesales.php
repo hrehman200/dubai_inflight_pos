@@ -1,6 +1,11 @@
 <?php
 include_once('../connect.php');
 $invoice_id               = $_POST['invoice'];
+if($invoice_id == '') {
+    echo '<h3>No invoice number (RS-.....) set. Go back to select flight package selection screen.</h3>';
+    exit();
+}
+
 $b               = $_POST['cashier'];
 $c               = $_POST['date'];
 $d               = $_POST['ptype'];

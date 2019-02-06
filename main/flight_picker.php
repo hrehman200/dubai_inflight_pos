@@ -474,6 +474,13 @@ if(isset($_GET['customer_id'])) {
 
     let urlParams = new URLSearchParams(window.location.search);
 
+    $('#formFlightTime').on('submit', function(e) {
+        if($('input[name="invoice"]').val() == '') {
+            bootbox.alert('No invoice number set. Please go back to package selection screen.');
+            e.preventDefault();
+        }
+    });
+
     var _setMinutes = function() {
         var minutes = $('#flightOffer').find('option:selected').data('duration');
         if(minutes > 30) {
