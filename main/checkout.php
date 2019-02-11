@@ -101,7 +101,7 @@
     </style>
 </head>
 <body onLoad="document.getElementById('country').focus();">
-<form action="savesales.php" method="post">
+<form action="savesales.php" id="checkoutForm" method="post">
     <div id="ac">
         <center><h4><i class="icon icon-money icon-large"></i> Collection</h4></center>
         <hr>
@@ -215,6 +215,10 @@
 </form>
 
 <script type="text/javascript">
+
+    $('#checkoutForm').on('submit', function(e) {
+        $('#saveButton').attr('disabled', true);
+    });
 
     function callJavaScriptOnFirstMenu(selectedValue) {
         var credit_time = document.getElementById('credit_time').value;
