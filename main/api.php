@@ -15,6 +15,10 @@ function getTimeslotsForFlightDate() {
     if ($office_time_slots == 1) {
         $start = "10:00";
         $end = "18:30";
+
+    } else if(strpos($_SERVER["HTTP_REFERER"], BASE_URL) !== false) {
+        $start = "11:00";
+        $end = "18:30";
     }
 
     $tStart = strtotime($start);

@@ -912,7 +912,7 @@
                 'flight_offer_id': flightOfferId,
                 'duration': duration,
                 'show_slots_with_minutes_only': $('#chkOnlySlotsWithDuration').is(':checked') ? 1 : 0,
-                'office_time_slots': 1,//$('#chkOnlyOfficeTimeSlots').is(':checked') ? 1 : 0
+                'office_time_slots': 0,//$('#chkOnlyOfficeTimeSlots').is(':checked') ? 1 : 0
             },
             dataType: 'json',
             success: function (response) {
