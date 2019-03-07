@@ -25,6 +25,12 @@ if(empty($invoice) || is_null($invoice)) {
     exit();
 }
 
+if(array_key_exists('decision', $_POST) && $_POST['decision'] == 'ERROR') {
+    echo 'An error occurred. Please go back and retry the transaction.<br/>';
+    echo '<b>Error: </b>'. $_POST['message'];
+    exit();
+}
+
 // mark groupon codes as used
 $query = $db->prepare('SELECT groupon_code FROM flight_purchases WHERE groupon_code IS NOT NULL AND invoice_id=? ');
 $query->execute([$invoice]);
