@@ -569,6 +569,13 @@ function getCustomerBookings() {
         if ($query2->rowCount() > 0) {
             while ($row = $query2->fetch()) {
 
+                $cancel_html = '<a href="javascript:;" onclick="reschedule(' . $row['flight_booking_id'] . ')" class="btn btn-small btn-reschedule">Reschedule</a>
+                            <a href="javascript:;" onclick="cancelFlight(\'' . $row['flight_booking_id'] . '\', this)" class="btn btn-small btn-cancel">Cancel</a>';
+
+                if(!is_null($row['flight_time']) && strtotime($row['flight_time']) < time()) {
+                    $cancel_html = '';
+                }
+
                 $table2 .= sprintf('
                     <tr>
                         <td>%s</td>
@@ -583,8 +590,7 @@ function getCustomerBookings() {
                     ($row['credit_time'] > 0 ? '<a href="javascript:;" class="btn btn-small btnTransferCredit">Transfer</a>' : '')
                     . '</td>
                         <td>
-                            <a href="javascript:;" onclick="reschedule(' . $row['flight_booking_id'] . ')" class="btn btn-small btn-reschedule">Reschedule</a>
-                            <a href="javascript:;" onclick="cancelFlight(\'' . $row['flight_booking_id'] . '\', this)" class="btn btn-small btn-cancel">Cancel</a>
+                            '.$cancel_html.'
                         </td>
                     </tr>', $row['customer_name'], $row['offer_name'], $row['created'], $row['flight_time'],
                     ($row['deduct_from_balance'] > 0) ? $row['booking_duration'] : $row['duration'],
