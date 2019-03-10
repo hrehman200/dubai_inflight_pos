@@ -282,7 +282,7 @@ if(isset($_GET['customer_id'])) {
                     $str_query = parse_url($url, PHP_URL_QUERY);
 
                     $result = $db->prepare("SELECT fp.id AS flight_purchase_id, fp.deduct_from_balance, fp.class_people, fp.discount, fp.discount_id, vc.percent,
-                      fo.code, fpkg.package_name, fo.offer_name, fp.price, fo.duration 
+                      fo.code, fpkg.package_name, fo.offer_name, fp.price, fo.duration, d.parent 
                       FROM flight_purchases fp
                       LEFT JOIN flight_offers fo ON fp.flight_offer_id = fo.id
                       LEFT JOIN flight_packages fpkg ON fo.package_id = fpkg.id
@@ -324,6 +324,16 @@ if(isset($_GET['customer_id'])) {
                                 $discount_amount = $discount_percent * $current_price / 100;
                                 $total_cost -= $discount_amount;
                                 ?>
+                                <select class="discountParent">
+                                    <?php
+                                    $query = $db->query('SELECT DISTINCT(parent) FROM discounts WHERE parent != "" ORDER BY parent');
+                                    $query->execute();
+                                    while($row2 = $query->fetch()) {
+                                        $selected = ($row['parent'] == $row2['parent']) ? 'selected' : '';
+                                        echo sprintf('<option %s>%s</option>', $selected, $row2['parent']);
+                                    }
+                                    ?>
+                                </select>
                                 <select class="discountPercent" data-transaction-id="<?=$row['flight_purchase_id']?>">
                                     <option value="0" data-percent="0">None</option>
                                     <?php
@@ -331,7 +341,7 @@ if(isset($_GET['customer_id'])) {
                                     $query->execute();
                                     while($row2 = $query->fetch()) {
                                         $selected = (($row['discount_id']==$row2['id'])?'selected':'');
-                                        echo sprintf('<option value="%d" %s data-percent="%.2f">%s (%.0f%%)</option>', $row2['id'], $selected, $row2['percent'], $row2['category'], $row2['percent']);
+                                        echo sprintf('<option value="%d" %s data-percent="%.2f" data-parent="%s">%s (%.0f%%)</option>', $row2['id'], $selected, $row2['percent'], $row2['parent'], $row2['category'], $row2['percent']);
                                     }
                                     ?>
                                 </select>
@@ -1313,6 +1323,17 @@ if(isset($_GET['customer_id'])) {
         $('#flightOffer').val(urlParams.get('flight_offer_id'));
     }
 
+    $('.discountParent').on('change', function(e) {
+        if (e.originalEvent !== undefined) {
+            var parent = $(this).val();
+
+            $('.discountPercent')
+                .find('option').hide().end()
+                .find('option[data-parent="' + parent + '"]').show().end()
+                .find('option[data-parent="' + parent + '"]:eq(0)').prop('selected', true).end()
+                .change();
+        }
+    }).change();
 </script>
 
 <?php include('footer.php'); ?>
