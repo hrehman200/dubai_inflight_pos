@@ -106,34 +106,116 @@ $position = $_SESSION['SESS_LAST_NAME'];
                 <i class="icon-dashboard"></i> Dashboard
 
                 <div align="center">
-                    <h3>Commercial Packages</h3>
-                <?php
-                $packages = $db->prepare("SELECT * FROM flight_packages WHERE status = 1 AND (type IS NULL OR type = 0)");
-                $packages->execute(array());
+                    <h3><?=(is_string($_GET['pkg_id']) ? $_GET['pkg_id'] : 'Packages')?></h3>
+                    <?php
+                    $packages = $db->prepare("SELECT * FROM flight_packages WHERE status = 1 AND (type IS NULL OR type = 0)");
+                    $packages->execute(array());
 
-                while($row = $packages->fetch()) {
-                    echo sprintf('<a class="btn" href="flight_picker.php?pkg_id=%d&id=&invoice=%s">
-                    <img src="img/flight_pacakges/%s" width="128" class="" /> <br/>
-                    %s</a>', $row['id'], $finalcode, $row['image'], $row['package_name']);
-                }
-                ?>
+                    $packages1 = [
+                        'FTF' => [
+                            'packages' => [
+                                'Earn your wings' => [
+                                    'id' => 1,
+                                    'img' => ''
+                                ],
+                                'Spread your wings' => [
+                                    'id' => 3,
+                                    'img' => ''
+                                ],
+                                'FTF Class Session' => [
+                                    'id' => 5,
+                                    'img' => ''
+                                ]
+                            ],
+                            'img' => ''
+                        ],
+                        'Return Flyer' => [
+                            'id' => 6,
+                            'img' => '',
+                            'packages' => []
+                        ],
+                        'Military' => [
+                            'packages' => [
+                                'Military Contract' => [
+                                    'id' => 6,
+                                    'img' => ''
+                                ],
+                                'Military Individuals' => [
+                                    'id' => 6,
+                                    'img' => ''
+                                ]
+                            ],
+                            'img' => ''
+                        ],
+                        'Add On' => [
+                            'packages' => [
+                                'Up Sale' => [
+                                    'id' => 18,
+                                    'img' => ''
+                                ],
+                                'Classroom' => [
+                                    'id' => 5,
+                                    'img' => ''
+                                ],
+                                'Gift Vouchers' => [
+                                    'id' => 11,
+                                    'img' => ''
+                                ],
+                                'FTF School Package' => [
+                                    'id' => 12,
+                                    'img' => ''
+                                ]
+                            ],
+                            'img' => ''
+                        ]
+                    ];
+
+                    function getLink($pkg_name, $pkg_data) {
+                        global $finalcode;
+                        if(array_key_exists('id', $pkg_data)) {
+                            $href = sprintf('flight_picker.php?pkg_id=%d&id=&invoice=%s', $pkg_data['id'], $finalcode);
+                        } else {
+                            $href = sprintf('flight_packages.php?pkg_id=%s&id=&invoice=%s', $pkg_name, $finalcode);
+                        }
+
+                        return sprintf('<a class="btn" href="%s">
+                                    <img src="img/flight_pacakges/%s" width="128" class="" /> <br/>
+                                    %s</a>', $href, $pkg_data['img'], $pkg_name);
+                    }
+
+                    $pkg_id = $_GET['pkg_id'];
+                    if(is_string($pkg_id)) {
+                        foreach($packages1[$pkg_id]['packages'] as $pkg_name => $pkg_data) {
+                            echo getLink($pkg_name, $pkg_data);
+                        }
+                    } else {
+                        foreach ($packages1 as $pkg_name => $pkg_data) {
+                            echo getLink($pkg_name, $pkg_data);
+                        }
+                    }
+
+                    ?>
                 </div>
+
+                <?php if(!isset($_GET['pkg_id'])) { ?>
 
                 <hr>
 
                 <div align="center">
-                    <h3>Internal Packages</h3>
+                    <h3>Internal Bookings</h3>
                     <?php
                     $packages = $db->prepare("SELECT * FROM flight_packages WHERE status = 1 AND type = ?");
                     $packages->execute(array(FLIGHT_PACKAGE_TYPE_INTERNAL));
 
-                    while($row = $packages->fetch()) {
+                    while ($row = $packages->fetch()) {
                         echo sprintf('<a class="btn btnInternalPackages" href="flight_picker.php?pkg_id=%d&id=&invoice=%s" data-package="%s">
                         <img src="img/flight_pacakges/%s" width="128" class="" /> <br/>
                         %s</a>', $row['id'], $finalcode, $row['package_name'], $row['image'], $row['package_name']);
                     }
                     ?>
                 </div>
+
+                <?php } ?>
 
             </div>
         </div>
