@@ -98,6 +98,13 @@ include('header.php');
                     <tr>
                         <th colspan="11" style="text-align: center;">
                             <h3>End of Day Report from&nbsp;<?php echo date('M j, Y', strtotime($d1)) ?>&nbsp;to&nbsp;<?php echo date('M j, Y', strtotime($d2)) ?></h3>
+                            <?php
+                            if(isset($_GET['verified'])) {
+                                ?>
+                                <h4>Verified by: <?=$_SESSION['SESS_FIRST_NAME']?></h4>
+                                <?php
+                            }
+                            ?>
                         </th>
                     </tr>
                     <tr>

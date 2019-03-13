@@ -193,7 +193,7 @@ $position = $_SESSION['SESS_LAST_NAME'];
                         }
                     } else {
                         foreach ($packages1 as $pkg_name => $pkg_data) {
-                            echo getLink($pkg_name, $pkg_data);
+                            echo getLink($pkg_name, $pkg_data, $pkg_name);
                         }
                     }
 
