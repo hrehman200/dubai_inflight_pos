@@ -170,10 +170,13 @@ $position = $_SESSION['SESS_LAST_NAME'];
                         ]
                     ];
 
-                    function getLink($pkg_name, $pkg_data) {
+                    function getLink($pkg_name, $pkg_data, $parent_pkg = null) {
                         global $finalcode;
                         if(array_key_exists('id', $pkg_data)) {
-                            $href = sprintf('flight_picker.php?pkg_id=%d&id=&invoice=%s', $pkg_data['id'], $finalcode);
+                            if($parent_pkg == 'Add On') {
+                                $parent_pkg = 'Other';
+                            }
+                            $href = sprintf('flight_picker.php?pkg_id=%d&pkg_name=%s&invoice=%s', $pkg_data['id'], $parent_pkg, $finalcode);
                         } else {
                             $href = sprintf('flight_packages.php?pkg_id=%s&id=&invoice=%s', $pkg_name, $finalcode);
                         }
@@ -186,7 +189,7 @@ $position = $_SESSION['SESS_LAST_NAME'];
                     $pkg_id = $_GET['pkg_id'];
                     if(is_string($pkg_id)) {
                         foreach($packages1[$pkg_id]['packages'] as $pkg_name => $pkg_data) {
-                            echo getLink($pkg_name, $pkg_data);
+                            echo getLink($pkg_name, $pkg_data, $pkg_id);
                         }
                     } else {
                         foreach ($packages1 as $pkg_name => $pkg_data) {
@@ -208,7 +211,7 @@ $position = $_SESSION['SESS_LAST_NAME'];
                     $packages->execute(array(FLIGHT_PACKAGE_TYPE_INTERNAL));
 
                     while ($row = $packages->fetch()) {
-                        echo sprintf('<a class="btn btnInternalPackages" href="flight_picker.php?pkg_id=%d&id=&invoice=%s" data-package="%s">
+                        echo sprintf('<a class="btn btnInternalPackages" href="flight_picker.php?pkg_id=%d&pkg_name=Other&invoice=%s" data-package="%s">
                         <img src="img/flight_pacakges/%s" width="128" class="" /> <br/>
                         %s</a>', $row['id'], $finalcode, $row['package_name'], $row['image'], $row['package_name']);
                     }

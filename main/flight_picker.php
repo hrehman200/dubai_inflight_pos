@@ -172,6 +172,7 @@ if(isset($_GET['customer_id'])) {
                 <input type="hidden" name="creditDuration" id="creditDuration" value="" />
                 <input type="hidden" name="useCredit" id="useCredit" value="0" />
                 <input type="hidden" name="giveaway_token" id="giveaway_token" value="<?=$_GET['t']?>" />
+                <input type="hidden" name="pkg_name" id="pkg_name" value="<?=$_GET['pkg_name']?>" />
 
                 <?php
                 $result = $db->prepare("SELECT * FROM flight_packages WHERE id = :package_id AND status = 1");
@@ -328,9 +329,23 @@ if(isset($_GET['customer_id'])) {
                                     <?php
                                     $query = $db->query('SELECT DISTINCT(parent) FROM discounts WHERE parent != "" ORDER BY parent');
                                     $query->execute();
+                                    $arr_default_discounts = [
+                                        6 => 'Return Flyer',
+                                        1 => 'FTF',
+                                        3 => 'FTF',
+                                        5 => 'FTF',
+                                        12 => 'FTF',
+                                    ];
                                     while($row2 = $query->fetch()) {
-                                        $selected = ($row['parent'] == $row2['parent']) ? 'selected' : '';
-                                        echo sprintf('<option %s>%s</option>', $selected, $row2['parent']);
+                                        if(isset($_GET['pkg_name']) && $_GET['pkg_name'] == $row2['parent']) {
+                                            echo sprintf('<option %s>%s</option>', 'selected', $row2['parent']);
+                                        }
+                                        if(is_null($row['parent'])) {
+                                            $selected = ($arr_default_discounts[$_GET['pkg_id']] == $row2['parent']) ? 'selected' : '';
+                                        } else {
+                                            $selected = ($row['parent'] == $row2['parent']) ? 'selected' : '';
+                                        }
+
                                     }
                                     ?>
                                 </select>
@@ -1324,12 +1339,13 @@ if(isset($_GET['customer_id'])) {
     }
 
     $('.discountParent').on('change', function(e) {
-        if (e.originalEvent !== undefined) {
-            var parent = $(this).val();
+        var parent = $(this).val();
+        $('.discountPercent')
+            .find('option').hide().end()
+            .find('option[data-parent="' + parent + '"]').show().end();
 
+        if (e.originalEvent !== undefined) {
             $('.discountPercent')
-                .find('option').hide().end()
-                .find('option[data-parent="' + parent + '"]').show().end()
                 .find('option[data-parent="' + parent + '"]:eq(0)').prop('selected', true).end()
                 .change();
         }
