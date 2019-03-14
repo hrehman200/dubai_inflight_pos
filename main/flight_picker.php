@@ -217,7 +217,7 @@ if(isset($_GET['customer_id'])) {
 
                 <input type="text" class="form-contorl span4" placeholder="Search Customers" id="customer" name="customer" autocomplete="off" />
 
-                <button id="btnAddCustomer" data-href="user_login.php" class="btn btn-secondary" style="margin-bottom:9px;">
+                <button id="btnAddCustomer" data-href="customer_add_pos.php" class="btn btn-secondary" style="margin-bottom:9px;">
                     Add Customer
                 </button>
 
@@ -454,7 +454,7 @@ if(isset($_GET['customer_id'])) {
                 <p>Loading...</p>
             </div>
             <div class="modal-footer">
-                <div class="msg"></div>
+                <div class="msg alert alert-danger hidden"></div>
                 <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
                 <button type="button" id="btnSaveCustomer" class="btn btn-primary" data-loading-text="<i>Saving...</i>">Save</button>
             </div>
@@ -792,7 +792,7 @@ if(isset($_GET['customer_id'])) {
                     var _customer = response.data;
                     $('#customer').append('<option value="'+_customer.customer_id+'" selected>'+_customer.customer_name+'</option>');
                 } else {
-                    $('#add-customer-modal .msg').html('');
+                    $('#add-customer-modal .msg').removeClass('hidden').html(response.msg);
                 }
             }
         });

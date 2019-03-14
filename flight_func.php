@@ -18,6 +18,7 @@ define('ROLE_OPERATOR', 'Operator');
 define('ROLE_CASHIER', 'cashier');
 define('ROLE_ACCOUNT', 'account');
 define('ROLE_MANAGEMENT', 'Management');
+define('ROLE_PROCUREMENT', 'Procurement');
 
 define('SESS_MOCK_ROLE', 'sess_mock_role');
 

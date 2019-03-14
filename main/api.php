@@ -223,11 +223,13 @@ function saveCustomer() {
     $sql = "INSERT INTO customer
       (customer_name, address, gender, phone, email, password, nationality, resident_of, dob, 
       image, 
-      activate_token)
+      activate_token,
+      note)
       VALUES
       (:customer_name, :address, :gender, :phone, :email, :password, :nationality, :resident_of, :dob, 
       :image,
-      :activate_token)";
+      :activate_token,
+      :note)";
 
     $query = $db->prepare($sql);
 
@@ -235,8 +237,8 @@ function saveCustomer() {
     $link = sprintf('<a href="%smain/activate.php?lt=%s&invoice=%s&p=%s">Activate</a>', BASE_URL, $link_token, $post['invoice'], $post['p']);
 
     $query->execute(array(
-        ':customer_name' => $post['first_name'].' '.$post['last_name'],
-        ':address' => ($post['address'] ? $post['address'] : ''),
+        ':customer_name' => ($post['pos']==1) ? $post['customer_name'] : $post['first_name'].' '.$post['last_name'],
+        ':address' => ($post['pos']==1) ? $post['email'] : ($post['address'] ? $post['address'] : ''),
         ':gender' => $post['gender'],
         ':phone' => $post['phone'],
         ':email' => $post['email'],
@@ -245,17 +247,20 @@ function saveCustomer() {
         ':resident_of' => ($post['resident_of'] ? $post['resident_of'] : ''),
         ':dob' => $post['dob-year'].'-'.$post['dob-month'].'-'.$post['dob-day'],
         ':image' => ($new_image ? $new_image : ''),
-        ':activate_token' => $link_token
+        ':activate_token' => $link_token,
+        ':note' => $post['note'] ? $post['note'] : ''
     ));
 
     $customer_id = $db->lastInsertId();
 
-    $body = '<div>
-        <img src="' . BASE_URL . 'main/img/inflight_logo.png" width="200" />
-        <p>Click on the following link to activate your account: </p>
-        <p>' . $link . '</p>
-    </div>';
-    $response = sendEmail($post['email'], 'InflightDubai Account Activation', $body);
+    if($post['pos'] != 1) {
+        $body = '<div>
+            <img src="' . BASE_URL . 'main/img/inflight_logo.png" width="200" />
+            <p>Click on the following link to activate your account: </p>
+            <p>' . $link . '</p>
+        </div>';
+        $response = sendEmail($post['email'], 'InflightDubai Account Activation', $body);
+    }
 
     echo json_encode(array(
         'success' => 1,

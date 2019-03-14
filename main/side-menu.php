@@ -55,7 +55,7 @@ if ($position == 'cashier'  || $position == 'Operator' || $_SESSION[SESS_MOCK_RO
 				//<li class="'.($current_page=='salesreport.php'?'active':'').'"><a href="salesreport.php?d1=0&d2=0"><i class="icon-bar-chart icon-2x"></i> Sales Report</a></li>
 				//<li class="'.($current_page=='select_customer.php'?'active':'').'"><a rel="facebox" href="select_customer.php"><i class="icon-user icon-2x"></i> Customer Ledger</a></li>
 				//
-} else if ($position == 'Procurement') {
+} else if ($position == ROLE_PROCUREMENT || $_SESSION[SESS_MOCK_ROLE] == ROLE_PROCUREMENT) {
     echo '<li class="'.($current_page=='index.php'?'active':'').'"><a href="index.php"><i class="icon-dashboard icon-2x"></i> Dashboard </a></li>
 				<li class="'.($current_page=='purchaseslist.php'?'active':'').'"><a href="purchaseslist.php"><i class="icon-bar-chart icon-2x"></i> Procurement</a></li>
 				<li class="'.($current_page=='supplier.php'?'active':'').'"><a href="supplier.php"><i class="icon-group icon-2x"></i> Suppliers</a></li>
@@ -77,7 +77,7 @@ if($position == ROLE_MANAGEMENT) {
     <hr/>
     <li class=""><a href="mock_role.php?r=<?=ROLE_CASHIER?>"><i class="icon-user icon-2x"></i> Reception</a></li>
     <li class=""><a href="mock_role.php?r=<?=ROLE_ACCOUNT?>"><i class="icon-user icon-2x"></i> Managers</a></li>
-    <li class=""><a href="mock_role.php?r=<?=ROLE_Procurement?>"><i class="icon-user icon-2x"></i> Support Dept.</a></li>
+    <li class=""><a href="mock_role.php?r=<?=ROLE_PROCUREMENT?>"><i class="icon-user icon-2x"></i> Support Dept.</a></li>
     <li class=""><a href="mock_role.php?r=<?=ROLE_MANAGEMENT?>"><i class="icon-user icon-2x"></i> Admin</a></li>
     <?php
 }

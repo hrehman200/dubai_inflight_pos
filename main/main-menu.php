@@ -58,7 +58,7 @@ else if ($position=='account' || $_SESSION[SESS_MOCK_ROLE] == ROLE_ACCOUNT) {
 				//<a href="salesreport.php?d1=0&d2=0"><i class="icon-bar-chart icon-2x"></i> <br/> Sales Report</a>
 
 }
-else if ($position=='Procurement') {
+else if ($position==ROLE_PROCUREMENT || $_SESSION[SESS_MOCK_ROLE] == ROLE_PROCUREMENT) {
     echo '<!--<a href="index.php"><i class="icon-dashboard icon-2x"></i> <br/> Dashboard </a>-->
 				<a href="purchaseslist.php?d1=0&d2=0"><i class="icon-bar-chart icon-2x"></i> <br/> Procurement</a>
 				<a href="supplier.php"><i class="icon-group icon-2x"></i> <br/> Suppliers</a>
