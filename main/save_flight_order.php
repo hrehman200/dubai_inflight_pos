@@ -60,9 +60,11 @@ if ($_POST['useBalance'] == 1 && $_POST['useCredit'] == 0) {
         insertFlightBooking($flight_purchase_id, $flight_time, $flight_duration);
     }
 
-    $query = $db->prepare("SELECT SUM(duration) AS booked_duration FROM flight_bookings WHERE flight_purchase_id=:flightPurchaseId");
+    $query = $db->prepare("SELECT SUM(duration) AS booked_duration FROM flight_bookings WHERE flight_purchase_id IN (
+      SELECT id FROM flight_purchases WHERE invoice_id = :invoiceId
+    )");
     $query->execute(array(
-        ':flightPurchaseId' => $flight_purchase_id
+        ':invoiceId' => $invoice
     ));
     $row             = $query->fetch();
     $booked_duration = $row['booked_duration'];
@@ -72,7 +74,11 @@ if ($_POST['useBalance'] == 1 && $_POST['useCredit'] == 0) {
     if($minutes == 0) {
         updateCustomerFlightBalance($customer_id, $flight_purchase_id, $minutes, false, true);
     } else {
-        updateCustomerFlightBalance($customer_id, $flight_purchase_id, $minutes);
+        $query = $db->prepare('SELECT id FROM flight_purchases WHERE invoice_id = ?');
+        $query->execute([$invoice]);
+        while($row = $query->fetch()) {
+            updateCustomerFlightBalance($customer_id, $row['id'], $minutes);
+        }
     }
 }
 
