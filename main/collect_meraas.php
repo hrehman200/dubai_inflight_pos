@@ -109,10 +109,12 @@ include('header.php');
                     </tr>
                     <tr>
                         <th width="16%"> Invoice Number</th>
+                        <th width="16%"> Operator</th>
                         <th width="13%"> Transaction Date</th>
                         <th width="13%"> Cash</th>
                         <th width="13%"> Card</th>
                         <th width="13%"> Online</th>
+                        <th width="13%"> Souq</th>
                         <th width="13%"> Customer ID</th>
                         <th width="20%"> Customer Name</th>
                         <th width="20%"> Service</th>
@@ -154,6 +156,7 @@ include('header.php');
                     $total_card   = 0;
                     $total_account = 0;
                     $total_online = 0;
+                    $total_souq = 0;
 
                     for ($i = 0; $row = $result->fetch(PDO::FETCH_ASSOC); $i++) {
                         $current_cost = round($row['amount'], 0);
@@ -211,10 +214,17 @@ include('header.php');
                         if($row['mode_of_payment_1'] == 'Online') {
                             $total_online += $row['mop1_amount'];
                         }
+                        if($row['mode_of_payment'] == 'Souq') {
+                            $total_souq += $row['mop_amount'];
+                        }
+                        if($row['mode_of_payment_1'] == 'Souq') {
+                            $total_souq += $row['mop1_amount'];
+                        }
 
                         ?>
                         <tr>
                             <td><a href='<?php echo $invoiceHref ?>'> <?php echo $row['invoice_number']; ?></td>
+                            <td><?php echo $row['cashier']; ?></td>
                             <td><?php echo $row['date']; ?></td>
                             <td><?php  
                             if ($row['mode_of_payment']=='Cash') echo $row['mop_amount'];
@@ -225,6 +235,9 @@ include('header.php');
                             <td><?php
                             if ($row['mode_of_payment']=='Online') echo $row['mop_amount'];
                             if ($row['mode_of_payment_1']=='Online') echo $row['mop1_amount'];?></td>
+                            <td><?php
+                             if ($row['mode_of_payment']=='Souq') echo $row['mop_amount'];
+                            if ($row['mode_of_payment_1']=='Souq') echo $row['mop1_amount'];?></td>
                             <td><?php
                             echo ($row['customer_id']) ? $row['customer_id'] : $row['customer_id']; ?></td>
                             <td><?php
@@ -274,6 +287,11 @@ include('header.php');
                         <td colspan="1" style=""><b><?= number_format($total_card, 0) ?></b></td>
                         <td></td>
                     </tr>
+                    <tr>
+                        <td colspan="9" style="text-align: right;"> <b>Souq:</b></td>
+                        <td colspan="1" style=""><b><?= $total_souq > 0 ? number_format($total_souq, 0) : 'No Sale' ?></b></td>
+                        <td></td>
+                    </tr>
                     <!--<tr>
                         <td colspan="9" style="text-align: right;"> <b>Account:</b></td>
                         <td colspan="1" style=""><b><?= number_format($total_account, 0) ?></b></td>
@@ -308,7 +326,9 @@ include('header.php');
                     }
                     ?>
                     <tr>
-                        <td colspan="9" style="text-align: right;"><b>Signature:</b></td>
+                        <td colspan="9" style="text-align: right;"><b>Verified By:</b></td>
+                        <td colspan="1" style="padding-top:50px;">__________________</td></tr>
+                        <tr><td colspan="9" style="text-align: right;"><b>Signature:</b></td>
                         <td colspan="1" style="padding-top:50px;">__________________</td>
                         <td></td>
                     </tr>

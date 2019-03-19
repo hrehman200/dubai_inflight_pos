@@ -169,12 +169,13 @@
             <select name="mode_of_payment" id="mode_of_payment"
                     style="width: 268px; height:30px;  margin-bottom: 15px;" onchange="callJavaScriptOnFirstMenu(this);"
                     required>
-                <option value="-1">-- Mode of Payment--</option>
+                <option value="N/A">-- Mode of Payment--</option>
                 <option value="Cash">Cash</option>
                 <option value="Card">Card</option>
                 <option value="Account">Account</option>
                 <option value="Online">Online</option>
                 <option value="credit_time">Pre-Opening</option>
+                <option value="Souq">Souq</option>
 
             </select>
 
@@ -189,11 +190,12 @@
             <select name="mode_of_payment_1" id="mode_of_payment_1"
                     style="width: 268px; height:30px;  margin-bottom: 15px;"
                     onchange="callJavaScriptOnSecondMenu(this);" step="any" required>
-                <option value="-1">-- Mode of Payment--</option>
+                <option value="N/A">-- Mode of Payment--</option>
                 <option value="Cash">Cash</option>
                 <option value="Card">Card</option>
                 <option value="Account">Account</option>
                 <option value="Online">Online</option>
+                <option value="Souq">Souq</option>
             </select>
 
             <br>
@@ -241,6 +243,9 @@
         else if (inputValue == 'Online') {
 
         }
+        else if (inputValue == 'Souq') {
+
+        }
 
         else if (inputValue == 'credit_cash') {
             document.getElementById("cash").value = credit_cash;
@@ -250,6 +255,7 @@
         else if (inputValue == 'credit_time') {
 
         }
+
 
         else {
 
