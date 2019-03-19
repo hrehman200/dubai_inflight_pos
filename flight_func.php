@@ -40,6 +40,28 @@ $offer_to_groupon_map = [
 
 $_FTF_DISCOUNTS = ['Alpha', 'Discovery Way', 'Arooha', 'Desert Gate', 'JustDo', 'Highway', 'Groupon', 'Cobone', 'Emirates Airline'];
 
+function getFTFDiscounts($rnl_parent = null, $with_rnl_parents = false) {
+    global $db;
+
+    if($with_rnl_parents) {
+        $query = $db->prepare('SELECT DISTINCT(rnl_parent) AS discount_name FROM discounts WHERE rnl_parent != "" 
+          UNION
+          SELECT DISTINCT(category) AS discount_name FROM discounts WHERE rnl_parent != "" ');
+        $query->execute();
+
+    } else {
+        if ($rnl_parent == null) {
+            $query = $db->prepare('SELECT DISTINCT(rnl_parent) AS discount_name FROM discounts WHERE rnl_parent != "" ');
+            $query->execute();
+        } else {
+            $query = $db->prepare('SELECT DISTINCT(category) AS discount_name FROM discounts WHERE rnl_parent = ? ');
+            $query->execute([$rnl_parent]);
+        }
+    }
+    $rows = $query->fetchAll(PDO::FETCH_ASSOC);
+    return array_map(function($item) {return $item['discount_name'];}, $rows);
+}
+
 /**
  * @param $customer_id
  * @param $flight_purchase_id
@@ -791,8 +813,6 @@ function isTimeInsideSearchedDate($flight_time, $date1, $date2) {
  */
 function getQuery($package_name, $sale_date_check = true) {
 
-    global $_FTF_DISCOUNTS;
-
     if($package_name == 'Skydivers' || $package_name == 'FTF' || $package_name == 'RF - Repeat Flights' || $package_name == 'FT - Upsale') {
         $join_with_discount = 'LEFT JOIN discounts d ON fp1.discount_id = d.id OR fp1.discount_id = 0';
     } else {
@@ -810,7 +830,7 @@ function getQuery($package_name, $sale_date_check = true) {
     } else if($package_name == 'FT - Upsale') {
         $package_check = " fp1.flight_offer_id IN (84, 97, 98, 99, 100, 101, 102, 103, 104, 105, 116)";
 
-    } else if(!in_array($package_name, $_FTF_DISCOUNTS)) {
+    } else if(!in_array($package_name, getFTFDiscounts(null, true))) {
         $package_check = " (fpkg.id IN (6, 8)";
         if(strpos($package_name, 'Military') === 0) { // we need to check whether for RF, military discount is given, in which case RF will come in Military
             $package_check .= " OR fpkg.package_name LIKE 'RF - Repeat Flights%'
@@ -898,7 +918,7 @@ function getQuery($package_name, $sale_date_check = true) {
     if($package_name == 'Skydivers' || $package_name == 'FTF' || $package_name == 'RF - Repeat Flights' || $package_name == 'FT - Upsale') {
 
         $ftf_discount_check = '';
-        foreach($_FTF_DISCOUNTS as $ftf_discount) {
+        foreach(getFTFDiscounts(null, true) as $ftf_discount) {
             $ftf_discount_check .= "AND d.category NOT LIKE '" . $ftf_discount . "%'";
         }
 
@@ -908,8 +928,8 @@ function getQuery($package_name, $sale_date_check = true) {
                  AND d.category NOT LIKE 'Military%'
                  ".$ftf_discount_check;
 
-    } else if(in_array($package_name, $_FTF_DISCOUNTS)){
-        $sql .= "AND d.category LIKE '{$package_name}%'";
+    } else if(in_array($package_name, getFTFDiscounts(null, true))){
+        $sql .= "AND (d.category LIKE '{$package_name}%' OR d.rnl_parent LIKE '{$package_name}%')";
 
     } else if($package_name == NAVY_SEAL){
         $sql .= "AND d.category LIKE 'Navy Seal%'";
@@ -945,7 +965,7 @@ function getQuery($package_name, $sale_date_check = true) {
  * @return array
  */
 function getDataAndAggregate($package_name, $start_date, $end_date) {
-    global $db, $_FTF_DISCOUNTS;
+    global $db;
 
     $sql_w_sale_date = getQuery($package_name);
     $result = $db->prepare($sql_w_sale_date);
@@ -1503,46 +1523,39 @@ function getCustomerLiabilityForMonth($customer_id, $month) {
 }
 
 function getFTFRevenue($start_date, $end_date, $include_rf_in_ftf = false, $return_sum = true) {
+
     $arr_ftf = [];
     /** FTF without discounts applied */
     $arr2 = getDataAndAggregate('FTF', $start_date, $end_date);
     $arr_ftf = array_merge($arr_ftf, $arr2);
 
-    /** ALPHA */
-    $arr2 = getDataAndAggregate('Alpha', $start_date, $end_date);
-    $arr_ftf = array_merge($arr_ftf, $arr2);
+    $ftf_discounts = getFTFDiscounts();
 
-    /** DISCOVERY WAY */
-    $arr2 = getDataAndAggregate('Discovery Way', $start_date, $end_date);
-    $arr_ftf = array_merge($arr_ftf, $arr2);
+    foreach($ftf_discounts as $ftf_discount) {
+        //$arr2 = getDataAndAggregate($ftf_discount, $start_date, $end_date);
 
-    /** AROOHA */
-    $arr2 = getDataAndAggregate('Arooha', $start_date, $end_date);
-    $arr_ftf = array_merge($arr_ftf, $arr2);
+        $ftf_subdiscounts = getFTFDiscounts($ftf_discount);
+        $arr_subdiscount = [];
+        foreach($ftf_subdiscounts as $subdiscount) {
+            $arr3 = getDataAndAggregate($subdiscount, $start_date, $end_date);
+            $arr_subdiscount = array_merge($arr_subdiscount, $arr3);
+        }
 
-    /** DESERT GATE */
-    $arr2 = getDataAndAggregate('Desert Gate', $start_date, $end_date);
-    $arr_ftf = array_merge($arr_ftf, $arr2);
+        $arr_subdiscount_sum[0] = [
+            'package_name' => $ftf_discount,
+            'paid' => array_sum(array_column($arr_subdiscount, 'paid')),
+            'total_minutes' => array_sum(array_column($arr_subdiscount, 'total_minutes')),
+            'minutes_used' => array_sum(array_column($arr_subdiscount, 'minutes_used')),
+            'aed_value' => array_sum(array_column($arr_subdiscount, 'aed_value')),
+            'avg_per_min' => array_sum(array_column($arr_subdiscount, 'avg_per_min')),
+            $ftf_discount => $arr_subdiscount
+        ];
 
-    /** JustDO */
-    $arr2 = getDataAndAggregate('JustDO', $start_date, $end_date);
-    $arr_ftf = array_merge($arr_ftf, $arr2);
 
-    /** HIGHWAY */
-    $arr2 = getDataAndAggregate('Highway', $start_date, $end_date);
-    $arr_ftf = array_merge($arr_ftf, $arr2);
+        $arr_ftf = array_merge($arr_ftf, $arr_subdiscount_sum);
+    }
 
-    /** GROUPON */
-    $arr2 = getDataAndAggregate('Groupon', $start_date, $end_date);
-    $arr_ftf = array_merge($arr_ftf, $arr2);
 
-    /** COBONE */
-    $arr2 = getDataAndAggregate('Cobone', $start_date, $end_date);
-    $arr_ftf = array_merge($arr_ftf, $arr2);
-
-    /** EMIRATES AIRLINE */
-    $arr2 = getDataAndAggregate('Emirates Airline', $start_date, $end_date);
-    $arr_ftf = array_merge($arr_ftf, $arr2);
 
     if($include_rf_in_ftf) {
         /** RF */

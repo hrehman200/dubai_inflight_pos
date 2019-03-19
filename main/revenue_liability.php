@@ -83,12 +83,23 @@ set_time_limit(1800);
                         <?php
 
                         $cache_filename = sprintf('uploads/%s_%s.txt', $_GET['d1'], $_GET['d2']);
+                        $clickable_rows = ['Military', 'FTF', 'Groupon', 'Cobone', 'Corporate Discount', 'B2b'];
 
-                        if($_POST['pageType'] == 'military') {
+                        if($_POST['pageType'] == 'Military') {
                             $arr_revenue = json_decode(base64_decode($_POST['military_data']), true);
 
-                        } else if($_POST['pageType'] == 'ftf') {
-                            $arr_revenue = json_decode(base64_decode($_POST['ftf_data']), true);
+                        } else if($_POST['pageType'] == 'FTF') {
+                            // so that arr_ftf can be passed to next level
+                            $arr_ftf = json_decode(base64_decode($_POST['ftf_data']), true);
+                            $arr_revenue = $arr_ftf;
+
+                        } else if(in_array($_POST['pageType'], $clickable_rows)) {
+                            $arr = json_decode(base64_decode($_POST['ftf_data']), true);
+                            $arr = array_filter($arr, function($item) {
+                                return array_key_exists($_POST['pageType'], $item);
+                            });
+                            $arr = array_values($arr);
+                            $arr_revenue = $arr[0][$_POST['pageType']];
 
                         } else if(file_exists($cache_filename)) {
                             $arr_to_read = json_decode(file_get_contents($cache_filename), true);
@@ -192,17 +203,18 @@ set_time_limit(1800);
                             }
 
                             $display_title = $row['package_name'];
-                            if($row['package_name']=='Military' && $_POST['pageType'] == 'military') {
+                            if($row['package_name']=='Military' && $_POST['pageType'] == 'Military') {
                                 $display_title = 'Military Individuals';
                             }
+
                             ?>
-                            <tr class="<?=$row['package_name']=='Military'||$row['package_name']=='FTF'?'clickable-row':''?>" data-page-type="<?=strtolower($row['package_name'])?>">
+                            <tr class="<?=in_array($row['package_name'], $clickable_rows)?'clickable-row':''?>" data-page-type="<?=$row['package_name']?>">
                                 <td><b><?= $display_title  ?></b></td>
                                 <td><?= number_format($row['paid']) ?></td>
                                 <td><?= number_format($row['total_minutes']) ?></td>
                                 <td><?= number_format($row['minutes_used']) ?></td>
                                 <td><?
-                                    if($row['package_name'] == 'Military' && $_POST['pageType'] != 'military') {
+                                    if($row['package_name'] == 'Military' && $_POST['pageType'] != 'Military') {
                                         $military_avg_min = $row['avg_per_min'];
                                     } else {
                                         echo number_format($row['avg_per_min'], 2);
@@ -215,7 +227,7 @@ set_time_limit(1800);
                         }
 
                         $arr_packages = json_encode(array_map(function($v) {
-                            if($_POST['pageType'] == 'military' && $v['package_name'] == 'Military') {
+                            if($_POST['pageType'] == 'Military' && $v['package_name'] == 'Military') {
                                 return 'Military Individuals';
                             }
                             return $v['package_name'];
@@ -237,7 +249,7 @@ set_time_limit(1800);
                     </table>
 
                     <form id="military-form" method="POST" action="<?=$_SERVER['REQUEST_URI']?>" target="_blank">
-                        <input type="hidden" name="pageType" value="military" />
+                        <input type="hidden" name="pageType" value="Military" />
                         <input type="hidden" name="military_data" value="<?=base64_encode(json_encode($arr_military))?>" />
                         <input type="hidden" name="ftf_data" value="<?=base64_encode(json_encode($arr_ftf))?>" />
                     </form>
