@@ -60,14 +60,25 @@ if ($_POST['useBalance'] == 1 && $_POST['useCredit'] == 0) {
         insertFlightBooking($flight_purchase_id, $flight_time, $flight_duration);
     }
 
+    $query = $db->prepare('SELECT id FROM flight_purchases WHERE invoice_id = ?');
+    $query->execute([$invoice]);
+    $rows = $query->fetchAll(PDO::FETCH_ASSOC);
+    $flight_purchase_ids = array_map(function($item) {return $item['id']; }, $rows);
+
     $query = $db->prepare("SELECT SUM(duration) AS booked_duration FROM flight_bookings WHERE flight_purchase_id IN (
-      SELECT id FROM flight_purchases WHERE invoice_id = :invoiceId
+      ".implode(',', $flight_purchase_ids)."
     )");
-    $query->execute(array(
-        ':invoiceId' => $invoice
-    ));
+    $query->execute();
     $row             = $query->fetch();
     $booked_duration = $row['booked_duration'];
+
+    $query = $db->prepare('SELECT SUM(fo.duration) AS offer_duration 
+      FROM flight_purchases fp
+      INNER JOIN flight_offers fo ON fp.flight_offer_id = fo.id
+      WHERE fp.id IN ('.implode(',', $flight_purchase_ids).')');
+    $query->execute();
+    $row             = $query->fetch();
+    $offer_duration = $row['offer_duration'];
 
     $minutes = $offer_duration - $booked_duration;
 
