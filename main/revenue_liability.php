@@ -83,7 +83,7 @@ set_time_limit(1800);
                         <?php
 
                         $cache_filename = sprintf('uploads/%s_%s.txt', $_GET['d1'], $_GET['d2']);
-                        $clickable_rows = ['Military', 'FTF', 'Groupon', 'Cobone', 'Corporate Discount', 'B2b'];
+                        $clickable_rows = ['Military', 'FTF', 'Groupon', 'Cobone', 'Corporate Discount', 'B2B'];
 
                         if($_POST['pageType'] == 'Military') {
                             $arr_revenue = json_decode(base64_decode($_POST['military_data']), true);
@@ -242,7 +242,7 @@ set_time_limit(1800);
                             <td><b><?
                                     $avg_min_sum = array_sum(array_column($arr_revenue, 'avg_per_min'));
                                     $avg_min_sum -= $military_avg_min;
-                                    echo number_format($avg_min_sum);
+                                    //echo number_format($avg_min_sum);
                                     ?></b></td>
                             <td><b><?= number_format(array_sum(array_column($arr_revenue, 'aed_value')), 2) ?></b></td>
                         </tr>
@@ -530,6 +530,13 @@ set_time_limit(1800);
 <script type="text/javascript" src="js/chart.piecelabel.js"></script>
 <script type="text/javascript">
 
+    var arr = JSON.parse('<?=$arr_paid?>');
+    var arrColors = [];
+    for(var i in arr) {
+        var randomColor = "#"+((1<<24)*Math.random()|0).toString(16);
+        arrColors.push(randomColor);
+    }
+
     Vue.component('pie-chart', {
         extends: VueChartJs.Pie,
         mounted () {
@@ -539,7 +546,7 @@ set_time_limit(1800);
                     {
                         label: 'Data One',
                         data: JSON.parse('<?=$arr_paid?>'),
-                        backgroundColor: ['#F7DF00', '#ca0813', '#287AEB', '#89A366', '#9F7371', '#72D84E', '#42C4F0', '#f4c141', '#4286f4', '#f441e5']
+                        backgroundColor: arrColors //['#F7DF00', '#ca0813', '#287AEB', '#89A366', '#9F7371', '#72D84E', '#42C4F0', '#f4c141', '#4286f4', '#f441e5']
                     }
                 ]
             }, {
