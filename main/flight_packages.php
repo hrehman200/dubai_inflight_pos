@@ -121,60 +121,60 @@ $position = $_SESSION['SESS_LAST_NAME'];
                             'packages' => [
                                 'Earn your wings' => [
                                     'id' => 1,
-                                    'img' => ''
+                                    'img' => 'EYWP.png'
                                 ],
                                 'Spread your wings' => [
                                     'id' => 3,
-                                    'img' => ''
+                                    'img' => 'sywp.png'
                                 ],
                                 'FTF School Package' => [
                                     'id' => 12,
-                                    'img' => ''
+                                    'img' => 'sp.png'
                                 ],
                                 'additional'=> [
                                     'Up Sale' => [
                                         'id' => 18,
-                                        'img' => ''
+                                        'img' => 'upsale.png'
                                     ],
                                     'FTF Class Session' => [
                                         'id' => 5,
-                                        'img' => ''
+                                        'img' => 'cr.png'
                                     ]
                                 ]
                             ],
-                            'img' => ''
+                            'img' => 'ftfpt.png'
                         ],
                         'Return Flyer' => [
                             'id' => 6,
-                            'img' => '',
+                            'img' => 'rf.png',
                             'packages' => []
                         ],
                         'Military' => [
                             'packages' => [
                                 'Military Contract' => [
                                     'id' => 6,
-                                    'img' => ''
+                                    'img' => 'mc.png'
                                 ],
                                 'Military Individuals' => [
                                     'id' => 6,
-                                    'img' => ''
+                                    'img' => 'mind.png'
                                 ]
                             ],
-                            'img' => ''
+                            'img' => 'milt.png'
                         ],
                         'Add On' => [
                             'packages' => [
                                 'Classroom' => [
                                     'id' => 5,
-                                    'img' => ''
+                                    'img' => 'cr.png'
                                 ],
                                 'Gift Vouchers' => [
                                     'id' => 11,
-                                    'img' => ''
+                                    'img' => 'gv.png'
                                 ],
 
                             ],
-                            'img' => ''
+                            'img' => 'add.png'
                         ]
                     ];
 
