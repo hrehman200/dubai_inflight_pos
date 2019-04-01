@@ -105,6 +105,11 @@ $position = $_SESSION['SESS_LAST_NAME'];
             <div class="contentheader">
                 <i class="icon-dashboard"></i> Dashboard
 
+                <? if(isset($_GET['pkg_id'])) { ?>
+                <br><br>
+                <button class="btn" onclick="javascript:history.back();">Back</button>
+                <? } ?>
+
                 <div align="center">
                     <h3><?=(is_string($_GET['pkg_id']) ? $_GET['pkg_id'] : 'Packages')?></h3>
                     <?php
@@ -122,9 +127,19 @@ $position = $_SESSION['SESS_LAST_NAME'];
                                     'id' => 3,
                                     'img' => ''
                                 ],
-                                'FTF Class Session' => [
-                                    'id' => 5,
+                                'FTF School Package' => [
+                                    'id' => 12,
                                     'img' => ''
+                                ],
+                                'additional'=> [
+                                    'Up Sale' => [
+                                        'id' => 18,
+                                        'img' => ''
+                                    ],
+                                    'FTF Class Session' => [
+                                        'id' => 5,
+                                        'img' => ''
+                                    ]
                                 ]
                             ],
                             'img' => ''
@@ -149,10 +164,6 @@ $position = $_SESSION['SESS_LAST_NAME'];
                         ],
                         'Add On' => [
                             'packages' => [
-                                'Up Sale' => [
-                                    'id' => 18,
-                                    'img' => ''
-                                ],
                                 'Classroom' => [
                                     'id' => 5,
                                     'img' => ''
@@ -161,10 +172,7 @@ $position = $_SESSION['SESS_LAST_NAME'];
                                     'id' => 11,
                                     'img' => ''
                                 ],
-                                'FTF School Package' => [
-                                    'id' => 12,
-                                    'img' => ''
-                                ]
+
                             ],
                             'img' => ''
                         ]
@@ -189,7 +197,15 @@ $position = $_SESSION['SESS_LAST_NAME'];
                     $pkg_id = $_GET['pkg_id'];
                     if(is_string($pkg_id)) {
                         foreach($packages1[$pkg_id]['packages'] as $pkg_name => $pkg_data) {
-                            echo getLink($pkg_name, $pkg_data, $pkg_id);
+
+                            if($pkg_name == 'additional') {
+                                echo '<hr><h4>Additional Packages</h4>';
+                                foreach($pkg_data as $pkg_name2 => $pkg_data2) {
+                                    echo getLink($pkg_name2, $pkg_data2);
+                                }
+                            } else {
+                                echo getLink($pkg_name, $pkg_data, $pkg_id);
+                            }
                         }
                     } else {
                         foreach ($packages1 as $pkg_name => $pkg_data) {
