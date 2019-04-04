@@ -123,9 +123,9 @@ set_time_limit(1800);
 
                             $arr_revenue = array_merge($arr_revenue, $arr_ftf_sum);
 
-                            /** FT - Upsale */
-                            $arr2 = getDataAndAggregate('FT - Upsale', $_GET['d1'], $_GET['d2']);
-                            //$arr_revenue = array_merge($arr_revenue, $arr2);
+                            /** UP-Sale */
+                            $arr2 = getDataAndAggregate('UP-Sale', $_GET['d1'], $_GET['d2']);
+                            $arr_revenue = array_merge($arr_revenue, $arr2);
 
                             /** RF */
                             $arr2 = getDataAndAggregate('RF - Repeat Flights', $_GET['d1'], $_GET['d2']);

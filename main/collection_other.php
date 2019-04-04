@@ -126,9 +126,9 @@ include('navfixed.php');
                         /** FTF */
                         $arr_ftf = getDataAndAggregate('FTF', $_GET['d1'], $_GET['d2']);
 
-                        /** FT - Upsale */
-                        $arr2 = getDataAndAggregate('FT - Upsale', $_GET['d1'], $_GET['d2']);
-                        $arr_ftf = array_merge($arr_ftf, $arr2);
+                        /** UP-Sale */
+                        $arr2 = getDataAndAggregate('UP-Sale', $_GET['d1'], $_GET['d2']);
+                        //$arr_ftf = array_merge($arr_ftf, $arr2);
 
                         $arr_ftf[0] = [
                             'package_name' => 'FTF',

@@ -813,7 +813,7 @@ function isTimeInsideSearchedDate($flight_time, $date1, $date2) {
  */
 function getQuery($package_name, $sale_date_check = true) {
 
-    if($package_name == 'Skydivers' || $package_name == 'FTF' || $package_name == 'RF - Repeat Flights' || $package_name == 'FT - Upsale') {
+    if($package_name == 'Skydivers' || $package_name == 'FTF' || $package_name == 'RF - Repeat Flights' || $package_name == 'UP-Sale') {
         $join_with_discount = 'LEFT JOIN discounts d ON fp1.discount_id = d.id OR fp1.discount_id = 0';
     } else {
         $join_with_discount = 'INNER JOIN discounts d ON fp1.discount_id = d.id';
@@ -827,7 +827,7 @@ function getQuery($package_name, $sale_date_check = true) {
     } else if($package_name == 'RF - Repeat Flights') {
         $package_check = " fpkg.package_name LIKE 'RF - Repeat Flights%'";
 
-    } else if($package_name == 'FT - Upsale') {
+    } else if($package_name == 'UP-Sale') {
         $package_check = " fp1.flight_offer_id IN (84, 97, 98, 99, 100, 101, 102, 103, 104, 105, 116)";
 
     } else if(!in_array($package_name, getFTFDiscounts(null, true))) {
@@ -915,7 +915,7 @@ function getQuery($package_name, $sale_date_check = true) {
                                 (customer_name != 'FDR' AND customer_name != 'MAINTENANCE' AND customer_name != 'inflight staff flying' AND customer_name != 'Training Inflight') OR customer_name IS NULL
                             ) ", $join_with_discount, $package_check, $date_check);
 
-    if($package_name == 'Skydivers' || $package_name == 'FTF' || $package_name == 'RF - Repeat Flights' || $package_name == 'FT - Upsale') {
+    if($package_name == 'Skydivers' || $package_name == 'FTF' || $package_name == 'RF - Repeat Flights' || $package_name == 'UP-Sale') {
 
         $ftf_discount_check = '';
         foreach(getFTFDiscounts(null, true) as $ftf_discount) {
