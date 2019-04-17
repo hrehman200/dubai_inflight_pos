@@ -83,7 +83,7 @@ include('header.php');
     $(function() {
 
         <?php
-        if(isset($_GET['verified'])) {
+        if(isset($_GET['verified']) || $argv[1] == 'verified') {
         ?>
         $('#tblSalesReport').css('border-collapse', 'collapse');
         $('#tblSalesReport, #tblSalesReport th, #tblSalesReport td')
