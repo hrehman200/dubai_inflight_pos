@@ -1,7 +1,7 @@
 <html>
 <head>
     <?php
-    require_once('../connect.php');
+    require_once(dirname(__DIR__).'/connect.php');
     set_time_limit(180);
     ?>
     <title>
