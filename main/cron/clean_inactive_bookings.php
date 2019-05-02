@@ -12,7 +12,7 @@ if(php_sapi_name() === 'cli') {
 
     $query = $db->prepare('SELECT id
       FROM flight_purchases fp
-      WHERE status = 0 AND created < (NOW() - INTERVAL 30 MINUTE)');
+      WHERE status = 0 AND created < (NOW() - INTERVAL 1 DAY)');
     $query->execute();
     $result = $query->fetchAll();
 
