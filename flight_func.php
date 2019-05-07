@@ -1121,7 +1121,7 @@ function getMerchandiseRevenue($product_name, $date1, $date2) {
                             INNER JOIN sales_order so ON s.invoice_number = so.invoice
                             INNER JOIN products p ON so.product = p.product_id 
                             WHERE 
-                            (p.product_name NOT LIKE "%Video%" AND p.product_name NOT LIKE "%Helmet Rent%")
+                            (p.product_name NOT LIKE "%Video%" AND p.product_name NOT LIKE "%Helmet Rent%" AND p.product_name NOT LIKE "Rental Helmet Full Day")
                             AND p.gen_name = ?
                             AND (s.date >= ? AND s.date <= ?)');
         $query->execute([TYPE_MERCHANDISE, $date1, $date2]);
@@ -1133,7 +1133,7 @@ function getMerchandiseRevenue($product_name, $date1, $date2) {
                             INNER JOIN sales_order so ON s.invoice_number = so.invoice
                             INNER JOIN products p ON so.product = p.product_id 
                             WHERE 
-                            (p.product_name LIKE "%Helmet Rent%")
+                            (p.product_name LIKE "%Helmet Rent%" OR p.product_name LIKE "Rental Helmet Full Day")
                             AND (s.date >= ? AND s.date <= ?)');
         $query->execute([$date1, $date2]);
         $row = $query->fetch(PDO::FETCH_ASSOC);
@@ -1168,7 +1168,7 @@ function getMerchandiseRevenue($product_name, $date1, $date2) {
 function getOtherRevenue($product_name, $date1, $date2) {
     global $db;
 
-    $others = ['"Facility Rental"', '"Sandstorm Registration Fee"'];
+    $others = ['"Facility Rental"', '"Sandstorm Registration Fee"', '"Sandstorm Registration Fee 2019"'];
     $sql = sprintf('SELECT SUM(so.amount - (so.discount * so.amount / 100)) AS paid
                         FROM sales s
                         INNER JOIN sales_order so ON s.invoice_number = so.invoice
