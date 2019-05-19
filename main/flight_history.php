@@ -178,6 +178,7 @@ session_start();
 
                         $sql = "SELECT fp.id AS flight_purchase_id, fp.deduct_from_balance, fo.code, fpkg.package_name, fo.offer_name, fp.price, fo.duration, c.customer_name, DATE_FORMAT(fp.created,'%b %d, %Y') AS created,
                               fb.duration AS booking_duration,
+                              fb.from_flight_purchase_id,
                               s.after_dis,
                               s.invoice_number,
                               fc.expired_on, 
@@ -238,7 +239,20 @@ session_start();
                                     }
                                     ?></td>
                                 <td><?php
-                                    echo $row['deduct_from_balance']>0 ? $row['offer_name'].' (Deduct from balance)' : $row['offer_name'] ;
+                                    if($row['deduct_from_balance']>0) {
+                                        echo $row['offer_name'].' (Deduct from balance)';
+
+                                        if($row['from_flight_purchase_id'] > 0) {
+                                            $query2 = $db->prepare('SELECT invoice_id FROM flight_purchases WHERE id = ?');
+                                            $query2->execute([$row['from_flight_purchase_id']]);
+                                            $from_invoice = $query2->fetch();
+                                            echo  '<br><small><b>From Invoice: </b>'.$from_invoice['invoice_id'].'</small>';
+                                        }
+
+                                    } else {
+                                        echo $row['offer_name'];
+                                    }
+
                                     if($row['expired_on'] != null) {
                                         echo sprintf('<br><small><b>Expired on:<b> %s 
                                             <br>
@@ -399,4 +413,4 @@ session_start();
     }
 </script>
 <?php include('footer.php'); ?>
-</html>
+</html>
