@@ -1096,20 +1096,14 @@ function askForGiveawayApproval() {
 function emailSalesReportToAdmin() {
     global $db;
 
-    if(isset($_POST['tableHtml'])) {
-        $subject = 'Verified Sales Report for ' . date('jS F, Y');
-        $body = $_POST['tableHtml'];
-        sendEmail('carlos.euribe@inflightdubai.com', $subject, $body);
-        sendEmail('shah@inflightdubai.com', $subject, $body);
-    }
+    $query = $db->prepare('INSERT INTO eod_report_queue VALUES (NULL, ?, NULL)');
+    $query->execute([$_SESSION['SESS_MEMBER_ID']]);
 
     echo json_encode(array(
         'success' => 1
     ));
 
-    recordCustomerMonthlyLiability();
-    sendFlightExpiryReminder();
-    markPurchasesExpired();
+    // rest of the stuff will be done by cron job at mid night
 }
 
 function verifyGroupon() {

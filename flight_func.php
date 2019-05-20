@@ -627,7 +627,7 @@ function getPurchaseType($invoice_id) {
  * @param bool $include_info_address
  * @return mixed
  */
-function sendEmail($email, $subject, $body, $include_info_address = false) {
+function sendEmail($email, $subject, $body, $include_info_address = false, $from = 'info@inflightdubai.com') {
 
     $mailin = new Mailin('https://api.sendinblue.com/v2.0', MAILIN_API_KEY);
 
@@ -641,7 +641,7 @@ function sendEmail($email, $subject, $body, $include_info_address = false) {
     $data = array(
         "to" => array($email => "to whom!"),
         "bcc" => $arr_bcc,
-        "from" => array("info@inflightdubai.com"),
+        "from" => array($from),
         "subject" => $subject,
         "html" => $body,
         "headers" => array("Content-Type" => "text/html; charset=iso-8859-1")
@@ -1741,4 +1741,12 @@ function sendFlightExpiryReminder() {
             sendEmail($email, 'Expiration of Purchased Offers', $body, true);
         }
     }
+}
+
+function getUserById($user_id) {
+    global $db;
+    $query = $db->prepare('SELECT * FROM user WHERE id = ?');
+    $query->execute([$user_id]);
+    $row = $query->fetch(PDO::FETCH_ASSOC);
+    return $row;
 }

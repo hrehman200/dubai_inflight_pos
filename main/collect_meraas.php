@@ -98,7 +98,7 @@ include('header.php');
             },
             dataType: "json",
             success: function (response) {
-                alert('Email sent');
+                alert('Verification saved. Email will be sent at midnight.');
                 window.top.close();
             },
         });

@@ -30,9 +30,10 @@ $d2 = $dt->format('Y-m-d');
         <th colspan="13" style="text-align: center;">
             <h3>End of Day Report from&nbsp;<?php echo date('M j, Y', strtotime($d1)) ?>&nbsp;to&nbsp;<?php echo date('M j, Y', strtotime($d2)) ?></h3>
             <?php
-            if(isset($_GET['verified']) || php_sapi_name() == 'cli') {
+            if(isset($_GET['verified']) || isset($_GET['user_id'])) {
+                $user = getUserById($_GET['user_id']);
                 ?>
-                <h4>Verified by: <?=isset($_SESSION['SESS_FIRST_NAME']) ? $_SESSION['SESS_FIRST_NAME'] : 'SYSTEM'?></h4>
+                <h4>Verified by: <?=isset($_SESSION['SESS_FIRST_NAME']) ? $_SESSION['SESS_FIRST_NAME'] : $user['name']?></h4>
                 <?php
             }
             ?>
@@ -259,12 +260,25 @@ $d2 = $dt->format('Y-m-d');
     ?>
     <tr>
         <td colspan="9" style="text-align: right;"><b>Verified By:</b></td>
-        <td colspan="1" style="padding-top:50px;">__________________</td>
+        <td colspan="1" style="padding-top:10px;">
+            <?php
+            if(isset($user)) {
+                echo $user['name'];
+            }
+            ?>
+            _______________________
+        </td>
         <td colspan="3"></td>
     </tr>
     <tr>
         <td colspan="9" style="text-align: right;"><b>Signature:</b></td>
-        <td colspan="1" style="padding-top:50px;">__________________</td>
+        <td colspan="1" style="padding-top:50px;">
+            <?php
+            if(isset($user)) {
+                echo sprintf('<img src="%s" />', BASE_URL.'/main/uploads/'.$user['sign_img']);
+            }
+            ?>__________________
+        </td>
         <td colspan="3"></td>
     </tr>
 
