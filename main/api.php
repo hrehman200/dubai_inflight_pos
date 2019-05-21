@@ -1106,6 +1106,23 @@ function emailSalesReportToAdmin() {
     // rest of the stuff will be done by cron job at mid night
 }
 
+function emailSalesReportToManager() {
+    global $db;
+
+    if(isset($_POST['tableHtml'])) {
+        $subject = 'Verified Sales Report for ' . date('jS F, Y');
+        $body = $_POST['tableHtml'];
+
+        $user = getUserById($_POST['userId']);
+        sendEmail($user['email'], $subject, $body);
+    }
+
+    echo json_encode(array(
+        'success' => 1,
+        'msg' => 'Email sent'
+    ));
+}
+
 function verifyGroupon() {
     global $db, $offer_to_groupon_map;
 

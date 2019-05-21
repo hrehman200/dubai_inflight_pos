@@ -38,6 +38,7 @@ require_once('auth.php');
     <link href="../style.css" media="screen" rel="stylesheet" type="text/css"/>
     <link rel="stylesheet" type="text/css" href="tcal.css"/>
     <script type="text/javascript" src="tcal.js"></script>
+    <script src="js/bootbox.min.js" type="text/javascript"></script>
     <script language="javascript">
         function Clickheretoprint() {
             $('#tblSalesReport').closest('.span10').removeClass()
@@ -125,6 +126,7 @@ require_once('auth.php');
                 <button style="float:right; margin-right:5px;" class="btn btn-warning btn-large" onclick="convertToCSV()" id="exportCSV"/>
                     Export
                 </button>
+                <button style="margin-right:5px;" class="btn btn-info btn-large pull-right" id="btnVerified">Verified</button>
                 <br><br>
 
 
@@ -176,7 +178,7 @@ require_once('auth.php');
                             <?php
                             if(isset($_GET['verified'])) {
                             ?>
-                                <h4>Verified by: <?=$_SESSION['SESS_FIRST_NAME']?></h4>
+                                <h4>Operator Name: <?=$_SESSION['SESS_FIRST_NAME']?></h4>
                             <?php
                             }
                             ?>
@@ -263,11 +265,11 @@ require_once('auth.php');
 
                         if($row['mode_of_payment'] == 'Account') {
                             $total_account += $row['mop_amount'];
-                            $total_sale += $row['mop_amount'];
+                            //$total_sale += $row['mop_amount'];
                         }
                         if($row['mode_of_payment_1'] == 'Account') {
                             $total_account += $row['mop1_amount'];
-                            $total_sale += $row['mop1_amount'];
+                            //$total_sale += $row['mop1_amount'];
                         }
 
                         if(strtolower($_SESSION['SESS_LAST_NAME']) == 'admin' || $_SESSION[SESS_MOCK_ROLE] == 'admin' ||
@@ -311,12 +313,10 @@ require_once('auth.php');
                         <td colspan="1" style=""><b><?= number_format($total_cash, 0) ?></b></td>
                     </tr>
                     <tr>
-                        <td colspan="9" style="text-align: right;"> <b>Card:</b></td>
+                        <td style="text-align: right;"> <b>Account:</b></td>
+                        <td style=""><b><?= number_format($total_account, 0) ?></b></td>
+                        <td colspan="7" style="text-align: right;"> <b>Card:</b></td>
                         <td colspan="1" style=""><b><?= number_format($total_card, 0) ?></b></td>
-                    </tr>
-                    <tr>
-                        <td colspan="9" style="text-align: right;"> <b>Account:</b></td>
-                        <td colspan="1" style=""><b><?= number_format($total_account, 0) ?></b></td>
                     </tr>
                     <?php
                     if(strtolower($_SESSION['SESS_LAST_NAME']) == 'admin' || $_SESSION[SESS_MOCK_ROLE] == 'admin' ||
@@ -361,6 +361,70 @@ require_once('auth.php');
 
 </body>
 <script type="text/javascript">
+
+    $('#btnVerified').on('click', function(e) {
+        bootbox.prompt({
+            title: "Select manager to email verified sales report:<br/><hr/> ",
+            inputType: 'select',
+            inputOptions: [
+                {
+                    text: 'Select...',
+                    value: '',
+                },
+                {
+                    text: 'Shah',
+                    value: '18',
+                },
+                {
+                    text: 'Freedy',
+                    value: '16',
+                },
+                {
+                    text: 'Mark',
+                    value: '20',
+                },
+                {
+                    text: 'Marija',
+                    value: '15',
+                }
+            ],
+            callback: function (userId) {
+                $('.loading-gif').show();
+                if (userId > 0) {
+                    window.open('salesreport.php?verified=1&user_id='+userId);
+                }
+            }
+        });
+    });
+
+    <?php
+    if(isset($_GET['verified'])) {
+        ?>
+        $('#tblSalesReport').css('border-collapse', 'collapse');
+        $('#tblSalesReport, #tblSalesReport th, #tblSalesReport td')
+            .css('border', '1px solid grey');
+
+        $.ajax({
+            url: 'api.php',
+            method: 'POST',
+            data: {
+                'call': 'emailSalesReportToManager',
+                'userId': <?=$_GET['user_id']?>,
+                'tableHtml': $('#tblSalesReport').parent().html()
+            },
+            dataType: 'json',
+            success: function (response) {
+                $('.loading-gif').hide();
+                if (response.success == 1) {
+                    alert(response.msg);
+                }
+            }
+        });
+    <?php
+    }
+    ?>
+
+
     function convertToCSV() {
         exportTableToCSV($('#tblSalesReport'), 'filename.csv');
     }
