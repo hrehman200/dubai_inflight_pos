@@ -28,7 +28,7 @@ $d2 = $dt->format('Y-m-d');
     <thead>
     <tr>
         <th colspan="13" style="text-align: center;">
-            <h3>End of Day Report from&nbsp;<?php echo date('M j, Y', strtotime($d1)) ?>&nbsp;to&nbsp;<?php echo date('M j, Y', strtotime($d2)) ?></h3>
+            <h4>End of Day Report from&nbsp;<?php echo date('M j, Y', strtotime($d1)) ?>&nbsp;to&nbsp;<?php echo date('M j, Y', strtotime($d2)) ?></h4>
             <?php
             if(isset($_GET['verified']) || isset($_GET['user_id'])) {
                 $user = getUserById($_GET['user_id']);
@@ -61,13 +61,16 @@ $d2 = $dt->format('Y-m-d');
     <?php
 
     $sql = "SELECT s.*, c.customer_name FROM sales s
-                        LEFT JOIN customer c ON s.customer_id = c.customer_id";
+                        LEFT JOIN customer c ON s.customer_id = c.customer_id
+                        LEFT JOIN flight_purchases fp ON s.invoice_number = fp.invoice_id";
 
     if($_SESSION['SESS_LAST_NAME'] == 'Operator') {
         $sql .= " INNER JOIN user u ON s.cashier = u.name AND u.position = 'Operator' ";
     }
 
-    $sql .= " WHERE date >= :a AND date <= :b";
+    $sql .= " WHERE date >= :a AND date <= :b 
+                AND 
+                (fp.created IS NULL || TIME(fp.created) <= '18:00:00')"; // either fp is null OR its created date is before office timings
 
     if($_SESSION['SESS_LAST_NAME'] == 'Operator') {
         $sql .= sprintf(" AND u.name = '%s'", $_SESSION['SESS_FIRST_NAME']);
@@ -75,6 +78,7 @@ $d2 = $dt->format('Y-m-d');
     $sql .= ' AND s.amount > 0 AND 
                         (s.mode_of_payment !="Account" AND s.mode_of_payment_1 != "Account" AND s.mode_of_payment !="credit_time" AND s.mode_of_payment_1 != "credit_time") ';
     $sql .= " AND (c.customer_name != 'FDR' OR c.customer_name IS NULL)
+                    GROUP BY IFNULL(fp.invoice_id, s.invoice_number)
                     ORDER by transaction_id DESC";
 
     $result = $db->prepare($sql);
@@ -223,10 +227,7 @@ $d2 = $dt->format('Y-m-d');
         <td colspan="1" style=""><b><?= $total_souq > 0 ? number_format($total_souq, 0) : 'No Sale' ?></b></td>
         <td colspan="3"></td>
     </tr>
-    <!--<tr>
-                        <td colspan="9" style="text-align: right;"> <b>Account:</b></td>
-                        <td colspan="1" style=""><b><?= number_format($total_account, 0) ?></b></td>
-                    </tr>-->
+
     <?php
     if(strtolower($_SESSION['SESS_LAST_NAME']) == 'admin' ||
         strtolower($_SESSION['SESS_LAST_NAME']) == ROLE_ACCOUNT ||
@@ -241,11 +242,6 @@ $d2 = $dt->format('Y-m-d');
         <?php
     }
     ?>
-
-    <!-- <tr>
-        <td colspan="9" style="text-align: right;"><b>Souq:</b></td>
-         <td colspan="1" style="padding-top:10px;">__________________</td>
-     </tr>-->
 
     <?php
     if($_SESSION['SESS_LAST_NAME'] == 'Operator' || $_SESSION[SESS_MOCK_ROLE] == ROLE_OPERATOR) {
@@ -284,4 +280,119 @@ $d2 = $dt->format('Y-m-d');
 
     </tbody>
 
+</table>
+
+
+<?php
+$sql = "SELECT s.*, c.customer_name FROM sales s
+                        LEFT JOIN customer c ON s.customer_id = c.customer_id
+                        INNER JOIN flight_purchases fp ON s.invoice_number = fp.invoice_id";
+
+if($_SESSION['SESS_LAST_NAME'] == 'Operator') {
+    $sql .= " INNER JOIN user u ON s.cashier = u.name AND u.position = 'Operator' ";
+}
+
+$sql .= " WHERE date >= ? AND date <= ? AND fp.created >= ? AND fp.created <= ?";
+
+if($_SESSION['SESS_LAST_NAME'] == 'Operator') {
+    $sql .= sprintf(" AND u.name = '%s'", $_SESSION['SESS_FIRST_NAME']);
+}
+$sql .= ' AND s.amount > 0 AND 
+                        (s.mode_of_payment = "Online") ';
+$sql .= " AND (c.customer_name != 'FDR' OR c.customer_name IS NULL)
+                    GROUP BY fp.invoice_id
+                    ORDER by transaction_id DESC";
+
+$query = $db->prepare($sql);
+$query->execute([$d1, $d2, $d1.' 18:00:00', $d1.' 23:59:59']);
+$rows = $query->fetchAll(PDO::FETCH_ASSOC);
+if(count($rows) == 0) {
+    exit;
+}
+?>
+
+<hr style="border-color:black;">
+
+<table class="table table-bordered table-striped" id="tblSalesReport" border="1" style="text-align: left; border-collapse: collapse;">
+    <thead>
+    <tr>
+        <th colspan="13" style="text-align: center;">
+            <h4>Additional Sale after EOD</h4>
+        </th>
+    </tr>
+    <tr>
+        <th width="16%"> Invoice Number</th>
+        <th width="16%"> Operator</th>
+        <th width="13%"> Transaction Date</th>
+        <th width="13%"> Cash</th>
+        <th width="13%"> Card</th>
+        <th width="13%"> Online</th>
+        <th width="13%"> Souq</th>
+        <th width="13%"> Customer ID</th>
+        <th width="20%"> Customer Name</th>
+        <th width="20%"> Service</th>
+        <th width="20%"> Merchandise</th>
+        <th width="18%"> VAT</th>
+        <th width="18%"> Net of VAT</th>
+
+    </tr>
+    </thead>
+    <tbody>
+    <?php foreach($rows as $row) {
+        $current_cost = round($row['amount'], 0);
+        $online_amount_after_office += $current_cost;
+        $invoiceHref = 'flight_preview.php?invoice=' . $row['invoice_number'] . '&sale_type=' . $row['sale_type'];
+        ?>
+        <tr>
+            <td><a href="<?=$invoiceHref?>"> <?=$row['invoice_number']?></a></td>
+            <td><?=$row['cashier']?></td>
+            <td><?=$row['date']?></td>
+            <td></td>
+            <td></td>
+            <td><?=$row['mop_amount']?></td>
+            <td></td>
+            <td><?=$row['customer_id']?></td>
+            <td><?=$row['customer_name']?></td>
+            <td><?=number_format(($row['mop_amount'] + $row['mop1_amount']), 0)?></td>
+            <td></td>
+            <td>
+                <?php
+                $vat_percent = "5%";
+                $VAT = $row['amount'] *$vat_percent/105;
+                //$vat_amount  = $vat_percent * $current_amount_w_discount / 105;
+                echo number_format($VAT, 0);
+                ?></td>
+
+            <td><?= number_format($current_cost-$VAT, 0) ?></td>
+
+        </tr>
+    <?php } ?>
+    <tr>
+        <td colspan="10"></td>
+    </tr>
+    <tr>
+        <td><b>Grand Total: </b></td>
+        <td><?=number_format($online_amount_after_office+$total_sale)?></td>
+        <td colspan="7" style="text-align: right;"><b>Verified By:</b></td>
+        <td colspan="1" style="padding-top:10px;">
+            <?php
+            $marija = getUserById(15);
+            echo $marija['name'];
+            ?>
+            _______________________
+        </td>
+        <td colspan="3"></td>
+    </tr>
+    <tr>
+        <td><b>Print Date:</b></td>
+        <td><?=date('Y-m-d')?></td>
+        <td colspan="7" style="text-align: right;"><b>Signature:</b></td>
+        <td colspan="1" style="padding-top:50px;">
+            <?php
+            echo sprintf('<img src="%s" />', BASE_URL.'/main/uploads/'.$marija['sign_img']);
+            ?>__________________
+        </td>
+        <td colspan="3"></td>
+    </tr>
+    </tbody>
 </table>
