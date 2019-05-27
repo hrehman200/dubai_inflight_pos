@@ -306,93 +306,96 @@ $sql .= " AND (c.customer_name != 'FDR' OR c.customer_name IS NULL)
 $query = $db->prepare($sql);
 $query->execute([$d1, $d2, $d1.' 18:00:00', $d1.' 23:59:59']);
 $rows = $query->fetchAll(PDO::FETCH_ASSOC);
-if(count($rows) == 0) {
-    exit;
-}
-?>
+if(count($rows) > 0) {
+    ?>
 
-<hr style="border-color:black;">
+    <hr style="border-color:black;">
 
-<table class="table table-bordered table-striped" id="tblSalesReport" border="1" style="text-align: left; border-collapse: collapse;">
-    <thead>
-    <tr>
-        <th colspan="13" style="text-align: center;">
-            <h4>Additional Sale after EOD</h4>
-        </th>
-    </tr>
-    <tr>
-        <th width="16%"> Invoice Number</th>
-        <th width="16%"> Operator</th>
-        <th width="13%"> Transaction Date</th>
-        <th width="13%"> Cash</th>
-        <th width="13%"> Card</th>
-        <th width="13%"> Online</th>
-        <th width="13%"> Souq</th>
-        <th width="13%"> Customer ID</th>
-        <th width="20%"> Customer Name</th>
-        <th width="20%"> Service</th>
-        <th width="20%"> Merchandise</th>
-        <th width="18%"> VAT</th>
-        <th width="18%"> Net of VAT</th>
-
-    </tr>
-    </thead>
-    <tbody>
-    <?php foreach($rows as $row) {
-        $current_cost = round($row['amount'], 0);
-        $online_amount_after_office += $current_cost;
-        $invoiceHref = 'flight_preview.php?invoice=' . $row['invoice_number'] . '&sale_type=' . $row['sale_type'];
-        ?>
+    <table class="table table-bordered table-striped" id="tblSalesReport" border="1"
+           style="text-align: left; border-collapse: collapse;">
+        <thead>
         <tr>
-            <td><a href="<?=$invoiceHref?>"> <?=$row['invoice_number']?></a></td>
-            <td><?=$row['cashier']?></td>
-            <td><?=$row['date']?></td>
-            <td></td>
-            <td></td>
-            <td><?=$row['mop_amount']?></td>
-            <td></td>
-            <td><?=$row['customer_id']?></td>
-            <td><?=$row['customer_name']?></td>
-            <td><?=number_format(($row['mop_amount'] + $row['mop1_amount']), 0)?></td>
-            <td></td>
-            <td>
-                <?php
-                $vat_percent = "5%";
-                $VAT = $row['amount'] *$vat_percent/105;
-                //$vat_amount  = $vat_percent * $current_amount_w_discount / 105;
-                echo number_format($VAT, 0);
-                ?></td>
-
-            <td><?= number_format($current_cost-$VAT, 0) ?></td>
+            <th colspan="13" style="text-align: center;">
+                <h4>Additional Sale after EOD</h4>
+            </th>
+        </tr>
+        <tr>
+            <th width="16%"> Invoice Number</th>
+            <th width="16%"> Operator</th>
+            <th width="13%"> Transaction Date</th>
+            <th width="13%"> Cash</th>
+            <th width="13%"> Card</th>
+            <th width="13%"> Online</th>
+            <th width="13%"> Souq</th>
+            <th width="13%"> Customer ID</th>
+            <th width="20%"> Customer Name</th>
+            <th width="20%"> Service</th>
+            <th width="20%"> Merchandise</th>
+            <th width="18%"> VAT</th>
+            <th width="18%"> Net of VAT</th>
 
         </tr>
-    <?php } ?>
-    <tr>
-        <td colspan="10"></td>
-    </tr>
-    <tr>
-        <td><b>Grand Total: </b></td>
-        <td><?=number_format($online_amount_after_office+$total_sale)?></td>
-        <td colspan="7" style="text-align: right;"><b>Verified By:</b></td>
-        <td colspan="1" style="padding-top:10px;">
-            <?php
-            $marija = getUserById(15);
-            echo $marija['name'];
+        </thead>
+        <tbody>
+        <?php foreach ($rows as $row) {
+            $current_cost = round($row['amount'], 0);
+            $online_amount_after_office += $current_cost;
+            $invoiceHref = 'flight_preview.php?invoice=' . $row['invoice_number'] . '&sale_type=' . $row['sale_type'];
             ?>
-            _______________________
-        </td>
-        <td colspan="3"></td>
-    </tr>
-    <tr>
-        <td><b>Print Date:</b></td>
-        <td><?=date('Y-m-d')?></td>
-        <td colspan="7" style="text-align: right;"><b>Signature:</b></td>
-        <td colspan="1" style="padding-top:50px;">
-            <?php
-            echo sprintf('<img src="%s" />', BASE_URL.'/main/uploads/'.$marija['sign_img']);
-            ?>__________________
-        </td>
-        <td colspan="3"></td>
-    </tr>
-    </tbody>
-</table>
+            <tr>
+                <td><a href="<?= $invoiceHref ?>"> <?= $row['invoice_number'] ?></a></td>
+                <td><?= $row['cashier'] ?></td>
+                <td><?= $row['date'] ?></td>
+                <td></td>
+                <td></td>
+                <td><?= $row['mop_amount'] ?></td>
+                <td></td>
+                <td><?= $row['customer_id'] ?></td>
+                <td><?= $row['customer_name'] ?></td>
+                <td><?= number_format(($row['mop_amount'] + $row['mop1_amount']), 0) ?></td>
+                <td></td>
+                <td>
+                    <?php
+                    $vat_percent = "5%";
+                    $VAT = $row['amount'] * $vat_percent / 105;
+                    //$vat_amount  = $vat_percent * $current_amount_w_discount / 105;
+                    echo number_format($VAT, 0);
+                    ?></td>
+
+                <td><?= number_format($current_cost - $VAT, 0) ?></td>
+
+            </tr>
+        <?php } ?>
+        <tr>
+            <td colspan="10"></td>
+        </tr>
+        <tr>
+            <td><b>Grand Total: </b></td>
+            <td><?= number_format($online_amount_after_office + $total_sale) ?></td>
+            <td colspan="7" style="text-align: right;"><b>Verified By:</b></td>
+            <td colspan="1" style="padding-top:10px;">
+                <?php
+                $marija = getUserById(15);
+                echo $marija['name'];
+                ?>
+                _______________________
+            </td>
+            <td colspan="3"></td>
+        </tr>
+        <tr>
+            <td><b>Print Date:</b></td>
+            <td><?= date('Y-m-d') ?></td>
+            <td colspan="7" style="text-align: right;"><b>Signature:</b></td>
+            <td colspan="1" style="padding-top:50px;">
+                <?php
+                echo sprintf('<img src="%s" />', BASE_URL.'main/uploads/'.$marija['sign_img']);
+                ?>__________________
+            </td>
+            <td colspan="3"></td>
+        </tr>
+        </tbody>
+    </table>
+
+    <?php
+}
+?>
