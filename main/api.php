@@ -269,6 +269,107 @@ function saveCustomer() {
     ));
 }
 
+function saveEmployee() {
+
+    global $db;
+
+    $post = $_POST;
+
+    /*foreach ($post as $key => $value) {
+        if (empty($post[$key])) {
+            echo json_encode(array('success' => 0, 'msg' => 'Please fill all fields'));
+            return;
+        }
+    }*/
+
+    if($post['id'] > 0) {
+        $query = $db->prepare('UPDATE employees SET
+         employee_no=?, name=?, email=?, designation=?, department=?, manager_name=?, assets_in_hand=?, date_of_joining=?, visa_expiry_date=?, family_member=?, emergency_contact_no=?, bank_account_name=?, bank_account_no=?,
+         date_of_resignation=?, notice_period=?, assets_return=?, annual_leaves_eligible=?, annual_leaves_balance_aed=?, deduction_aed=?, gratuity=?, total=?
+         WHERE id = ?');
+        $query->execute(array(
+            $post['employee_no'], $post['name'], $post['email'], $post['designation'], $post['department'], $post['manager_name'], $post['assets_in_hand'], $post['date_of_joining'], $post['visa_expiry_date'], $post['family_member'], $post['emergency_contact_no'], $post['bank_account_name'], $post['bank_account_no'],
+            $post['date_of_resignation'], $post['notice_period'], $post['assets_return'], $post['annual_leaves_eligible'], $post['annual_leaves_balance_aed'], $post['deduction_aed'], $post['gratuity'], $post['total'],
+            $post['id']
+        ));
+
+    } else {
+        if (!filter_var($post['email'], FILTER_VALIDATE_EMAIL)) {
+            echo json_encode(array('success' => 0, 'msg' => 'Please enter valid email'));
+            return;
+        }
+
+        $query = $db->prepare('SELECT id FROM employees WHERE email = ?');
+        $query->execute(array($post['email']));
+        if (count($query->fetchAll(PDO::FETCH_ASSOC)) > 0) {
+            echo json_encode(array('success' => 0, 'msg' => 'The given email already exists in the system. Please use different email'));
+            return;
+        }
+
+        $sql = "INSERT INTO employees
+      (employee_no, name, email, designation, department, manager_name, assets_in_hand, date_of_joining, visa_expiry_date, family_member, emergency_contact_no, bank_account_name, bank_account_no, created)
+      VALUES
+      (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())";
+
+        $query = $db->prepare($sql);
+        $query->execute(array(
+            $post['employee_no'], $post['name'], $post['email'], $post['designation'], $post['department'], $post['manager_name'], $post['assets_in_hand'], $post['date_of_joining'], $post['visa_expiry_date'], $post['family_member'], $post['emergency_contact_no'], $post['bank_account_name'], $post['bank_account_no']
+        ));
+
+        $employee_id = $db->lastInsertId();
+    }
+
+    echo json_encode(array(
+        'success' => 1
+    ));
+}
+
+function saveEmployeeSalary() {
+
+    global $db;
+    $post = $_POST;
+
+    if($post['id'] > 0) {
+        $query = $db->prepare('UPDATE employee_salaries SET
+        employee_id=?, current_salary=?, effect_date=?, house_allowance=?, medical=?, mobile=?, ticket=?, other=?, bonus=?, staff_uniform=?, monthly_total=?, yearly_total=?
+         WHERE id = ?');
+        $query->execute(array(
+            $post['employee_id'], $post['current_salary'], $post['effect_date'], $post['house_allowance'], $post['medical'], $post['mobile'], $post['ticket'], $post['other'], $post['bonus'], $post['staff_uniform'], $post['monthly_total'], $post['yearly_total'],
+            $post['id']
+        ));
+
+    } else {
+        $sql = "INSERT INTO employee_salaries
+      (employee_id, current_salary, effect_date, house_allowance, medical, mobile, ticket, other, bonus, staff_uniform, monthly_total, yearly_total, created)
+      VALUES
+      (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())";
+
+        $query = $db->prepare($sql);
+        $query->execute(array(
+            $post['employee_id'], $post['current_salary'], $post['effect_date'], $post['house_allowance'], $post['medical'], $post['mobile'], $post['ticket'], $post['other'], $post['bonus'], $post['staff_uniform'], $post['monthly_total'], $post['yearly_total']
+        ));
+    }
+
+    echo json_encode(array(
+        'success' => 1
+    ));
+}
+
+function deleteEmployee() {
+    deleteRowsWhere('employee_salaries', 'employee_id', $_POST['id']);
+    deleteRowById('employees', $_POST['id']);
+    echo json_encode(array(
+        'success' => 1
+    ));
+}
+
+function deleteEmployeeSalary() {
+    deleteRowById('employee_salaries', $_POST['id']);
+    echo json_encode(array(
+        'success' => 1
+    ));
+}
+
 function saveProfile() {
 
     global $db;

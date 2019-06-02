@@ -1750,3 +1750,33 @@ function getUserById($user_id) {
     $row = $query->fetch(PDO::FETCH_ASSOC);
     return $row;
 }
+
+function getRowById($tbl, $id) {
+    global $db;
+    $query = $db->prepare('SELECT * FROM '.$tbl.' WHERE id = ?');
+    $query->execute([$id]);
+    $row = $query->fetch(PDO::FETCH_ASSOC);
+    return $row;
+}
+
+function getRowsWhere($tbl, $col, $id) {
+    global $db;
+    $query = $db->prepare('SELECT * FROM '.$tbl.' WHERE '.$col.' = ?');
+    $query->execute([$id]);
+    $rows = $query->fetchAll(PDO::FETCH_ASSOC);
+    return $rows;
+}
+
+function deleteRowById($tbl, $id) {
+    global $db;
+    $query = $db->prepare('DELETE FROM '.$tbl.' WHERE id = ?');
+    $query->execute([$id]);
+    return $query->affected_rows;
+}
+
+function deleteRowsWhere($tbl, $col, $val) {
+    global $db;
+    $query = $db->prepare('DELETE FROM '.$tbl.' WHERE '.$col.' = ?');
+    $query->execute([$val]);
+    return $query->affected_rows;
+}
