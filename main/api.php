@@ -1294,7 +1294,14 @@ function getBusinessPlanRevenueCellData() {
 
     } else if(strpos($entity, 'Block hours purchase') !== false) {
         $paid = getFlightSaleViaDiscountName('Block hours', $start, $end);
+
+    } else if($entity == 'Salaries & Wages') {
+        $paid = getPaidSalariesWagesForPeriod($start, $end);
+
+    } else if($entity == 'Benefits & Allowances') {
+        $paid = getBenefitsAllowancesForPeriod($start, $end);
     }
+
     echo json_encode(['success' => 1, 'data' => number_format($paid)]);
 }
 

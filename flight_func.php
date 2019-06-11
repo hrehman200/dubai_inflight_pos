@@ -1598,6 +1598,26 @@ function getFlightSaleViaDiscountName($discount_name, $start_date, $end_date) {
     return round($row['amount'], 1);
 }
 
+function getPaidSalariesWagesForPeriod($start_date, $end_date) {
+    global $db;
+    $query = $db->prepare('SELECT MAX(current_salary) AS paid FROM `employee_salaries` WHERE effect_date <= ? GROUP BY employee_id ORDER BY effect_date DESC');
+    $query->execute([$end_date]);
+    $rows = $query->fetchAll();
+
+    $sum = array_sum(array_map(function($item) { return $item['paid']; }, $rows));
+    return $sum;
+}
+
+function getBenefitsAllowancesForPeriod($start_date, $end_date) {
+    global $db;
+    $query = $db->prepare('SELECT MAX(monthly_total) - staff_uniform AS paid FROM `employee_salaries` WHERE effect_date <= ? GROUP BY employee_id ORDER BY effect_date DESC');
+    $query->execute([$end_date]);
+    $rows = $query->fetchAll();
+
+    $sum = array_sum(array_map(function($item) { return $item['paid']; }, $rows));
+    return $sum;
+}
+
 /**
  * @param $customer_id
  * @param $flight_purchase_id
