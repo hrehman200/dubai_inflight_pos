@@ -70,7 +70,7 @@ $d2 = $dt->format('Y-m-d');
 
     $sql .= " WHERE date >= :a AND date <= :b 
                 AND 
-                (fp.created IS NULL || TIME(fp.created) <= '18:00:00')"; // either fp is null OR its created date is before office timings
+                (fp.created IS NULL || TIME(fp.created) <= '19:00:00' || s.mode_of_payment !='Online' )"; // either fp is null OR its created date is before office timings
 
     if($_SESSION['SESS_LAST_NAME'] == 'Operator') {
         $sql .= sprintf(" AND u.name = '%s'", $_SESSION['SESS_FIRST_NAME']);
@@ -304,7 +304,7 @@ $sql .= " AND (c.customer_name != 'FDR' OR c.customer_name IS NULL)
                     ORDER by transaction_id DESC";
 
 $query = $db->prepare($sql);
-$query->execute([$d1, $d2, $d1.' 18:00:00', $d1.' 23:59:59']);
+$query->execute([$d1, $d2, $d1.' 19:00:00', $d1.' 23:59:59']);
 $rows = $query->fetchAll(PDO::FETCH_ASSOC);
 if(count($rows) > 0) {
     ?>
