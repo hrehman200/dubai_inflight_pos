@@ -1340,6 +1340,29 @@ function getUnconsumedRevenue() {
     return $rows;
 }
 
+function getUnconsumedRevenueForYear($year) {
+    global $db;
+
+    $query = $db->prepare('SELECT
+            ur.*, DATE(ur.created) AS expired_date,
+            fp.invoice_id, DATE(fp.created) AS purchase_date,
+            fo.offer_name,
+            c.customer_name
+        FROM
+            unconsumed_revenue ur
+        INNER JOIN flight_purchases fp ON
+            ur.flight_purchase_id = fp.id
+        INNER JOIN customer c ON
+            fp.customer_id = c.customer_id
+        INNER JOIN flight_offers fo ON 
+            fp.flight_offer_id = fo.id
+        WHERE
+            ur.year = ?');
+    $query->execute([$year]);
+    $rows = $query->fetchAll(PDO::FETCH_ASSOC);
+    return $rows;
+}
+
 /**
  * @param $year
  * @param null $month
