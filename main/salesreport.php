@@ -126,7 +126,7 @@ require_once('auth.php');
                 <button style="float:right; margin-right:5px;" class="btn btn-warning btn-large" onclick="convertToCSV()" id="exportCSV"/>
                     Export
                 </button>
-                <button style="margin-right:5px;" class="btn btn-info btn-large pull-right" id="btnVerified">Verified</button>
+                <button style="margin-right:5px;" class="btn btn-info btn-large pull-right" id="btnVerified">Verify</button>
                 <br><br>
 
 

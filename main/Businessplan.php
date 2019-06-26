@@ -123,19 +123,21 @@ if(isset($_FILES['csvFile']) && $_FILES['csvFile']['error'] == 0){
                 </select>
 
                 <div class="pull-right">
-                    <label for="chk1" >Budget</label>
-                    <input type="radio" id="chk1" name="chkSheetFormat" value="1" />
-                    <label for="chk2" >Actual</label>
-                    <input type="radio" id="chk2" name="chkSheetFormat" value="2" />
-                    <label for="chk3" >Reconsilation</label>
-                    <input type="radio" id="chk3" name="chkSheetFormat" value="3" />
-    
                     <button class="btn btnUploadCsv"> <i class="icon-upload icon-large"></i> Upload CSV </button>
                     <input type="file" id="csvFile" name="csvFile" style="display:none">
 
                     <Button type="button" onclick="convertToCSV()" id="exportCSV" class="btn btn-info">
                         <i class="icon-plus-sign icon-large"></i> Export
                     </button>
+                </div>
+
+                <div style="padding-bottom:5px;">
+                    <label for="chk1" >Budget</label>
+                    <input type="radio" id="chk1" name="chkSheetFormat" value="1" />
+                    <label for="chk2" >Actual</label>
+                    <input type="radio" id="chk2" name="chkSheetFormat" value="2" />
+                    <label for="chk3" >Reconsilation</label>
+                    <input type="radio" id="chk3" name="chkSheetFormat" value="3" />
                 </div>
 
                 <div>
@@ -365,7 +367,7 @@ if(isset($_FILES['csvFile']) && $_FILES['csvFile']['error'] == 0){
                                 </td>
                                 <td class="actual <?=$months[$i]?>" data-entity="<?=$entity_name?>" data-month="<?=$months[$i]?>">
                                     <?php
-                                    if($month_row['gl_code'] > 0) {
+                                    if($month_row['gl_code'] > 0 && !in_array($month_row['gl_code'], [74101, 74299])) {
                                         echo number_format($month_row['actual_value']);
                                         $fy_actual_total += $month_row['actual_value'];
                                     } else {
@@ -850,6 +852,6 @@ if(isset($_FILES['csvFile']) && $_FILES['csvFile']['error'] == 0){
         }
     });
 
-    $('#toMonth').change();
+    //$('#toMonth').change();
 
 </script>
