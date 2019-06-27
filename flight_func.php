@@ -598,7 +598,7 @@ function getPerMinuteCostForCustomer($customer_id, $start_date=false, $end_date=
 function getCustomerYearlyPurchase($customer_id, $start_date, $end_date) {
     global $db;
 
-    $query = $db->prepare('SELECT * FROM customer_yearly_purchases WHERE customer_id = ? AND start_date <= ? AND end_date > ?');
+    $query = $db->prepare('SELECT * FROM customer_yearly_purchases WHERE customer_id = ? AND start_date <= ? AND end_date <= ? ORDER BY start_date DESC');
     $query->execute([$customer_id, $start_date, $end_date]);
     $row = $query->fetch(PDO::FETCH_ASSOC);
     return $row;
