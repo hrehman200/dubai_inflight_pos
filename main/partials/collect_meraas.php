@@ -68,9 +68,12 @@ $d2 = $dt->format('Y-m-d');
         $sql .= " INNER JOIN user u ON s.cashier = u.name AND u.position = 'Operator' ";
     }
 
-    $sql .= " WHERE date >= :a AND date <= :b 
-                AND 
-                (fp.created IS NULL || TIME(fp.created) <= '19:00:00' || s.mode_of_payment !='Online' )"; // either fp is null OR its created date is before office timings
+    $sql .= " WHERE date >= :a AND date <= :b";
+
+    if($d1 == date('Y-m-d') && $d2 == date('Y-m-d')) {
+        // either fp is null OR its created date is before office timings
+        $sql .= " AND (fp.created IS NULL || TIME(fp.created) <= '19:00:00' || s.mode_of_payment !='Online' )";
+    }
 
     if($_SESSION['SESS_LAST_NAME'] == 'Operator') {
         $sql .= sprintf(" AND u.name = '%s'", $_SESSION['SESS_FIRST_NAME']);

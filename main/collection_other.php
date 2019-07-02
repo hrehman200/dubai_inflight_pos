@@ -371,6 +371,7 @@ include('navfixed.php');
                             }
 
                             $is_flying_merchandise = (strpos($row['product_name'], 'Helmet Rent') !== false ||
+                                $row['product_name'] == 'Rental Helmet Full Day' ||
                                 strpos($row['product_name'], 'Video') !== false ||
                                 strpos($row['product_name'], 'Photo') !== false
                             );
