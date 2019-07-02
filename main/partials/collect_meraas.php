@@ -278,10 +278,6 @@ $d2 = $dt->format('Y-m-d');
         <td colspan="3"></td>
     </tr>
 
-    </tbody>
-
-</table>
-
 
 <?php
 $sql = "SELECT s.*, c.customer_name FROM sales s
@@ -309,11 +305,6 @@ $rows = $query->fetchAll(PDO::FETCH_ASSOC);
 if(count($rows) > 0) {
     ?>
 
-    <hr style="border-color:black;">
-
-    <table class="table table-bordered table-striped" id="tblSalesReport" border="1"
-           style="text-align: left; border-collapse: collapse;">
-        <thead>
         <tr>
             <th colspan="13" style="text-align: center;">
                 <h4>Additional Sale after EOD</h4>
@@ -335,8 +326,6 @@ if(count($rows) > 0) {
             <th width="18%"> Net of VAT</th>
 
         </tr>
-        </thead>
-        <tbody>
         <?php foreach ($rows as $row) {
             $current_cost = round($row['amount'], 0);
             $online_amount_after_office += $current_cost;
@@ -397,5 +386,8 @@ if(count($rows) > 0) {
     </table>
 
     <?php
+} else { ?>
+    </tbody></table>
+<?php
 }
 ?>
