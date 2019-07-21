@@ -1361,7 +1361,8 @@ function getUnconsumedRevenueForYear($year) {
             fo.package_id = fpkg.id
         WHERE
             ur.year = ?
-            AND fpkg.package_name NOT IN("FDR", "Giveaways", "Staff Flying")');
+            AND fpkg.package_name NOT IN("FDR", "Giveaways", "Staff Flying")
+            AND c.customer_name NOT IN("FDR")');
     $query->execute([$year]);
     $rows = $query->fetchAll(PDO::FETCH_ASSOC);
     return $rows;
