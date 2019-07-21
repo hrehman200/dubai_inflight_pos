@@ -1324,22 +1324,6 @@ function getMerchandiseDiscountsGiven($from, $to) {
     return $rows;
 }
 
-function getUnconsumedRevenue() {
-    global $db;
-
-    $query = $db->prepare('SELECT 
-        CASE 
-            WHEN year < 2018 OR flight_purchase_id IS NULL THEN "Pre 2018"
-            ELSE year
-        END AS year1,
-        SUM(minutes) AS minutes, SUM(cost) AS cost
-          FROM unconsumed_revenue 
-          GROUP BY year1');
-    $query->execute();
-    $rows = $query->fetchAll(PDO::FETCH_ASSOC);
-    return $rows;
-}
-
 function getUnconsumedRevenueForYear($year) {
     global $db;
 
@@ -1348,7 +1332,8 @@ function getUnconsumedRevenueForYear($year) {
             fp.invoice_id, DATE(fp.created) AS purchase_date,
             fo.offer_name,
             fpkg.package_name,
-            c.customer_name
+            c.customer_name,
+            d.category AS discount_name
         FROM
             unconsumed_revenue ur
         INNER JOIN flight_purchases fp ON
@@ -1359,6 +1344,8 @@ function getUnconsumedRevenueForYear($year) {
             fp.flight_offer_id = fo.id
         INNER JOIN flight_packages fpkg ON 
             fo.package_id = fpkg.id
+        LEFT JOIN discounts d ON 
+            fp.discount_id = d.id
         WHERE
             ur.year = ?
             AND fpkg.package_name NOT IN("FDR", "Giveaways", "Staff Flying")

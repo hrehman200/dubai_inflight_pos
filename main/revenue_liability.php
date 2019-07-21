@@ -383,35 +383,6 @@ set_time_limit(1800);
                                 </table>
                             </div>
                         </div>
-
-                        <br/>
-
-                        <div class="row">
-                            <div class="span5 offset1">
-                                <table class="table">
-                                    <tr>
-                                        <th colspan="3" style="text-align: center;">Unconsumed Revenue</th>
-                                    </tr>
-                                    <tr>
-                                        <th>Year</th>
-                                        <th>Minutes</th>
-                                        <th>AED Value</th>
-                                    </tr>
-                                    <?php
-                                    $unconsumed_revenue_rows = getUnconsumedRevenue();
-                                    foreach($unconsumed_revenue_rows as $row) {
-                                        ?>
-                                        <tr>
-                                            <td><?=$row['year1']?></td>
-                                            <td><?=number_format($row['minutes'])?></td>
-                                            <td><?=number_format($row['cost'], 2)?></td>
-                                        </tr>
-                                        <?php
-                                    }
-                                    ?>
-                                </table>
-                            </div>
-                        </div>
                         <?php
                     }
                     ?>

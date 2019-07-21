@@ -37,6 +37,7 @@ if (!$_GET['y']) {
                 <div class="content" id="content">
                     Year:
                     <select id="year">
+                        <option <?= $_GET['y'] == 2017 ? 'selected' : '' ?> value="2017">Pre 2018</option>
                         <option <?= $_GET['y'] == 2018 ? 'selected' : '' ?> >2018</option>
                         <option <?= $_GET['y'] == 2019 ? 'selected' : '' ?> >2019</option>
                     </select>
@@ -75,10 +76,23 @@ if (!$_GET['y']) {
                             </tr>
                             <?php
 
-                            if(!array_key_exists($row['package_name'], $grouped)) {
-                                $grouped[$row['package_name']] = $row['cost'];
+                            $package_name = str_replace("\r\n", "", $row['package_name']);
+                            if(stripos($row['discount_name'], 'military') !== false) {
+                                $package_name = 'Military';
+                            }
+                            if(stripos($row['discount_name'], 'navy seal') !== false) {
+                                $package_name = 'Navy Seal';
+                            }
+                            if(stripos($row['discount_name'], 'presidentail') !== false) {
+                                $package_name = 'Presidential Guard';
+                            }
+                            if(stripos($row['package_name'], 'ftf') === 0) {
+                                $package_name = 'FTF';
+                            }
+                            if(!array_key_exists($package_name, $grouped)) {
+                                $grouped[$package_name] = $row['cost'];
                             } else {
-                                $grouped[$row['package_name']] += $row['cost'];
+                                $grouped[$package_name] += $row['cost'];
                             }
 
                         }
