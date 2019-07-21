@@ -1347,6 +1347,7 @@ function getUnconsumedRevenueForYear($year) {
             ur.*, DATE(ur.created) AS expired_date,
             fp.invoice_id, DATE(fp.created) AS purchase_date,
             fo.offer_name,
+            fpkg.package_name,
             c.customer_name
         FROM
             unconsumed_revenue ur
@@ -1356,8 +1357,11 @@ function getUnconsumedRevenueForYear($year) {
             fp.customer_id = c.customer_id
         INNER JOIN flight_offers fo ON 
             fp.flight_offer_id = fo.id
+        INNER JOIN flight_packages fpkg ON 
+            fo.package_id = fpkg.id
         WHERE
-            ur.year = ?');
+            ur.year = ?
+            AND fpkg.package_name NOT IN("FDR", "Giveaways", "Staff Flying")');
     $query->execute([$year]);
     $rows = $query->fetchAll(PDO::FETCH_ASSOC);
     return $rows;
