@@ -10,7 +10,7 @@ require_once dirname(dirname(__DIR__)).'/connect.php';
 
 if(php_sapi_name() === 'cli') {
 
-    $query = $db->prepare('SELECT s.date, s.invoice_number, c.email, c.customer_name FROM sales s
+    $query = $db->prepare('SELECT s.date, s.invoice_number, c.email, c.address, c.customer_name FROM sales s
       INNER JOIN customer c ON s.customer_id = c.customer_id
       WHERE s.expiry = DATE(NOW() + INTERVAL 30 DAY)');
 
@@ -45,8 +45,10 @@ if(php_sapi_name() === 'cli') {
                     </p>
                 </div>', $row['date'], $row['invoice_number'], implode("<br>", $flight_offers));
 
+                $email = strlen(trim($row['email'])) > 0 ? $row['email'] : $row['address'];
+
                 echo 'Sending email to '.$row['customer_name'].' for invoice '.$row['invoice_number']."\n";
-                sendEmail($row['email'], 'Expiration of Purchased Offers', $body, true);
+                sendEmail($email, 'Expiration of Purchased Offers', $body, true);
             }
 
         }
