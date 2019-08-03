@@ -83,7 +83,7 @@ set_time_limit(1800);
                         <?php
 
                         $cache_filename = sprintf('uploads/%s_%s.txt', $_GET['d1'], $_GET['d2']);
-                        $clickable_rows = ['Military', 'FTF', 'Groupon', 'Cobone', 'Corporate Discount', 'B2B'];
+                        $clickable_rows = ['Military', 'FTF', 'Groupon', 'Cobone', 'Corporate Discount', 'B2B', 'Retail Revenue'];
 
                         if($_POST['pageType'] == 'Military') {
                             $arr_revenue = json_decode(base64_decode($_POST['military_data']), true);
@@ -93,6 +93,11 @@ set_time_limit(1800);
                             $arr_ftf = json_decode(base64_decode($_POST['ftf_data']), true);
                             $arr_revenue = $arr_ftf;
 
+                        } else if($_POST['pageType'] == 'Retail Revenue') {
+                            // so that arr_ftf can be passed to next level
+                            $arr_retail = json_decode(base64_decode($_POST['retail_data']), true);
+                            $arr_revenue = $arr_retail;
+
                         } else if(in_array($_POST['pageType'], $clickable_rows)) {
                             $arr = json_decode(base64_decode($_POST['ftf_data']), true);
                             $arr = array_filter($arr, function($item) {
@@ -101,7 +106,7 @@ set_time_limit(1800);
                             $arr = array_values($arr);
                             $arr_revenue = $arr[0][$_POST['pageType']];
 
-                        } else if(file_exists($cache_filename)) {
+                        } else if(!file_exists($cache_filename)) {
                             $arr_to_read = json_decode(file_get_contents($cache_filename), true);
                             $arr_ftf = $arr_to_read['arr_ftf'];
                             $arr_military = $arr_to_read['arr_military'];
@@ -164,28 +169,39 @@ set_time_limit(1800);
                             $arr_revenue = array_merge($arr_revenue, $arr_military_sum);
 
                             // just for heading
-                            $arr_revenue[] = ['package_name' => 'Other Revenue'];
+                            $arr_revenue[] = ['package_name' => 'Revenue other than Tunnel'];
+
+                            $arr_retail = [];
 
                             /** HELMET RENT */
                             $arr2 = getMerchandiseRevenue('Helmet Rent', $_GET['d1'], $_GET['d2']);
-                            $arr_revenue = array_merge($arr_revenue, $arr2);
+                            $arr_retail = array_merge($arr_retail, $arr2);
 
                             /** VIDEO */
                             $arr2 = getMerchandiseRevenue('Video', $_GET['d1'], $_GET['d2']);
-                            $arr_revenue = array_merge($arr_revenue, $arr2);
+                            $arr_retail = array_merge($arr_retail, $arr2);
 
                             /** MERCHANDISE */
                             $arr2 = getMerchandiseRevenue(TYPE_MERCHANDISE, $_GET['d1'], $_GET['d2']);
-                            $arr_revenue = array_merge($arr_revenue, $arr2);
+                            $arr_retail = array_merge($arr_retail, $arr2);
 
                             /** OTHER e.g. Facility Rental, Sandstorm Registration Fee  */
                             $arr2 = getOtherRevenue('Other', $_GET['d1'], $_GET['d2']);
-                            $arr_revenue = array_merge($arr_revenue, $arr2);
+                            $arr_retail = array_merge($arr_retail, $arr2);
+
+                            $arr_retail_sum[0] = [
+                                'package_name' => 'Retail Revenue',
+                                'paid' => array_sum(array_column($arr_retail, 'paid')),
+                                'aed_value' => array_sum(array_column($arr_retail, 'aed_value')),
+                            ];
+
+                            $arr_revenue = array_merge($arr_revenue, $arr_retail_sum);
 
                             if(strtotime($_GET['d2']) < strtotime(date('Y-m-d'))) {
                                 $arr_to_write = [
                                     'arr_ftf' => $arr_ftf,
                                     'arr_military' => $arr_military,
+                                    'arr_retail' => $arr_retail,
                                     'arr_revenue' => $arr_revenue
                                 ];
                                 file_put_contents($cache_filename, json_encode($arr_to_write));
@@ -193,7 +209,7 @@ set_time_limit(1800);
                         }
 
                         foreach ($arr_revenue as $row) {
-                            if($row['package_name'] == 'Other Revenue') {
+                            if($row['package_name'] == 'Revenue other than Tunnel') {
                                 ?>
                                 <tr>
                                     <td colspan="6" bgcolor="#eeeeee"><b><?=$row['package_name']?></b></td>
@@ -252,6 +268,7 @@ set_time_limit(1800);
                         <input type="hidden" name="pageType" value="Military" />
                         <input type="hidden" name="military_data" value="<?=base64_encode(json_encode($arr_military))?>" />
                         <input type="hidden" name="ftf_data" value="<?=base64_encode(json_encode($arr_ftf))?>" />
+                        <input type="hidden" name="retail_data" value="<?=base64_encode(json_encode($arr_retail))?>" />
                     </form>
 
                     <div class="app">
