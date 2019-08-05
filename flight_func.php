@@ -1815,3 +1815,56 @@ function deleteRowsWhere($tbl, $col, $val) {
     $query->execute([$val]);
     return $query->affected_rows;
 }
+
+function getRnL($start_date, $end_date, $parent_package = null, $level = 2) {
+    global $db;
+
+    $package_column = $level == 1 ? 'parent_package AS package' : 'package';
+
+    $sql = 'SELECT '.$package_column.', SUM(paid) AS paid, SUM(total_minutes) AS total_minutes, SUM(minutes_used) AS minutes_used, SUM(aed_value) AS aed_value, avg_per_min
+      FROM rnl_cache WHERE date >= ? AND date <= ?';
+    $params = [$start_date, $end_date];
+
+    if($parent_package == 'FTF') {
+        $sql .= ' AND (package = "FTF" OR parent_package = "FTF")';
+    } else if($level == 1 && $parent_package == 'Military') {
+        $sql .= ' AND (parent_package = "Military")';
+    } else if($parent_package != null) {
+        $sql .= ' AND parent_package = ?';
+        $params[] = $parent_package;
+    } else {
+        $sql .= ' AND parent_package IS NULL';
+    }
+
+    if($level == 1) {
+        $sql .= ' GROUP BY parent_package';
+    } else {
+        $sql .= ' GROUP BY package';
+    }
+
+    $query = $db->prepare($sql);
+    $query->execute($params);
+    $rows = $query->fetchAll(PDO::FETCH_ASSOC);
+
+    if($parent_package == null) {
+        foreach ($rows as &$row) {
+            if ($row['package'] == 'FTF') { // sum all ftf packages and show as one row
+                $sub_rows1 = getRnL($start_date, $end_date, $row['package']);
+                $row = [
+                    'package' => 'FTF',
+                    'paid' => array_sum(array_column($sub_rows1, 'paid')),
+                    'total_minutes' => array_sum(array_column($sub_rows1, 'total_minutes')),
+                    'minutes_used' => array_sum(array_column($sub_rows1, 'minutes_used')),
+                    'aed_value' => array_sum(array_column($sub_rows1, 'aed_value')),
+                    'avg_per_min' => $row['avg_per_min'],
+                ];
+            }
+        }
+    }
+
+    return $rows;
+}
+
+function getRnLForCurrentDay($end_day, $package) {
+
+}

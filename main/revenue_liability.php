@@ -82,149 +82,37 @@ set_time_limit(1800);
                         </tr>
                         <?php
 
-                        $cache_filename = sprintf('uploads/%s_%s.txt', $_GET['d1'], $_GET['d2']);
                         $clickable_rows = ['Military', 'FTF', 'Groupon', 'Cobone', 'Corporate Discount', 'B2B', 'Retail Revenue'];
 
-                        if($_POST['pageType'] == 'Military') {
-                            $arr_revenue = json_decode(base64_decode($_POST['military_data']), true);
-
-                        } else if($_POST['pageType'] == 'FTF') {
-                            // so that arr_ftf can be passed to next level
-                            $arr_ftf = json_decode(base64_decode($_POST['ftf_data']), true);
-                            $arr_revenue = $arr_ftf;
-
-                        } else if($_POST['pageType'] == 'Retail Revenue') {
-                            // so that arr_ftf can be passed to next level
-                            $arr_retail = json_decode(base64_decode($_POST['retail_data']), true);
-                            $arr_revenue = $arr_retail;
-
-                        } else if(in_array($_POST['pageType'], $clickable_rows)) {
-                            $arr = json_decode(base64_decode($_POST['ftf_data']), true);
-                            $arr = array_filter($arr, function($item) {
-                                return array_key_exists($_POST['pageType'], $item);
-                            });
-                            $arr = array_values($arr);
-                            $arr_revenue = $arr[0][$_POST['pageType']];
-
-                        } else if(!file_exists($cache_filename)) {
-                            $arr_to_read = json_decode(file_get_contents($cache_filename), true);
-                            $arr_ftf = $arr_to_read['arr_ftf'];
-                            $arr_military = $arr_to_read['arr_military'];
-                            $arr_revenue = $arr_to_read['arr_revenue'];
+                        if(isset($_POST['pageType'])) {
+                            $arr_revenue = getRnL($_GET['d1'], $_GET['d2'], $_POST['pageType']);
 
                         } else {
-                            $arr_revenue = [];
+                            $arr_revenue = getRnL($_GET['d1'], $_GET['d2']);
 
-                            $arr_ftf = getFTFRevenue($_GET['d1'], $_GET['d2'], false, false);
+                            $arr_military = getRnL($_GET['d1'], $_GET['d2'], 'Military', 1);
+                            $arr_retail = getRnL($_GET['d1'], $_GET['d2'], 'Retail Revenue', 1);
 
-                            $arr_ftf_sum[0] = [
-                                'package_name' => 'FTF',
-                                'paid' => array_sum(array_column($arr_ftf, 'paid')),
-                                'total_minutes' => array_sum(array_column($arr_ftf, 'total_minutes')),
-                                'minutes_used' => array_sum(array_column($arr_ftf, 'minutes_used')),
-                                'aed_value' => array_sum(array_column($arr_ftf, 'aed_value')),
-                                'avg_per_min' => array_sum(array_column($arr_ftf, 'avg_per_min')),
-                            ];
-
-                            $arr_revenue = array_merge($arr_revenue, $arr_ftf_sum);
-
-                            /** UP-Sale */
-                            $arr2 = getDataAndAggregate('UP-Sale', $_GET['d1'], $_GET['d2']);
-                            $arr_revenue = array_merge($arr_revenue, $arr2);
-
-                            /** RF */
-                            $arr2 = getDataAndAggregate('RF - Repeat Flights', $_GET['d1'], $_GET['d2']);
-                            $arr_revenue = array_merge($arr_revenue, $arr2);
-
-                            /** SKYDIVERS */
-                            $arr2 = getDataAndAggregate('Skydivers', $_GET['d1'], $_GET['d2']);
-                            $arr_revenue = array_merge($arr_revenue, $arr2);
-
-                            $arr_military = [];
-                            /** Military */
-                            $arr2 = getDataAndAggregate('Military', $_GET['d1'], $_GET['d2']);
-                            $arr_military = array_merge($arr_military, $arr2);
-
-                            /** Navy Seal */
-                            $arr2 = getDataAndAggregate('Navy Seal', $_GET['d1'], $_GET['d2']);
-                            $arr_military = array_merge($arr_military, $arr2);
-
-                            /** Presidential Guard */
-                            $arr2 = getDataAndAggregate('Presidential Guard', $_GET['d1'], $_GET['d2']);
-                            $arr_military = array_merge($arr_military, $arr2);
-
-                            /** Sky god */
-                            $arr2 = getDataAndAggregate('Sky god%', $_GET['d1'], $_GET['d2']);
-                            $arr_military = array_merge($arr_military, $arr2);
-
-                            $arr_military_sum[0] = [
-                                'package_name' => 'Military',
-                                'paid' => array_sum(array_column($arr_military, 'paid')),
-                                'total_minutes' => array_sum(array_column($arr_military, 'total_minutes')),
-                                'minutes_used' => array_sum(array_column($arr_military, 'minutes_used')),
-                                'aed_value' => array_sum(array_column($arr_military, 'aed_value')),
-                                'avg_per_min' => array_sum(array_column($arr_military, 'avg_per_min')),
-                            ];
-
-                            $arr_revenue = array_merge($arr_revenue, $arr_military_sum);
-
-                            // just for heading
-                            $arr_revenue[] = ['package_name' => 'Revenue other than Tunnel'];
-
-                            $arr_retail = [];
-
-                            /** HELMET RENT */
-                            $arr2 = getMerchandiseRevenue('Helmet Rent', $_GET['d1'], $_GET['d2']);
-                            $arr_retail = array_merge($arr_retail, $arr2);
-
-                            /** VIDEO */
-                            $arr2 = getMerchandiseRevenue('Video', $_GET['d1'], $_GET['d2']);
-                            $arr_retail = array_merge($arr_retail, $arr2);
-
-                            /** MERCHANDISE */
-                            $arr2 = getMerchandiseRevenue(TYPE_MERCHANDISE, $_GET['d1'], $_GET['d2']);
-                            $arr_retail = array_merge($arr_retail, $arr2);
-
-                            /** OTHER e.g. Facility Rental, Sandstorm Registration Fee  */
-                            $arr2 = getOtherRevenue('Other', $_GET['d1'], $_GET['d2']);
-                            $arr_retail = array_merge($arr_retail, $arr2);
-
-                            $arr_retail_sum[0] = [
-                                'package_name' => 'Retail Revenue',
-                                'paid' => array_sum(array_column($arr_retail, 'paid')),
-                                'aed_value' => array_sum(array_column($arr_retail, 'aed_value')),
-                            ];
-
-                            $arr_revenue = array_merge($arr_revenue, $arr_retail_sum);
-
-                            if(strtotime($_GET['d2']) < strtotime(date('Y-m-d'))) {
-                                $arr_to_write = [
-                                    'arr_ftf' => $arr_ftf,
-                                    'arr_military' => $arr_military,
-                                    'arr_retail' => $arr_retail,
-                                    'arr_revenue' => $arr_revenue
-                                ];
-                                file_put_contents($cache_filename, json_encode($arr_to_write));
-                            }
+                            $arr_revenue = array_merge($arr_revenue, $arr_military);
+                            $arr_revenue = array_merge($arr_revenue, $arr_retail);
                         }
 
                         foreach ($arr_revenue as $row) {
-                            if($row['package_name'] == 'Revenue other than Tunnel') {
+                            if($row['package'] == 'Retail Revenue') {
                                 ?>
                                 <tr>
-                                    <td colspan="6" bgcolor="#eeeeee"><b><?=$row['package_name']?></b></td>
+                                    <td colspan="6" bgcolor="#eeeeee"><b>Revenue other than Tunnel</b></td>
                                 </tr>
                                 <?php
-                                continue;
                             }
 
-                            $display_title = $row['package_name'];
+                            $display_title = $row['package'];
                             if($row['package_name']=='Military' && $_POST['pageType'] == 'Military') {
                                 $display_title = 'Military Individuals';
                             }
 
                             ?>
-                            <tr class="<?=in_array($row['package_name'], $clickable_rows)?'clickable-row':''?>" data-page-type="<?=$row['package_name']?>">
+                            <tr class="<?=in_array($row['package'], $clickable_rows)?'clickable-row':''?>" data-page-type="<?=$row['package']?>">
                                 <td><b><?= $display_title  ?></b></td>
                                 <td><?= number_format($row['paid']) ?></td>
                                 <td><?= number_format($row['total_minutes']) ?></td>
@@ -243,10 +131,10 @@ set_time_limit(1800);
                         }
 
                         $arr_packages = json_encode(array_map(function($v) {
-                            if($_POST['pageType'] == 'Military' && $v['package_name'] == 'Military') {
+                            if($_POST['pageType'] == 'Military' && $v['package'] == 'Military') {
                                 return 'Military Individuals';
                             }
-                            return $v['package_name'];
+                            return $v['package'];
                         }, $arr_revenue));
                         $arr_paid = json_encode(array_map(function($v) { return round($v['aed_value'], 1); }, $arr_revenue));
                         ?>
@@ -412,9 +300,6 @@ set_time_limit(1800);
 <script type="text/javascript">
 
     $('.clickable-row').click(function(e) {
-        /*var win = window.open("<?=$_SERVER['REQUEST_URI']?>&military=1", '_blank');
-        win.focus();*/
-
         $('input[name="pageType"]').val($(this).data('page-type'));
         $('#military-form').submit();
     });
