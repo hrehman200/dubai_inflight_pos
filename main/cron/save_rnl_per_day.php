@@ -8,13 +8,13 @@
 
 require_once dirname(dirname(__DIR__)) . '/connect.php';
 
-function saveRnLRow($start_date, $package_name, $parent_package, $paid, $total_minutes, $minutes_used, $aed_value, $avg_per_min) {
+function saveRnLRow($start_date, $package, $parent_package, $paid, $total_minutes, $minutes_used, $aed_value, $avg_per_min) {
     global $db;
     $query = $db->prepare('INSERT INTO rnl_cache VALUES (NULL, ?, ?, ?, ?, ?, ?, ?, ?)');
-    $query->execute([$start_date, $package_name, $parent_package, (float)$paid, (int)$total_minutes, (int)$minutes_used, (float)$aed_value, (float)$avg_per_min]);
+    $query->execute([$start_date, $package, $parent_package, (float)$paid, (int)$total_minutes, (int)$minutes_used, (float)$aed_value, (float)$avg_per_min]);
 }
 
-$start_date = new DateTime('2019-01-01');
+$start_date = new DateTime();
 $end_date = new DateTime();
 $ftf_discounts = getFTFDiscounts();
 

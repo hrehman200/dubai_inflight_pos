@@ -1819,7 +1819,7 @@ function deleteRowsWhere($tbl, $col, $val) {
 function getRnL($start_date, $end_date, $parent_package = null, $level = 2) {
     global $db;
 
-    $package_column = $level == 1 ? 'parent_package AS package' : 'package';
+    $package_column = $level == 1 ? 'parent_package AS package_name' : 'package AS package_name';
 
     $sql = 'SELECT '.$package_column.', SUM(paid) AS paid, SUM(total_minutes) AS total_minutes, SUM(minutes_used) AS minutes_used, SUM(aed_value) AS aed_value, avg_per_min
       FROM rnl_cache WHERE date >= ? AND date <= ?';
@@ -1848,10 +1848,10 @@ function getRnL($start_date, $end_date, $parent_package = null, $level = 2) {
 
     if($parent_package == null) {
         foreach ($rows as &$row) {
-            if ($row['package'] == 'FTF') { // sum all ftf packages and show as one row
-                $sub_rows1 = getRnL($start_date, $end_date, $row['package']);
+            if ($row['package_name'] == 'FTF') { // sum all ftf packages and show as one row
+                $sub_rows1 = getRnL($start_date, $end_date, $row['package_name']);
                 $row = [
-                    'package' => 'FTF',
+                    'package_name' => 'FTF',
                     'paid' => array_sum(array_column($sub_rows1, 'paid')),
                     'total_minutes' => array_sum(array_column($sub_rows1, 'total_minutes')),
                     'minutes_used' => array_sum(array_column($sub_rows1, 'minutes_used')),
@@ -1865,6 +1865,92 @@ function getRnL($start_date, $end_date, $parent_package = null, $level = 2) {
     return $rows;
 }
 
-function getRnLForCurrentDay($end_day, $package) {
+function getRnLForCurrentDay($start_day, $end_day) {
+    $arr_revenue = [];
 
+    $arr_ftf = getFTFRevenue($start_day, $end_day, false, false);
+
+    $arr_ftf_sum[0] = [
+        'package_name' => 'FTF',
+        'paid' => array_sum(array_column($arr_ftf, 'paid')),
+        'total_minutes' => array_sum(array_column($arr_ftf, 'total_minutes')),
+        'minutes_used' => array_sum(array_column($arr_ftf, 'minutes_used')),
+        'aed_value' => array_sum(array_column($arr_ftf, 'aed_value')),
+        'avg_per_min' => array_sum(array_column($arr_ftf, 'avg_per_min')),
+    ];
+
+    $arr_revenue = array_merge($arr_revenue, $arr_ftf_sum);
+
+    /** UP-Sale */
+    $arr2 = getDataAndAggregate('UP-Sale', $start_day, $end_day);
+    $arr_revenue = array_merge($arr_revenue, $arr2);
+
+    /** RF */
+    $arr2 = getDataAndAggregate('RF - Repeat Flights', $start_day, $end_day);
+    $arr_revenue = array_merge($arr_revenue, $arr2);
+
+    /** SKYDIVERS */
+    $arr2 = getDataAndAggregate('Skydivers', $start_day, $end_day);
+    $arr_revenue = array_merge($arr_revenue, $arr2);
+
+    $arr_military = [];
+    /** Military */
+    $arr2 = getDataAndAggregate('Military', $start_day, $end_day);
+    $arr_military = array_merge($arr_military, $arr2);
+
+    /** Navy Seal */
+    $arr2 = getDataAndAggregate('Navy Seal', $start_day, $end_day);
+    $arr_military = array_merge($arr_military, $arr2);
+
+    /** Presidential Guard */
+    $arr2 = getDataAndAggregate('Presidential Guard', $start_day, $end_day);
+    $arr_military = array_merge($arr_military, $arr2);
+
+    /** Sky god */
+    $arr2 = getDataAndAggregate('Sky god%', $start_day, $end_day);
+    $arr_military = array_merge($arr_military, $arr2);
+
+    $arr_military_sum[0] = [
+        'package_name' => 'Military',
+        'paid' => array_sum(array_column($arr_military, 'paid')),
+        'total_minutes' => array_sum(array_column($arr_military, 'total_minutes')),
+        'minutes_used' => array_sum(array_column($arr_military, 'minutes_used')),
+        'aed_value' => array_sum(array_column($arr_military, 'aed_value')),
+        'avg_per_min' => array_sum(array_column($arr_military, 'avg_per_min')),
+    ];
+
+    $arr_revenue = array_merge($arr_revenue, $arr_military_sum);
+
+    $arr_retail = [];
+
+    /** HELMET RENT */
+    $arr2 = getMerchandiseRevenue('Helmet Rent', $start_day, $end_day);
+    $arr_retail = array_merge($arr_retail, $arr2);
+
+    /** VIDEO */
+    $arr2 = getMerchandiseRevenue('Video', $start_day, $end_day);
+    $arr_retail = array_merge($arr_retail, $arr2);
+
+    /** MERCHANDISE */
+    $arr2 = getMerchandiseRevenue(TYPE_MERCHANDISE, $start_day, $end_day);
+    $arr_retail = array_merge($arr_retail, $arr2);
+
+    /** OTHER e.g. Facility Rental, Sandstorm Registration Fee  */
+    $arr2 = getOtherRevenue('Other', $start_day, $end_day);
+    $arr_retail = array_merge($arr_retail, $arr2);
+
+    $arr_retail_sum[0] = [
+        'package_name' => 'Retail Revenue',
+        'paid' => array_sum(array_column($arr_retail, 'paid')),
+        'aed_value' => array_sum(array_column($arr_retail, 'aed_value')),
+    ];
+
+    $arr_revenue = array_merge($arr_revenue, $arr_retail_sum);
+
+    return [
+        'arr_revenue' => $arr_revenue,
+        'arr_ftf' => $arr_ftf,
+        'arr_military' => $arr_military,
+        'arr_retail' => $arr_retail
+    ];
 }

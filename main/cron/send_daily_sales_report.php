@@ -35,6 +35,8 @@ if(php_sapi_name() === 'cli') {
         markPurchasesExpired();
     }
 
+    require_once __DIR__ . '/save_rnl_per_day.php';
+
 } else {
     echo 'This script can only be ran from command line';
 }

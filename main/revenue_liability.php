@@ -32,9 +32,9 @@ set_time_limit(1800);
                         </button>
                     </a>
                 </div>
-                <form action="revenue_liability.php" method="get">
-                    From : <input type="text" name="d1" style="width: 223px; padding:14px;" class="tcal" value="" autocomplete="false"/>
-                    To: <input type="text" style="width: 223px; padding:14px;" name="d2" class="tcal" value="" autocomplete="false"/>
+                <form id="formRnL" action="revenue_liability.php" method="get">
+                    From : <input type="text" id="d1" name="d1" style="width: 223px; padding:14px;" class="tcal" value="" autocomplete="false"/>
+                    To: <input type="text" style="width: 223px; padding:14px;" id="d2" name="d2" class="tcal" value="" autocomplete="false"/>
                     <!--<br/>
                     <input type="hidden" name="customerId" id="customerId" value="<?/*=$_GET['customerId']*/?>" />
                     <input type="text" class="form-contorl span4" placeholder="Customer Name" id="customer" name="customer" autocomplete="off" />-->
@@ -84,7 +84,38 @@ set_time_limit(1800);
 
                         $clickable_rows = ['Military', 'FTF', 'Groupon', 'Cobone', 'Corporate Discount', 'B2B', 'Retail Revenue'];
 
-                        if(isset($_POST['pageType'])) {
+                        // for current day we will need to use old scheme of getting data freshly
+                        if(date('Y-m-d') == $_GET['d1'] && date('Y-m-d') == $_GET['d2']) {
+
+                            if($_POST['pageType'] == 'Military') {
+                                $arr_revenue = json_decode(base64_decode($_POST['military_data']), true);
+
+                            } else if($_POST['pageType'] == 'FTF') {
+                                // so that arr_ftf can be passed to next level
+                                $arr_ftf = json_decode(base64_decode($_POST['ftf_data']), true);
+                                $arr_revenue = $arr_ftf;
+
+                            } else if($_POST['pageType'] == 'Retail Revenue') {
+                                $arr_retail = json_decode(base64_decode($_POST['retail_data']), true);
+                                $arr_revenue = $arr_retail;
+
+                            } else if(in_array($_POST['pageType'], $clickable_rows)) {
+                                $arr = json_decode(base64_decode($_POST['ftf_data']), true);
+                                $arr = array_filter($arr, function($item) {
+                                    return array_key_exists($_POST['pageType'], $item);
+                                });
+                                $arr = array_values($arr);
+                                $arr_revenue = $arr[0][$_POST['pageType']];
+
+                            } else {
+                                $arr = getRnLForCurrentDay($_GET['d1'], $_GET['d2']);
+                                $arr_revenue = $arr['arr_revenue'];
+                                $arr_ftf = $arr['arr_ftf'];
+                                $arr_military = $arr['arr_military'];
+                                $arr_retail = $arr['arr_retail'];
+                            }
+
+                        } else if(isset($_POST['pageType'])) {
                             $arr_revenue = getRnL($_GET['d1'], $_GET['d2'], $_POST['pageType']);
 
                         } else {
@@ -98,7 +129,7 @@ set_time_limit(1800);
                         }
 
                         foreach ($arr_revenue as $row) {
-                            if($row['package'] == 'Retail Revenue') {
+                            if($row['package_name'] == 'Retail Revenue') {
                                 ?>
                                 <tr>
                                     <td colspan="6" bgcolor="#eeeeee"><b>Revenue other than Tunnel</b></td>
@@ -106,13 +137,13 @@ set_time_limit(1800);
                                 <?php
                             }
 
-                            $display_title = $row['package'];
+                            $display_title = $row['package_name'];
                             if($row['package_name']=='Military' && $_POST['pageType'] == 'Military') {
                                 $display_title = 'Military Individuals';
                             }
 
                             ?>
-                            <tr class="<?=in_array($row['package'], $clickable_rows)?'clickable-row':''?>" data-page-type="<?=$row['package']?>">
+                            <tr class="<?=in_array($row['package_name'], $clickable_rows)?'clickable-row':''?>" data-page-type="<?=$row['package_name']?>">
                                 <td><b><?= $display_title  ?></b></td>
                                 <td><?= number_format($row['paid']) ?></td>
                                 <td><?= number_format($row['total_minutes']) ?></td>
@@ -131,10 +162,10 @@ set_time_limit(1800);
                         }
 
                         $arr_packages = json_encode(array_map(function($v) {
-                            if($_POST['pageType'] == 'Military' && $v['package'] == 'Military') {
+                            if($_POST['pageType'] == 'Military' && $v['package_name'] == 'Military') {
                                 return 'Military Individuals';
                             }
-                            return $v['package'];
+                            return $v['package_name'];
                         }, $arr_revenue));
                         $arr_paid = json_encode(array_map(function($v) { return round($v['aed_value'], 1); }, $arr_revenue));
                         ?>
@@ -298,6 +329,18 @@ set_time_limit(1800);
 </body>
 
 <script type="text/javascript">
+
+    $('#formRnL').on('submit', function(e) {
+        var today = new Date();
+        var dd = String(today.getDate()).padStart(2, '0');
+        var mm = String(today.getMonth() + 1).padStart(2, '0'); //January is 0!
+        var yyyy = today.getFullYear();
+        today = mm + '/' + dd + '/' + yyyy;
+        if(($('#d1').val() == today || $('#d2').val() == today) && $('#d1').val() != $('#d2').val()) {
+            bootbox.alert("If you are searching for today's data, make sure start date and end date match.");
+            return false;
+        }
+    });
 
     $('.clickable-row').click(function(e) {
         $('input[name="pageType"]').val($(this).data('page-type'));
