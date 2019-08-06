@@ -69,11 +69,11 @@ while ($start_date <= $end_date) {
 
     /** HELMET RENT */
     $arr = getMerchandiseRevenue('Helmet Rent', $start_end, $start_end);
-    saveRnLRow($start_end, 'Helmet Rent', 'Revenue other than Tunnel', $arr[0]['paid'], 0, 0, $arr[0]['aed_value'], 0);
+    saveRnLRow($start_end, 'Helmet Rent', 'Retail Revenue', $arr[0]['paid'], 0, 0, $arr[0]['aed_value'], 0);
 
     /** VIDEO */
     $arr = getMerchandiseRevenue('Video', $start_end, $start_end);
-    saveRnLRow($start_end, 'Video', 'Retail Revenue', $arr[0]['paid'], 0, 0, $arr[0]['aed_value'], 0);
+    saveRnLRow($start_end, 'Videos/Photos', 'Retail Revenue', $arr[0]['paid'], 0, 0, $arr[0]['aed_value'], 0);
 
     /** MERCHANDISE */
     $arr = getMerchandiseRevenue(TYPE_MERCHANDISE, $start_end, $start_end);
