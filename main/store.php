@@ -15,11 +15,15 @@
     ?>
 
     <link href="vendors/uniform.default.css" rel="stylesheet" media="screen">
-    <link href="css/bootstrap_dark.min.css" rel="stylesheet">
+    <!--<link href="css/bootstrap_dark.min.css" rel="stylesheet">-->
     <link rel="stylesheet" type="text/css" href="css/DT_bootstrap.css">
     <link rel="stylesheet" type="text/css" href="css/bootstrap-datepicker.standalone.css">
 
-    <link rel="stylesheet" href="css/font-awesome.min.css">
+    <!--<link rel="stylesheet" href="css/font-awesome.min.css">-->
+
+    <!--<link href="css/bootstrap-responsive.css" rel="stylesheet">-->
+    <link rel="stylesheet" href="css/inflight-custom.css">
+    <link rel="stylesheet" href="css/bootstrap.min.css">
     <style type="text/css">
         body {
             padding-top: 60px;
@@ -63,8 +67,11 @@
             display: inline-block;
             background-color: blue;
         }
+
+        label, .datepicker td, .datepicker th, .modal-title, h3 {
+            color:white;
+        }
     </style>
-    <link href="css/bootstrap-responsive.css" rel="stylesheet">
 
     <!-- combosearch box-->
     <script src="vendors/bootstrap.js"></script>
@@ -81,10 +88,11 @@
 <body>
 
 <?php include('store_top_nav.php'); ?>
+<script src="js/inflight-custom.js"></script>
 
-<div class="container-fluid">
-    <div class="row-fluid">
-        <div class="span10 offset1">
+<div class="container-fluid mt-5">
+    <div class="row">
+        <div class="col-12">
             <?php
             if(!isset($_GET['p']) || $_GET['p'] == 2 || isset($_SESSION['CUSTOMER_ID'])) {
                 ?>
@@ -105,7 +113,7 @@
                     <input type="hidden" name="creditDuration" id="creditDuration" value=""/>
                     <input type="hidden" name="useCredit" id="useCredit" value="0"/>
 
-                    <select class="span6" name="pkg_id" id="pkg_id">
+                    <select class="col-6 form-control" name="pkg_id" id="pkg_id">
                         <option value="0">Select a Flight Package</option>
                         <?php
                         $result = $db->prepare("SELECT * FROM flight_packages WHERE id IN (1,3)");
@@ -122,7 +130,7 @@
 
                     <br>
 
-                    <select class="span6" name="flightOffer" id="flightOffer">
+                    <select class="col-6 form-control" name="flightOffer" id="flightOffer">
                         <option value="0">Select a Flight Offer</option>
                         <?php
                         $result = $db->prepare("SELECT * FROM flight_offers WHERE package_id = :package_id AND status = 1 
@@ -143,21 +151,21 @@
 
                     <br/>
 
-                    <button class="btn btn-info span2" style="margin-right: 25px; margin-left:0;" id="btnFlightHistory">
+                    <!--<button class="btn btn-info col-2" style="margin-right: 25px; margin-left:0;" id="btnFlightHistory">
                         Flight History
-                    </button>
+                    </button>-->
 
                     <br/><br/>
 
                     <div class="row">
-                        <div class="span3" style="margin-left:25px;">
+                        <div class="col-3" style="margin-left:25px;">
                             <div class="">
                                 <div id="datePicker"></div>
                                 <!--<button class="btn" id="btnBookings">Bookings (<span id="spBookings">0</span>)</button>-->
                             </div>
                         </div>
 
-                        <div class="span5">
+                        <div class="col-5">
                             <div class="divCalendar">
                                 <input type="checkbox" id="chkOnlySlotsWithDuration" name="chkOnlySlotsWithDuration"
                                        value="1"
@@ -202,14 +210,16 @@
 
                         </div>
 
-                        <div class="span3" id="divCustomerDetails">
-                            <h4 align="center" style=color:whitee> For Return & Experience Flyer's Rates, </h4><h4 align="center" > Call at <b>800-<i>Inflight</b> </i>(46354448) or send us email at, <i><u>info@inflightdubai.com</i></u></h4>
+                        <div class="col-3" id="divCustomerDetails"  style="color:white;">
+                            <h4 align="center"> For Return & Experience Flyer's Rates, </h4>
+                            <h4 align="center" > Call at: <br><b>800-<i>Inflight</b> </i>(46354448)<br>or send us email at: <br><i><u>info@inflightdubai.com</i></u></h4>
                         </div>
                     </div>
 
                 </form>
 
-                <div style="bottom:10px; background-color: #eeeeee; padding:10px;" class="span11">
+                <div class="row mt-5">
+                    <div style="bottom:10px; background-color: #eeeeee; padding:10px;" class="col-10 offset-1">
                     <table class="table table-bordered" id="resultTable" data-responsive="table">
                         <thead>
                         <tr>
@@ -356,6 +366,7 @@
 
                     <div class="clearfix"></div>
                 </div>
+                </div>
                 <?php
             }
             else if($_GET['p'] == 1) {
@@ -365,9 +376,9 @@
                     <img src="<?=BASE_URL?>main/img/inflight_logo.png" width="350" style="margin-left:90px;" /><br>
 
                     <h3>Please register/login to continue with the transaction</h3>
-                    <button class="btn btn-large btnRegister" data-link="customer_add.php">Signup (New Customer)</button>
-                    <button class="btn btn-large btnLogin" data-link="customer_login.php">Login</button>
-                    <button class="btn btn-large btnForgotPass" data-link="customer_forgotpass.php">Forgot Password</button>
+                    <button class="btn btn-primary btn-large btnRegister" data-link="customer_add.php">Signup (New Customer)</button>
+                    <button class="btn btn-primary btn-large btnLogin" data-link="customer_login.php">Login</button>
+                    <button class="btn btn-primary btn-large btnForgotPass" data-link="customer_forgotpass.php">Forgot Password</button>
 
                 </div>
             <?php
@@ -936,7 +947,7 @@
     }).datepicker('update', '<?php echo $_GET['date']?>')
         .trigger('changeDate');
 
-    $('#btnBookings').on('click', function (e) {
+    $('.btnBookings').on('click', function (e) {
         e.preventDefault();
 
         var pickedDate = $("#datePicker").data('datepicker').getFormattedDate('yyyy-mm-dd');
@@ -1440,6 +1451,7 @@
 
 </script>
 
-<?php include('footer.php'); ?>
+<?php include('store_footer.php'); ?>
+
 </html>
 

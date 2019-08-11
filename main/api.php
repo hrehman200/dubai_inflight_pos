@@ -592,8 +592,6 @@ function getCustomerBookings() {
             $sql .= sprintf(' AND fp.customer_id = %d', $_POST['bookingCustomerId']);
         }
 
-        $sql .= " ORDER BY fb.flight_time ASC";
-
         $arr_params = array(
             ':flightDate' => $post['date']
         );
@@ -602,6 +600,8 @@ function getCustomerBookings() {
             $sql .= " AND fp.customer_id = :customer_id";
             $arr_params[':customer_id'] = $_SESSION['CUSTOMER_ID'];
         }
+
+        $sql .= " ORDER BY fb.flight_time ASC";
 
         $query = $db->prepare($sql);
         $query->execute($arr_params);
