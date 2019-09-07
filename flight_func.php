@@ -40,7 +40,7 @@ $offer_to_groupon_map = [
 
 $_FTF_DISCOUNTS = ['Alpha', 'Discovery Way', 'Arooha', 'Desert Gate', 'JustDo', 'Highway', 'Groupon', 'Cobone', 'Emirates Airline'];
 
-function getFTFDiscounts($rnl_parent = null, $with_rnl_parents = false) {
+function getDiscountsOf($rnl_parent = null, $with_rnl_parents = false) {
     global $db;
 
     if($with_rnl_parents) {
@@ -58,6 +58,14 @@ function getFTFDiscounts($rnl_parent = null, $with_rnl_parents = false) {
             $query->execute([$rnl_parent]);
         }
     }
+    $rows = $query->fetchAll(PDO::FETCH_ASSOC);
+    return array_map(function($item) {return $item['discount_name'];}, $rows);
+}
+
+function getDiscountsOfParent($parent = '') {
+    global $db;
+    $query = $db->prepare('SELECT DISTINCT(category) AS discount_name FROM discounts WHERE parent = ? AND status = 1');
+    $query->execute([$parent]);
     $rows = $query->fetchAll(PDO::FETCH_ASSOC);
     return array_map(function($item) {return $item['discount_name'];}, $rows);
 }
@@ -598,8 +606,16 @@ function getPerMinuteCostForCustomer($customer_id, $start_date=false, $end_date=
 function getCustomerYearlyPurchase($customer_id, $start_date, $end_date) {
     global $db;
 
-    $query = $db->prepare('SELECT * FROM customer_yearly_purchases WHERE customer_id = ? AND start_date <= ? AND end_date <= ? ORDER BY start_date DESC');
-    $query->execute([$customer_id, $start_date, $end_date]);
+    $sql = 'SELECT * FROM customer_yearly_purchases WHERE customer_id = ? AND start_date <= ?';
+    $params = [$customer_id, $start_date];
+    $query = $db->prepare($sql);
+
+    if($end_date != null) {
+        $sql .= 'AND end_date <= ? ORDER BY start_date DESC';
+        $param[] = $end_date;
+    }
+
+    $query->execute($params);
     $row = $query->fetch(PDO::FETCH_ASSOC);
     return $row;
 }
@@ -830,7 +846,7 @@ function getQuery($package_name, $sale_date_check = true) {
     } else if($package_name == 'UP-Sale') {
         $package_check = " fp1.flight_offer_id IN (84, 97, 98, 99, 100, 101, 102, 103, 104, 105, 116)";
 
-    } else if(!in_array($package_name, getFTFDiscounts(null, true))) {
+    } else if(!in_array($package_name, getDiscountsOf(null, true))) {
         $package_check = " (fpkg.id IN (6, 8)";
         if(strpos($package_name, 'Military') === 0) { // we need to check whether for RF, military discount is given, in which case RF will come in Military
             $package_check .= " OR fpkg.package_name LIKE 'RF - Repeat Flights%'
@@ -918,32 +934,35 @@ function getQuery($package_name, $sale_date_check = true) {
     if($package_name == 'Skydivers' || $package_name == 'FTF' || $package_name == 'RF - Repeat Flights' || $package_name == 'UP-Sale') {
 
         $ftf_discount_check = '';
-        foreach(getFTFDiscounts(null, true) as $ftf_discount) {
+        foreach(getDiscountsOf(null, true) as $ftf_discount) {
             $ftf_discount_check .= "AND d.category NOT LIKE '" . $ftf_discount . "%'";
         }
 
-        $sql .= "AND d.category NOT IN ('Presidential Guard', 'Navy Seal', 'Military', 'Sky god%') 
-                 AND d.category NOT LIKE 'Navy Seal%'
+        $military_disounts = getDiscountsOfParent('Military');
+        $military_discount_check = sprintf("AND d.category NOT IN ('%s')", implode("','", $military_disounts));
+
+        $sql .= $military_discount_check.
+                 "AND d.category NOT LIKE 'Navy Seal%'
                  AND d.category NOT LIKE 'Groupon%'
                  AND d.category NOT LIKE 'Military%'
                  ".$ftf_discount_check;
 
-    } else if(in_array($package_name, getFTFDiscounts(null, true))){
+    } else if(in_array($package_name, getDiscountsOf(null, true))){
         $sql .= "AND (d.category LIKE '{$package_name}%' OR d.rnl_parent LIKE '{$package_name}%')";
 
     } else if($package_name == NAVY_SEAL){
         $sql .= "AND d.category LIKE 'Navy Seal%'";
 
-    } else if(strpos($package_name, 'Military') === 0){ // so that military discounts given to RF can be included in Military
+    } else if($package_name == 'Military'){ // so that military discounts given to RF can be included in Military
         $sql .= "AND (
                     (
-                        (fpkg.package_name LIKE 'RF - Repeat Flights%' AND d.category IN ('Presidential Guard', 'Military', 'Sky god%', 'Military Spc'))
+                        (fpkg.package_name LIKE 'RF - Repeat Flights%' AND d.category IN ('Presidential Guard', 'Military', 'Sky god%'))
                         OR 
-                        (fpkg.package_name NOT LIKE 'RF - Repeat Flights%' AND d.category IN ('Military', 'Military Spc'))
+                        (fpkg.package_name NOT LIKE 'RF - Repeat Flights%' AND d.category IN ('Military'))
                     ) OR (
-                        (fpkg.package_name LIKE 'FTF%' AND d.category IN ('Presidential Guard', 'Military', 'Sky god%', 'Military Spc'))
+                        (fpkg.package_name LIKE 'FTF%' AND d.category IN ('Presidential Guard', 'Military', 'Sky god%'))
                         OR 
-                        (fpkg.package_name NOT LIKE 'FTF%' AND d.category IN ('Military', 'Military Spc'))
+                        (fpkg.package_name NOT LIKE 'FTF%' AND d.category IN ('Military'))
                     )
                 )";
     } else {
@@ -1145,7 +1164,7 @@ function getMerchandiseRevenue($product_name, $date1, $date2) {
                             INNER JOIN sales_order so ON s.invoice_number = so.invoice
                             INNER JOIN products p ON so.product = p.product_id 
                             WHERE (p.product_name LIKE ? %s)
-                            AND (s.date >= ? AND s.date <= ?)', ($product_name=='Video') ? 'OR p.product_name LIKE "%%photo%%"' : ''));
+                            AND (s.date >= ? AND s.date <= ?)', ($product_name=='Video') ? 'OR p.product_name LIKE "%photo%"' : ''));
         $query->execute(["%" . $product_name . "%", $date1, $date2]);
         $row = $query->fetch(PDO::FETCH_ASSOC);
     }
@@ -1544,12 +1563,12 @@ function getFTFRevenue($start_date, $end_date, $include_rf_in_ftf = false, $retu
     $arr2 = getDataAndAggregate('FTF', $start_date, $end_date);
     $arr_ftf = array_merge($arr_ftf, $arr2);
 
-    $ftf_discounts = getFTFDiscounts();
+    $ftf_discounts = getDiscountsOf();
 
     foreach($ftf_discounts as $ftf_discount) {
         //$arr2 = getDataAndAggregate($ftf_discount, $start_date, $end_date);
 
-        $ftf_subdiscounts = getFTFDiscounts($ftf_discount);
+        $ftf_subdiscounts = getDiscountsOf($ftf_discount);
         $arr_subdiscount = [];
         foreach($ftf_subdiscounts as $subdiscount) {
             $arr3 = getDataAndAggregate($subdiscount, $start_date, $end_date);
@@ -1953,4 +1972,28 @@ function getRnLForCurrentDay($start_day, $end_day) {
         'arr_military' => $arr_military,
         'arr_retail' => $arr_retail
     ];
+}
+
+function saveRnLRow($start_date, $package, $parent_package, $paid, $total_minutes, $minutes_used, $aed_value, $avg_per_min) {
+    global $db;
+
+    switch($package) {
+        case NAVY_SEAL:
+            $start_date_like = substr($start_date, 0, -2)."%";
+            $query = $db->prepare('SELECT * FROM rnl_cache WHERE date LIKE "'.$start_date_like.'" AND package = ? LIMIT 1');
+            $query->execute([$package]);
+            $rows = $query->fetchAll(PDO::FETCH_ASSOC);
+            if(count($rows) > 0) {
+                $paid = 0;
+                $total_minutes = 0;
+            } else {
+                $purchase = getCustomerYearlyPurchase(756, $start_date, null);
+                $total_minutes = $purchase['per_month_minutes'];
+                $paid = $purchase['per_minute_cost'] * $total_minutes;
+            }
+            break;
+    }
+
+    $query = $db->prepare('INSERT INTO rnl_cache VALUES (NULL, ?, ?, ?, ?, ?, ?, ?, ?)');
+    $query->execute([$start_date, $package, $parent_package, (float)$paid, (int)$total_minutes, (int)$minutes_used, (float)$aed_value, (float)$avg_per_min]);
 }

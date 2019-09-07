@@ -8,8 +8,9 @@
 
 require_once dirname(dirname(__DIR__)) . '/connect.php';
 
-$start_date = new DateTime();
-$end_date = new DateTime();
+$start_date = new DateTime('2019-02-01');
+$end_date = new DateTime('2019-03-31');
+
 $ftf_discounts = getDiscountsOf();
 $military_discounts = getDiscountsOfParent('Military');
 
