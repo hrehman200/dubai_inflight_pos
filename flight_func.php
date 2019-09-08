@@ -1208,6 +1208,31 @@ function getOtherRevenue($product_name, $date1, $date2) {
     return $arr2;
 }
 
+function getClassSessionRevenue($product_name, $date1, $date2) {
+    global $db;
+
+    $sql = sprintf('SELECT s.amount FROM `flight_purchases` fp
+        INNER JOIN sales s ON fp.invoice_id = s.invoice_number
+        WHERE fp.flight_offer_id = 13
+        AND s.date >= ? AND s.date <= ?
+        GROUP BY s.invoice_number');
+    $query = $db->prepare($sql);
+    $query->execute([$date1, $date2]);
+    $rows = $query->fetchAll(PDO::FETCH_ASSOC);
+
+    $paid = array_sum(array_map(function($item) {
+        return $item['amount'];
+    }, $rows));
+
+    $arr2 = [[
+        'package_name' => $product_name,
+        'paid' => $paid,
+        'aed_value' => $paid
+    ]];
+
+    return $arr2;
+}
+
 /**
  * @param $packages
  * @param $from

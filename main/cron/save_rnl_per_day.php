@@ -91,6 +91,10 @@ while ($start_date <= $end_date) {
     $arr = getOtherRevenue('Other', $start_end, $start_end);
     saveRnLRow($start_end, 'Other', 'Retail Revenue', $arr[0]['paid'], 0, 0, $arr[0]['aed_value'], 0);
 
+    /** Class Session */
+    $arr = getClassSessionRevenue('Class Session', $start_end, $start_end);
+    saveRnLRow($start_end, 'Class Session', 'Retail Revenue', $arr[0]['paid'], 0, 0, $arr[0]['aed_value'], 0);
+
     $start_date->modify('+1 day');
 
 }
