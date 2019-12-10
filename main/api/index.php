@@ -1,6 +1,14 @@
 <?php
 include_once(dirname(dirname(__DIR__)).'/connect.php');
 
+function isValidToken() {
+    global $db;
+
+    $query = $db->prepare('SELECT * FROM customer WHERE api_token = ? AND api_token_expiry > NOW() AND status = 1 LIMIT 1');
+    $query->execute([$_POST['token']]);
+    return ($query->rowCount() > 0);
+}
+
 function loginCustomer() {
     global $db;
 
@@ -13,6 +21,10 @@ function loginCustomer() {
 
         $row = $query->fetch();
 
+        $query = $db->prepare('UPDATE customer SET api_token = ?, api_token_expiry = DATE(NOW() + INTERVAL 3 MONTH) WHERE customer_id = ?');
+        $token = createRandomPassword('api-', 50);
+        $query->execute([$token, $row['customer_id']]);
+
         echo json_encode(array(
             'success' => 1,
             'msg' => '',
@@ -20,6 +32,7 @@ function loginCustomer() {
                 'customer_id' => $row['customer_id'],
                 'first_name' => $row['first_name'],
                 'last_name' => $row['last_name'],
+                'token' => $token
             ]
         ));
 
@@ -561,104 +574,6 @@ function saveProfile() {
     ));
 }
 
-function searchCustomers() {
-    global $db;
-
-    $post = $_POST;
-
-    $query = $db->prepare('SELECT * FROM customer WHERE customer_name LIKE :search');
-    $query->execute(array(
-        ':search' => '%' . $post['search'] . '%'
-    ));
-
-    $result = $query->fetchAll(PDO::FETCH_ASSOC);
-
-    echo json_encode(array(
-        'success' => 1,
-        'msg' => '',
-        'data' => $result
-    ));
-}
-
-function getCustomerOptions() {
-    global $db;
-
-    $query = $db->prepare('SELECT customer_id, customer_name FROM customer ORDER BY customer_name ASC');
-    $query->execute();
-    $result = $query->fetchAll(PDO::FETCH_ASSOC);
-
-    $str = '';
-    foreach ($result as $row) {
-        if ($row['customer_id'] == $_POST['customerId']) {
-            continue;
-        }
-        $str .= sprintf('<option value="%s">%s</option>', $row['customer_id'], $row['customer_name']);
-    }
-
-    echo json_encode(array(
-        'success' => 1,
-        'msg' => '',
-        'data' => $str
-    ));
-}
-
-function getDetailsForNewBookingModal() {
-    global $db;
-    $post = $_POST;
-    $unbooked_duration = 0;
-
-    // if making another booking from same purchase
-    if ($post['flightPurchaseId'] > 0) {
-        $query = $db->prepare("SELECT * FROM flight_purchases fp
-                    INNER JOIN flight_offers fo ON fp.flight_offer_id = fo.id
-                    WHERE fp.id = :flightPurchaseId");
-        $query->execute(array(
-            ':flightPurchaseId' => $post['flightPurchaseId']
-        ));
-        $row = $query->fetch();
-        $total_duration = $row['duration'];
-
-        $query = $db->prepare("SELECT SUM(duration) AS booked_duration FROM flight_bookings WHERE flight_purchase_id=:flightPurchaseId");
-        $query->execute(array(
-            ':flightPurchaseId' => $post['flightPurchaseId']
-        ));
-        $row = $query->fetch();
-        $booked_duration = $row['booked_duration'];
-        $unbooked_duration = $total_duration - $booked_duration;
-    }
-
-    // get balance only from paid invoices
-    $query = $db->prepare("SELECT SUM(minutes) AS balance FROM flight_credits fc
-                           INNER JOIN flight_purchases fp ON fc.flight_purchase_id = fp.id
-                           WHERE fc.customer_id = :customerId
-                           AND fp.status = 1
-                           AND fp.flight_offer_id = :flightOfferId ");
-    $query->execute(array(
-        ':customerId' => $post['customerId'],
-        ':flightOfferId' => $post['flightOfferId']
-    ));
-
-    $row = $query->fetch();
-
-
-    // get balance only from paid invoices
-    $result = $db->prepare("SELECT * FROM customer WHERE customer_id = :customer_id");
-    $result->execute(array('customer_id' => $post['customerId']));
-    $row12 = $result->fetch();
-
-    $data = array(
-        'unbooked_duration' => (int)$unbooked_duration,
-        'balance' => (int)$row['balance'],
-        'credit_time' => (int)$row12['credit_time'],
-    );
-
-    echo json_encode(array(
-        'success' => 1,
-        'msg' => '',
-        'data' => $data
-    ));
-}
-
 function getCustomerBookings() {
     global $db;
 
@@ -832,104 +747,24 @@ function verifyPassword() {
     }
 }
 
-function rescheduleFlightTime() {
-    global $db;
-    $post = $_POST;
-
-    $sql = "UPDATE flight_bookings SET flight_time = :flightTime
-          WHERE id = :flightBookingId";
-    $query = $db->prepare($sql);
-    $query->execute(array(
-        'flightTime' => $post['flight_time'],
-        'flightBookingId' => $post['flight_booking_id']
-    ));
-
-    echo json_encode(array(
-        'success' => 1,
-        'msg' => ''
-    ));
-}
-
-function cancelFlight() {
-    global $db;
-
-    deleteFlightBooking($_POST['flight_booking_id']);
-
-    echo json_encode(array(
-        'success' => 1,
-        'msg' => ''
-    ));
-}
-
-function transferCredit() {
-    global $db;
-    $post = $_POST;
-
-    $query = $db->prepare('SELECT credit_time FROM customer WHERE customer_id = :customerId');
-    $query->execute(array(
-        'customerId' => $post['customer_id']
-    ));
-    $row = $query->fetch();
-    if ($row['credit_time'] < $post['credit_to_transfer']) {
-        echo json_encode(array(
-            'success' => 0,
-            'msg' => 'Selected customer does not have mentioned credit'
-        ));
-        return;
+function deleteFromCart() {
+    if ($_POST['flightPurchaseId'] > 0) {
+        deleteFlightPurchase($_POST['flightPurchaseId']);
     }
 
-    $sql = "UPDATE customer SET credit_time = credit_time + :creditToTransfer
-          WHERE customer_id = :toCustomerId";
-    $query = $db->prepare($sql);
-    $query->execute(array(
-        'creditToTransfer' => $post['credit_to_transfer'],
-        'toCustomerId' => $post['to_customer_id']
-    ));
-
-    $sql = "UPDATE customer SET credit_time = credit_time - :creditToTransfer
-          WHERE customer_id = :customerId";
-    $query = $db->prepare($sql);
-    $query->execute(array(
-        'creditToTransfer' => $post['credit_to_transfer'],
-        'customerId' => $post['customer_id']
-    ));
-
-    echo json_encode(array(
-        'success' => 1,
-        'msg' => ''
-    ));
-}
-
-function transferBalance() {
-    global $db;
-    $post = $_POST;
-
-    transferBalanceFromCustomerAtoB($post['from_customer_id'], $post['to_customer_id'], $post['balance_to_transfer'], $post['flightOfferId'], $post['fromFlightPurchaseId']);
-
-    echo json_encode(array(
-        'success' => 1,
-        'msg' => ''
-    ));
-}
-
-function getVatForDiscountedAmountAndInvoice() {
-    $arr_vat = getVatDetailsForDiscountedAmountAndInvoice($_POST['discounted_amount'], $_POST['invoice'], $_POST['saving_flight']);
-    echo json_encode(array(
-        'success' => 1,
-        'data' => $arr_vat
-    ));
-}
-
-function getSignature() {
-
-    $params = [];
-    foreach ($_REQUEST['data'] as $value) {
-        $params[$value['name']] = $value['value'];
-    }
-
-    $signature = sign($params);
-    echo json_encode(array('success' => 1, 'data' => $signature));
+    getBookingsForInvoice();
 }
 
 $_POST = json_decode(file_get_contents('php://input'), true);
-call_user_func($_POST['call']);
+
+$public_methods = ['loginCustomer', 'saveCustomer', 'sendPassReset'];
+
+if(!in_array($_POST['call'], $public_methods)) {
+    if (isValidToken()) {
+        call_user_func($_POST['call']);
+    } else {
+        echo json_encode(['success' => 0, 'msg' => 'Invalid token. Please login again.']);
+    }
+} else {
+    call_user_func($_POST['call']);
+}
