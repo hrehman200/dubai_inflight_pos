@@ -30,8 +30,8 @@ function loginCustomer() {
             'msg' => '',
             'data' => [
                 'customer_id' => $row['customer_id'],
-                'first_name' => $row['first_name'],
-                'last_name' => $row['last_name'],
+                'first_name' => $row['first_name'] ? $row['first_name'] : '',
+                'last_name' => $row['last_name'] ? $row['last_name'] : '',
                 'token' => $token
             ]
         ));
@@ -333,9 +333,10 @@ function getBookingsForInvoice() {
     $cart_items = [];
     $total = 0;
     while($row = $result->fetch(PDO::FETCH_ASSOC)) {
-        $row['vat_amount'] = round($row['percent'] * $row['price'] / 105, 2);
+        $row['vat_amount'] = round($row['percent'] * $row['price'] / 105, 1);
         $cart_items[] = $row;
 
+        $row['price'] = (int) $row['price'];
         $total += $row['price'];
     }
 
@@ -755,7 +756,9 @@ function deleteFromCart() {
     getBookingsForInvoice();
 }
 
-$_POST = json_decode(file_get_contents('php://input'), true);
+if(!isset($_POST)) {
+    $_POST = json_decode(file_get_contents('php://input'), true);
+}
 
 $public_methods = ['loginCustomer', 'saveCustomer', 'sendPassReset'];
 
