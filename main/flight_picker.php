@@ -703,6 +703,8 @@ if(isset($_GET['customer_id'])) {
                 if(response.success == 1) {
                     $(divToFillId).html(response.data);
                     $('[data-toggle="tooltip"]').tooltip();
+                } else {
+                    bootbox.alert(response.msg);
                 }
             }
         });

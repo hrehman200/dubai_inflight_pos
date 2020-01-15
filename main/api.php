@@ -1,11 +1,12 @@
 <?php
 include_once('../connect.php');
 
-function getTimeslotsForFlightDate() {
+function getTimeslotsForFlightDate()
+{
 
     global $db;
 
-    $duration_required = (int)$_POST['duration'];
+    $duration_required = (int) $_POST['duration'];
     $show_slots_with_minutes_only = $_POST['show_slots_with_minutes_only'];
     $office_time_slots = $_POST['office_time_slots'];
 
@@ -15,10 +16,16 @@ function getTimeslotsForFlightDate() {
     if ($office_time_slots == 1) {
         $start = "10:00";
         $end = "18:30";
-
-    } else if(strpos($_SERVER["HTTP_REFERER"], BASE_URL) !== false) {
+    } else if (strpos($_SERVER["HTTP_REFERER"], BASE_URL) !== false) {
         $start = "11:00";
         $end = "18:30";
+    }
+
+    $datetime = DateTime::createFromFormat('Y-m-d', $_POST['flight_date']);
+    $day = $datetime->format('D');
+    if ($day == 'Mon' || $day == 'Tue') {
+        echo json_encode(array('success' => 0, 'msg' => 'No slot available on Monday and Tuesday'));
+        exit;
     }
 
     $tStart = strtotime($start);
@@ -36,7 +43,7 @@ function getTimeslotsForFlightDate() {
 
         $slot_time = $_POST['flight_date'] . ' ' . date("H:i:00", $tNow);
 
-        if(strpos(BASE_URL, $_SERVER['HTTP_HOST']) !== false || isset($_SESSION['CUSTOMER_ID'])) {
+        if (strpos(BASE_URL, $_SERVER['HTTP_HOST']) !== false || isset($_SESSION['CUSTOMER_ID'])) {
             $slot_timestamp = strtotime($slot_time);
             if ($current_timestamp > $slot_timestamp) {
                 $tNow = strtotime("+{$slot_increment} minutes", $tNow);
@@ -65,7 +72,7 @@ function getTimeslotsForFlightDate() {
         }
 
         $unbooked_duration = 30 - $row['bookedDuration'];
-        $percent_booked = (int)floor($row['bookedDuration'] / 30 * 100);
+        $percent_booked = (int) floor($row['bookedDuration'] / 30 * 100);
         $percent_unbooked = 100 - $percent_booked;
 
 
@@ -117,7 +124,7 @@ function getTimeslotsForFlightDate() {
         }
 
         // don't show online customers beyond office timings
-        if(isset($_SESSION['CUSTOMER_ID']) && ($tNow <= strtotime("09:30") || $tNow >= strtotime("19:00")) ) {
+        if (isset($_SESSION['CUSTOMER_ID']) && ($tNow <= strtotime("09:30") || $tNow >= strtotime("19:00"))) {
             $tNow = strtotime("+{$slot_increment} minutes", $tNow);
             continue;
         }
@@ -144,11 +151,11 @@ function getTimeslotsForFlightDate() {
         }
     }
 
-
     echo json_encode(array('success' => 1, 'msg' => '', 'data' => $str));
 }
 
-function validPhone($phone_no) {
+function validPhone($phone_no)
+{
 
     $isPhoneNum = false;
 
@@ -157,7 +164,7 @@ function validPhone($phone_no) {
 
     //eliminate leading 0 if its there
     if (strlen($justNums) == 11) {
-        $justNums = preg_replace("/^0/", '',$justNums);
+        $justNums = preg_replace("/^0/", '', $justNums);
     }
 
     if (strlen($justNums) >= 6 && strlen($justNums) <= 13) {
@@ -167,7 +174,8 @@ function validPhone($phone_no) {
     return $isPhoneNum;
 }
 
-function saveCustomer() {
+function saveCustomer()
+{
 
     global $db;
 
@@ -197,7 +205,7 @@ function saveCustomer() {
         return;
     }
 
-    if(strlen($_FILES['customer_img']['name']) > 0) {
+    if (strlen($_FILES['customer_img']['name']) > 0) {
         $current_image = $_FILES['customer_img']['name'];
         $extension = substr(strrchr($current_image, '.'), 1);
         if (($extension != "jpg") && ($extension != "jpeg") && ($extension != "gif") && ($extension != "png") && ($extension != "bmp")) {
@@ -205,7 +213,7 @@ function saveCustomer() {
             return;
         }
 
-        if (round(($_FILES["customer_img"]["size"]/1024)/1024, 0) > 2) {
+        if (round(($_FILES["customer_img"]["size"] / 1024) / 1024, 0) > 2) {
             echo json_encode(array('success' => 0, 'msg' => "Image file size should not be greater than 2mb"));
             return;
         }
@@ -237,15 +245,15 @@ function saveCustomer() {
     $link = sprintf('<a href="%smain/activate.php?lt=%s&invoice=%s&p=%s">Activate</a>', BASE_URL, $link_token, $post['invoice'], $post['p']);
 
     $query->execute(array(
-        ':customer_name' => ($post['pos']==1) ? $post['customer_name'] : $post['first_name'].' '.$post['last_name'],
-        ':address' => ($post['pos']==1) ? $post['email'] : ($post['address'] ? $post['address'] : ''),
+        ':customer_name' => ($post['pos'] == 1) ? $post['customer_name'] : $post['first_name'] . ' ' . $post['last_name'],
+        ':address' => ($post['pos'] == 1) ? $post['email'] : ($post['address'] ? $post['address'] : ''),
         ':gender' => $post['gender'],
         ':phone' => $post['phone'],
         ':email' => $post['email'],
         ':password' => sha1($post['password']),
         ':nationality' => ($post['nationality'] ? $post['nationality'] : ''),
         ':resident_of' => ($post['resident_of'] ? $post['resident_of'] : ''),
-        ':dob' => $post['dob-year'].'-'.$post['dob-month'].'-'.$post['dob-day'],
+        ':dob' => $post['dob-year'] . '-' . $post['dob-month'] . '-' . $post['dob-day'],
         ':image' => ($new_image ? $new_image : ''),
         ':activate_token' => $link_token,
         ':note' => $post['note'] ? $post['note'] : ''
@@ -253,7 +261,7 @@ function saveCustomer() {
 
     $customer_id = $db->lastInsertId();
 
-    if($post['pos'] != 1) {
+    if ($post['pos'] != 1) {
         $body = '<div>
             <img src="' . BASE_URL . 'main/img/inflight_logo.png" width="200" />
             <p>Click on the following link to activate your account: </p>
@@ -269,7 +277,8 @@ function saveCustomer() {
     ));
 }
 
-function saveEmployee() {
+function saveEmployee()
+{
 
     global $db;
 
@@ -282,7 +291,7 @@ function saveEmployee() {
         }
     }*/
 
-    if($post['id'] > 0) {
+    if ($post['id'] > 0) {
         $query = $db->prepare('UPDATE employees SET
          employee_no=?, name=?, email=?, designation=?, department=?, manager_name=?, assets_in_hand=?, date_of_joining=?, visa_expiry_date=?, family_member=?, emergency_contact_no=?, bank_account_name=?, bank_account_no=?,
          date_of_resignation=?, notice_period=?, assets_return=?, annual_leaves_eligible=?, annual_leaves_balance_aed=?, deduction_aed=?, gratuity=?, total=?
@@ -292,7 +301,6 @@ function saveEmployee() {
             $post['date_of_resignation'], $post['notice_period'], $post['assets_return'], $post['annual_leaves_eligible'], $post['annual_leaves_balance_aed'], $post['deduction_aed'], $post['gratuity'], $post['total'],
             $post['id']
         ));
-
     } else {
         if (!filter_var($post['email'], FILTER_VALIDATE_EMAIL)) {
             echo json_encode(array('success' => 0, 'msg' => 'Please enter valid email'));
@@ -324,12 +332,13 @@ function saveEmployee() {
     ));
 }
 
-function saveEmployeeSalary() {
+function saveEmployeeSalary()
+{
 
     global $db;
     $post = $_POST;
 
-    if($post['id'] > 0) {
+    if ($post['id'] > 0) {
         $query = $db->prepare('UPDATE employee_salaries SET
         employee_id=?, current_salary=?, effect_date=?, house_allowance=?, medical=?, mobile=?, ticket=?, other=?, bonus=?, staff_uniform=?, monthly_total=?, yearly_total=?
          WHERE id = ?');
@@ -337,7 +346,6 @@ function saveEmployeeSalary() {
             $post['employee_id'], $post['current_salary'], $post['effect_date'], $post['house_allowance'], $post['medical'], $post['mobile'], $post['ticket'], $post['other'], $post['bonus'], $post['staff_uniform'], $post['monthly_total'], $post['yearly_total'],
             $post['id']
         ));
-
     } else {
         $sql = "INSERT INTO employee_salaries
       (employee_id, current_salary, effect_date, house_allowance, medical, mobile, ticket, other, bonus, staff_uniform, monthly_total, yearly_total, created)
@@ -355,7 +363,8 @@ function saveEmployeeSalary() {
     ));
 }
 
-function deleteEmployee() {
+function deleteEmployee()
+{
     deleteRowsWhere('employee_salaries', 'employee_id', $_POST['id']);
     deleteRowById('employees', $_POST['id']);
     echo json_encode(array(
@@ -363,21 +372,23 @@ function deleteEmployee() {
     ));
 }
 
-function deleteEmployeeSalary() {
+function deleteEmployeeSalary()
+{
     deleteRowById('employee_salaries', $_POST['id']);
     echo json_encode(array(
         'success' => 1
     ));
 }
 
-function saveProfile() {
+function saveProfile()
+{
 
     global $db;
 
     $post = $_POST;
 
     foreach ($post as $key => $value) {
-        if(strpos($key, 'password') !== false) {
+        if (strpos($key, 'password') !== false) {
             continue;
         }
 
@@ -392,7 +403,7 @@ function saveProfile() {
         return;
     }
 
-    if(strlen($_FILES['customer_img']['name']) > 0) {
+    if (strlen($_FILES['customer_img']['name']) > 0) {
         $current_image = $_FILES['customer_img']['name'];
         $extension = substr(strrchr($current_image, '.'), 1);
         if (($extension != "jpg") && ($extension != "jpeg") && ($extension != "gif") && ($extension != "png") && ($extension != "bmp")) {
@@ -400,7 +411,7 @@ function saveProfile() {
             return;
         }
 
-        if (round(($_FILES["customer_img"]["size"]/1024)/1024, 0) > 2) {
+        if (round(($_FILES["customer_img"]["size"] / 1024) / 1024, 0) > 2) {
             echo json_encode(array('success' => 0, 'msg' => "Image file size should not be greater than 2mb"));
             return;
         }
@@ -416,7 +427,7 @@ function saveProfile() {
         }
     }
 
-    if($post['new_password'] != '') {
+    if ($post['new_password'] != '') {
 
         $query = $db->prepare('SELECT * FROM customer WHERE email = ? AND password = ? AND status = 1 LIMIT 1');
         $query->execute([
@@ -441,22 +452,22 @@ function saveProfile() {
         customer_name=?, address=?, gender=?, phone=?, email=?, nationality=?, resident_of=?, dob=?";
 
     $arr_params = array(
-        $post['first_name'].' '.$post['last_name'],
+        $post['first_name'] . ' ' . $post['last_name'],
         $post['address'],
         $post['gender'],
         $post['phone'],
         $post['email'],
         $post['nationality'],
         $post['resident_of'],
-        $post['dob-year'].'-'.$post['dob-month'].'-'.$post['dob-day']
+        $post['dob-year'] . '-' . $post['dob-month'] . '-' . $post['dob-day']
     );
 
-    if($new_image) {
+    if ($new_image) {
         $sql .= ', image=?';
         $arr_params[] = $new_image;
     }
 
-    if($new_password) {
+    if ($new_password) {
         $sql .= ', password=?';
         $arr_params[] = $new_password;
     }
@@ -474,7 +485,8 @@ function saveProfile() {
     ));
 }
 
-function searchCustomers() {
+function searchCustomers()
+{
     global $db;
 
     $post = $_POST;
@@ -493,7 +505,8 @@ function searchCustomers() {
     ));
 }
 
-function getCustomerOptions() {
+function getCustomerOptions()
+{
     global $db;
 
     $query = $db->prepare('SELECT customer_id, customer_name FROM customer ORDER BY customer_name ASC');
@@ -516,7 +529,8 @@ function getCustomerOptions() {
 }
 
 
-function getDetailsForNewBookingModal() {
+function getDetailsForNewBookingModal()
+{
     global $db;
     $post = $_POST;
     $unbooked_duration = 0;
@@ -561,9 +575,9 @@ function getDetailsForNewBookingModal() {
     $row12 = $result->fetch();
 
     $data = array(
-        'unbooked_duration' => (int)$unbooked_duration,
-        'balance' => (int)$row['balance'],
-        'credit_time' => (int)$row12['credit_time'],
+        'unbooked_duration' => (int) $unbooked_duration,
+        'balance' => (int) $row['balance'],
+        'credit_time' => (int) $row12['credit_time'],
     );
 
     echo json_encode(array(
@@ -573,7 +587,8 @@ function getDetailsForNewBookingModal() {
     ));
 }
 
-function getCustomerBookings() {
+function getCustomerBookings()
+{
     global $db;
 
     $post = $_POST;
@@ -588,7 +603,7 @@ function getCustomerBookings() {
                            INNER JOIN flight_bookings fb ON fb.flight_purchase_id = fp.id
                            WHERE fp.status = 1 AND date(fb.flight_time) = :flightDate";
 
-        if($_POST['bookingCustomerId'] > 0) {
+        if ($_POST['bookingCustomerId'] > 0) {
             $sql .= sprintf(' AND fp.customer_id = %d', $_POST['bookingCustomerId']);
         }
 
@@ -625,7 +640,6 @@ function getCustomerBookings() {
                         <td>%s</td>
                     </tr>', $row['customer_name'], $row['offer_name'], $row['flight_time'], $row['booking_duration']);
             }
-
         } else {
             $table .= '<tr><td colspan="4">No bookings found</td></tr>';
         }
@@ -678,11 +692,12 @@ function getCustomerBookings() {
                 $cancel_html = '<a href="javascript:;" onclick="reschedule(' . $row['flight_booking_id'] . ')" class="btn btn-small btn-reschedule">Reschedule</a>
                             <a href="javascript:;" onclick="cancelFlight(\'' . $row['flight_booking_id'] . '\', this)" class="btn btn-small btn-cancel">Cancel</a>';
 
-                if(!is_null($row['flight_time']) && strtotime($row['flight_time']) < time()) {
+                if (!is_null($row['flight_time']) && strtotime($row['flight_time']) < time()) {
                     $cancel_html = '';
                 }
 
-                $table2 .= sprintf('
+                $table2 .= sprintf(
+                    '
                     <tr>
                         <td>%s</td>
                         <td>%s</td>
@@ -690,17 +705,23 @@ function getCustomerBookings() {
                         <td>%s</td>
                         <td>%d</td>
                         <td>%d <br/>' . ($row['minutes'] > 0 ? '<a href="javascript:;" onclick="deductFromBalance(' . $row['duration'] . ',' . $row['minutes'] . ',' . $row['id'] . ',' . $row['flight_purchase_id'] . ');" class="btn btn-small">Deduct</a>' : '') .
-                    ($row['minutes'] > 0 ? '<a href="javascript:;" onclick="showBalanceTransferDialog(' . $row['customer_id'] . ',' . $row['id'] . ',' . $row['minutes'] . ',' . $row['flight_purchase_id'] . ');" class="btn btn-small btn-transfer">Transfer</a>' : '')
-                    . '</td>
+                        ($row['minutes'] > 0 ? '<a href="javascript:;" onclick="showBalanceTransferDialog(' . $row['customer_id'] . ',' . $row['id'] . ',' . $row['minutes'] . ',' . $row['flight_purchase_id'] . ');" class="btn btn-small btn-transfer">Transfer</a>' : '')
+                        . '</td>
                         <td>%d <br/>' . ($row['credit_time'] > 0 ? '<a href="javascript:;" onclick="deductFromCreditTime(' . $row['customer_id'] . ',' . $row['credit_time'] . ',' . $row['id'] . ',' . $row['duration'] . ');" class="btn btn-small">Deduct</a>' : '') .
-                    ($row['credit_time'] > 0 ? '<a href="javascript:;" class="btn btn-small btnTransferCredit">Transfer</a>' : '')
-                    . '</td>
+                        ($row['credit_time'] > 0 ? '<a href="javascript:;" class="btn btn-small btnTransferCredit">Transfer</a>' : '')
+                        . '</td>
                         <td>
-                            '.$cancel_html.'
+                            ' . $cancel_html . '
                         </td>
-                    </tr>', $row['customer_name'], $row['offer_name'], $row['created'], $row['flight_time'],
+                    </tr>',
+                    $row['customer_name'],
+                    $row['offer_name'],
+                    $row['created'],
+                    $row['flight_time'],
                     ($row['deduct_from_balance'] > 0) ? $row['booking_duration'] : $row['duration'],
-                    $row['minutes'], $row['credit_time']);
+                    $row['minutes'],
+                    $row['credit_time']
+                );
             }
         }
     } else {
@@ -730,7 +751,8 @@ function getCustomerBookings() {
     echo json_encode($data);
 }
 
-function verifyPassword() {
+function verifyPassword()
+{
     global $db;
 
     if (sha1($_POST['password']) == '17874598808386e981a2bc4723c9bd38c5de4982') {
@@ -746,7 +768,8 @@ function verifyPassword() {
     }
 }
 
-function getPONo() {
+function getPONo()
+{
     global $db;
 
     $query = $db->prepare('SELECT DISTINCT po_no, po_amount FROM purchases WHERE po_no LIKE :search ORDER BY transaction_id DESC');
@@ -763,7 +786,8 @@ function getPONo() {
     ));
 }
 
-function saveBusinessPlanRow() {
+function saveBusinessPlanRow()
+{
     global $db;
 
     $post = $_POST;
@@ -803,7 +827,8 @@ function saveBusinessPlanRow() {
     ));
 }
 
-function rescheduleFlightTime() {
+function rescheduleFlightTime()
+{
     global $db;
     $post = $_POST;
 
@@ -821,7 +846,8 @@ function rescheduleFlightTime() {
     ));
 }
 
-function cancelFlight() {
+function cancelFlight()
+{
     global $db;
 
     deleteFlightBooking($_POST['flight_booking_id']);
@@ -832,7 +858,8 @@ function cancelFlight() {
     ));
 }
 
-function transferCredit() {
+function transferCredit()
+{
     global $db;
     $post = $_POST;
 
@@ -871,7 +898,8 @@ function transferCredit() {
     ));
 }
 
-function transferBalance() {
+function transferBalance()
+{
     global $db;
     $post = $_POST;
 
@@ -883,7 +911,8 @@ function transferBalance() {
     ));
 }
 
-function getProductSubCategories() {
+function getProductSubCategories()
+{
     global $db;
 
     $post = $_POST;
@@ -902,7 +931,8 @@ function getProductSubCategories() {
     ));
 }
 
-function getProducts() {
+function getProducts()
+{
     global $db;
     $result = $db->prepare("SELECT common_name FROM products 
       WHERE category_id = :categoryId AND status = 1 
@@ -924,7 +954,8 @@ function getProducts() {
     ));
 }
 
-function getGenders() {
+function getGenders()
+{
     global $db;
     $result2 = $db->prepare("SELECT gender, product_id
           FROM products
@@ -940,7 +971,8 @@ function getGenders() {
     ));
 }
 
-function getSizes() {
+function getSizes()
+{
     global $db;
     $result2 = $db->prepare("SELECT size, product_id
           FROM products
@@ -959,7 +991,8 @@ function getSizes() {
     ));
 }
 
-function getColors() {
+function getColors()
+{
     global $db;
     $result2 = $db->prepare("SELECT Attribute, product_id, image, qty
           FROM products
@@ -978,7 +1011,8 @@ function getColors() {
     ));
 }
 
-function getProductId() {
+function getProductId()
+{
     global $db;
     $result = $db->prepare("SELECT product_id FROM products WHERE common_name = :commonName
       AND size = :size
@@ -1008,7 +1042,8 @@ function getProductId() {
     }
 }
 
-function getVatForDiscountedAmountAndInvoice() {
+function getVatForDiscountedAmountAndInvoice()
+{
     $arr_vat = getVatDetailsForDiscountedAmountAndInvoice($_POST['discounted_amount'], $_POST['invoice'], $_POST['saving_flight']);
     echo json_encode(array(
         'success' => 1,
@@ -1016,14 +1051,15 @@ function getVatForDiscountedAmountAndInvoice() {
     ));
 }
 
-function saveDiscount() {
+function saveDiscount()
+{
 
     global $db;
 
     if (@$_POST['saving_flight'] == 1) {
         $sql = "UPDATE flight_purchases SET discount = ?, discount_id = ? ";
         $arr = [$_POST['discount'], $_POST['discount_id']];
-        if(strlen($_POST['groupon_code']) > 0) {
+        if (strlen($_POST['groupon_code']) > 0) {
             $sql .= ", groupon_code = ?, deduct_from_balance=3 ";
             $arr[] = $_POST['groupon_code'];
         }
@@ -1032,7 +1068,6 @@ function saveDiscount() {
 
         $query = $db->prepare($sql);
         $query->execute($arr);
-
     } else {
         $query = $db->prepare("UPDATE sales_order SET discount = ?, discount_id = ?
           WHERE transaction_id = ?");
@@ -1045,7 +1080,8 @@ function saveDiscount() {
     ));
 }
 
-function loginCustomer() {
+function loginCustomer()
+{
     global $db;
 
     $query = $db->prepare('SELECT * FROM customer WHERE email = ? AND password = ? AND status = 1 LIMIT 1');
@@ -1066,7 +1102,6 @@ function loginCustomer() {
             'success' => 1,
             'msg' => ''
         ));
-
     } else {
         echo json_encode(array(
             'success' => 0,
@@ -1075,7 +1110,8 @@ function loginCustomer() {
     }
 }
 
-function logoutCustomer() {
+function logoutCustomer()
+{
     global $db;
 
     session_destroy();
@@ -1086,7 +1122,8 @@ function logoutCustomer() {
     ));
 }
 
-function sendPassReset() {
+function sendPassReset()
+{
     global $db;
 
     $query = $db->prepare('SELECT customer_id FROM customer WHERE email = ? LIMIT 1');
@@ -1116,7 +1153,6 @@ function sendPassReset() {
             'msg' => 'Password reset instruction sent to your email.',
             'data' => $response
         ));
-
     } else {
         echo json_encode(array(
             'success' => 0,
@@ -1125,7 +1161,8 @@ function sendPassReset() {
     }
 }
 
-function getSignature() {
+function getSignature()
+{
 
     $params = [];
     foreach ($_REQUEST['data'] as $value) {
@@ -1136,7 +1173,8 @@ function getSignature() {
     echo json_encode(array('success' => 1, 'data' => $signature));
 }
 
-function getFlightOffers() {
+function getFlightOffers()
+{
     global $db;
 
     if ($_POST['packageId'] > 0) {
@@ -1155,10 +1193,11 @@ function getFlightOffers() {
     ));
 }
 
-function askForGiveawayApproval() {
+function askForGiveawayApproval()
+{
     global $db;
 
-    if($_POST['userId'] > 0) {
+    if ($_POST['userId'] > 0) {
         $result = $db->prepare('SELECT email FROM user WHERE id=?');
         $result->execute([$_POST['userId']]);
         $row = $result->fetch();
@@ -1182,8 +1221,8 @@ function askForGiveawayApproval() {
 
         $body = '<div>
             <img src="' . BASE_URL . 'main/img/inflight_logo.png" width="200" />
-            <p>An approval request for giveaway flight of package <b>'.$offer['offer_name'].'</b> has been made for customer <b>'.$customer['customer_name'].'</b>. Please respond: </p>
-            <p>' . $approve_link . '&nbsp;'.$disapprove_link.'</p>
+            <p>An approval request for giveaway flight of package <b>' . $offer['offer_name'] . '</b> has been made for customer <b>' . $customer['customer_name'] . '</b>. Please respond: </p>
+            <p>' . $approve_link . '&nbsp;' . $disapprove_link . '</p>
         </div>';
         $response = sendEmail($row['email'], 'Approval Request for Giveaway', $body);
     }
@@ -1194,7 +1233,8 @@ function askForGiveawayApproval() {
     ));
 }
 
-function emailSalesReportToAdmin() {
+function emailSalesReportToAdmin()
+{
     global $db;
 
     $query = $db->prepare('INSERT INTO eod_report_queue VALUES (NULL, ?, NULL)');
@@ -1207,10 +1247,11 @@ function emailSalesReportToAdmin() {
     // rest of the stuff will be done by cron job at mid night
 }
 
-function emailSalesReportToManager() {
+function emailSalesReportToManager()
+{
     global $db;
 
-    if(isset($_POST['tableHtml'])) {
+    if (isset($_POST['tableHtml'])) {
         $subject = 'Verified Sales Report for ' . date('jS F, Y');
         $body = $_POST['tableHtml'];
 
@@ -1224,7 +1265,8 @@ function emailSalesReportToManager() {
     ));
 }
 
-function verifyGroupon() {
+function verifyGroupon()
+{
     global $db, $offer_to_groupon_map;
 
     $query = $db->prepare('SELECT flight_offer_id FROM flight_purchases WHERE id = ? ');
@@ -1235,36 +1277,37 @@ function verifyGroupon() {
     $query = $db->prepare('SELECT * FROM groupon_discount_codes 
       WHERE discount_id = ? AND code = ? AND used LIKE "0000-00-%" ');
     $query->execute([$offer_to_groupon_map[$flight_offer_id], $_POST['code']]);
-    if($query->rowCount() > 0) {
+    if ($query->rowCount() > 0) {
         echo json_encode(array('success' => 1));
     } else {
         echo json_encode(array('success' => 0));
     }
 }
 
-function getBusinessPlanRevenueCellData() {
+function getBusinessPlanRevenueCellData()
+{
 
     $paid = 0;
     $start_end_dates = getStartEndDateFromMonthYear($_POST['year'], $_POST['month']);
     $start = $start_end_dates['start'];
     $end = $start_end_dates['end'];
 
-    if(strtotime($end) > time() && $end != date('Y-m-t')) {
+    if (strtotime($end) > time() && $end != date('Y-m-t')) {
         echo json_encode(['success' => 1, 'data' => 0]);
         return;
     }
 
     $entity = trim($_POST['entity']);
     $entity_id = getBusinessEntityId($entity, 0, '');
-    if(strtolower($entity) == 'military individuals') {
+    if (strtolower($entity) == 'military individuals') {
         $entity = 'Military';
     }
 
-    if(strtolower($entity) == 'navy seals') {
+    if (strtolower($entity) == 'navy seals') {
         $entity = 'Navy Seal';
     }
 
-    if(in_array($entity, [
+    if (in_array($entity, [
         'FTF',
         'Skydivers',
         'Navy Seal',
@@ -1274,31 +1317,25 @@ function getBusinessPlanRevenueCellData() {
     ])) {
 
         $paid = getBusinessEntityActualValue($entity_id, $_POST['year'], $_POST['month']);
-        if($paid <= 0) {
-            if($entity == 'FTF') {
+        if ($paid <= 0) {
+            if ($entity == 'FTF') {
                 $paid = getFTFRevenue($start, $end, true)[0]['aed_value'];
             } else {
                 $paid = getDataAndAggregate($entity, $start, $end)[0]['aed_value'];
             }
             updateBusinessEntityValue($entity_id, $_POST['year'], $_POST['month'], null, $paid);
         }
-
-    } else if(strpos($entity, 'Video') !== false) {
+    } else if (strpos($entity, 'Video') !== false) {
         $paid = getMerchandiseRevenue('Video', $start, $end)[0]['aed_value'];
-
-    } else if($entity == TYPE_MERCHANDISE) {
+    } else if ($entity == TYPE_MERCHANDISE) {
         $paid = getMerchandiseRevenue(TYPE_MERCHANDISE, $start, $end)[0]['aed_value'];
-
-    } else if($entity == 'Rental Service') {
+    } else if ($entity == 'Rental Service') {
         $paid = getMerchandiseRevenue('Helmet Rent', $start, $end)[0]['aed_value'];
-
-    } else if(strpos($entity, 'Block hours purchase') !== false) {
+    } else if (strpos($entity, 'Block hours purchase') !== false) {
         $paid = getFlightSaleViaDiscountName('Block hours', $start, $end);
-
-    } else if($entity == 'Salaries & Wages') {
+    } else if ($entity == 'Salaries & Wages') {
         $paid = getPaidSalariesWagesForPeriod($start, $end);
-
-    } else if($entity == 'Benefits & Allowances') {
+    } else if ($entity == 'Benefits & Allowances') {
         $paid = getBenefitsAllowancesForPeriod($start, $end);
     }
 
