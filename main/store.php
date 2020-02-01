@@ -748,7 +748,8 @@
     };
 
     var _getFlightOffers = function(packageId) {
-        /*$.ajax({
+        $('#flightOffer').prop('disabled', true);
+        $.ajax({
             url: 'api.php',
             method: 'POST',
             data: {
@@ -756,29 +757,31 @@
                 'packageId': packageId,
             },
             dataType: 'json',
-            success: function (response) {
+            success: function(response) {
                 if (response.success == 1) {
+                    _handleFlightOffers(response);
                 }
             }
-        });*/
+        });
 
-        var response = '{}';
-        if (packageId == 1) {
-            response = '{"success":1,"data":[{"id":"134","package_id":"1","offer_name":"FTF - 2 Flights 1 Person","code":"IND-000934","price":"184","duration":"2","status":"1"},{"id":"135","package_id":"1","offer_name":"FTF - 4 Flights 1 Person","code":"IND-000935","price":"348","duration":"4","status":"1"},{"id":"136","package_id":"1","offer_name":"FTF - 10 Flights 2 Person","code":"IND-000936","price":"830","duration":"10","status":"1"}]}';
-        } else if (packageId == 3) {
-            response = '{"success":1,"data":[{"id":"138","package_id":"3","offer_name":"FTF - 20 Flights 10 Person","code":"IND-000909","price":"1540","duration":"20","status":"1"},{"id":"139","package_id":"3","offer_name":"FTF - 30 Flights 12 Person","code":"IND-000911","price":"2250","duration":"30","status":"1"},{"id":"140","package_id":"3","offer_name":"FTF - 12 Flights 3 Person","code":"IND-00093161","price":"960","duration":"12","status":"1"}]}';
-        }
-        _handleFlightOffers(JSON.parse(response));
+        // var response = '{}';
+        // if (packageId == 1) {
+        //     response = '{"success":1,"data":[{"id":"134","package_id":"1","offer_name":"FTF - 2 Flights 1 Person","code":"IND-000934","price":"184","duration":"2","status":"1"},{"id":"135","package_id":"1","offer_name":"FTF - 4 Flights 1 Person","code":"IND-000935","price":"348","duration":"4","status":"1"},{"id":"136","package_id":"1","offer_name":"FTF - 10 Flights 2 Person","code":"IND-000936","price":"830","duration":"10","status":"1"}]}';
+        // } else if (packageId == 3) {
+        //     response = '{"success":1,"data":[{"id":"138","package_id":"3","offer_name":"FTF - 20 Flights 10 Person","code":"IND-000909","price":"1540","duration":"20","status":"1"},{"id":"139","package_id":"3","offer_name":"FTF - 30 Flights 12 Person","code":"IND-000911","price":"2250","duration":"30","status":"1"},{"id":"140","package_id":"3","offer_name":"FTF - 12 Flights 3 Person","code":"IND-00093161","price":"960","duration":"12","status":"1"}]}';
+        // }
+        //_handleFlightOffers(JSON.parse(response));
     };
 
     var _handleFlightOffers = function(response) {
+        $('#flightOffer').prop('disabled', false);
         var offers = response.data;
         $('#flightOffer option').not(':first').remove();
         for (var i in offers) {
             $('#flightOffer').append('<option value="' + offers[i].id + '" \
                         data-duration="' + offers[i].duration + '" ' + (offers[i].id == "<?= $_GET["offer_id"] ?>" ? "selected" : "") + ' > \
-                            ' + offers[i].offer_name + ' - ' + offers[i].code + ' - AED' + offers[i].price + '\
-                            </option>');
+                            ' + offers[i].offer_name + ' - AED' + offers[i].price + '\
+                            </option>'); // + ' - ' + offers[i].code 
         }
         $('#flightOffer').change();
     };
@@ -943,7 +946,7 @@
                     $(divToFillId).html(response.data);
                     $('[data-toggle="tooltip"]').tooltip();
                 } else {
-                    bootbox.alert(response.msg);
+                    alert(response.msg);
                 }
             }
         });
