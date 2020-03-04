@@ -24,7 +24,7 @@ function getTimeslotsForFlightDate()
     $datetime = DateTime::createFromFormat('Y-m-d', $_POST['flight_date']);
     $day = $datetime->format('D');
     if ($day == 'Mon' || $day == 'Tue') {
-        echo json_encode(array('success' => 0, 'msg' => 'No slot available on Monday and Tuesday'));
+        echo json_encode(array('success' => 0, 'msg' => 'No slot available on Mondays and Tuesdays'));
         exit;
     }
 
@@ -1340,6 +1340,24 @@ function getBusinessPlanRevenueCellData()
     }
 
     echo json_encode(['success' => 1, 'data' => number_format($paid)]);
+}
+
+function savePartner()
+{
+    global $db;
+
+    $query = $db->prepare('INSERT INTO discounts VALUES (NULL, ?, ?, ?, ?, ?, ?)');
+    $query->execute([$_POST['type'], $_POST['category'], $_POST['percent'], 1, $_POST['parent'], $_POST['rnl_parent']]);
+    echo json_encode(['success' => 1]);
+}
+
+function deletePartner()
+{
+    global $db;
+
+    $query = $db->prepare('UPDATE discounts SET status = 0 WHERE id = ?');
+    $query->execute([$_POST['id']]);
+    echo json_encode(['success' => 1]);
 }
 
 call_user_func($_POST['call']);
