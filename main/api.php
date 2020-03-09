@@ -1360,4 +1360,45 @@ function deletePartner()
     echo json_encode(['success' => 1]);
 }
 
+function addPackage()
+{
+    global $db;
+
+    $query = $db->prepare('INSERT INTO flight_packages VALUES (NULL, ?, "", 1, 0)');
+    $query->execute([$_POST['name']]);
+    echo json_encode(['success' => 1]);
+}
+
+function deletePackage()
+{
+    global $db;
+
+    $query = $db->prepare('UPDATE flight_packages SET status = 0 WHERE id = ?');
+    $query->execute([$_POST['id']]);
+
+    $query = $db->prepare('UPDATE flight_offers SET status = 0 WHERE package_id = ?');
+    $query->execute([$_POST['id']]);
+
+    echo json_encode(['success' => 1]);
+}
+
+function saveOffer()
+{
+    global $db;
+
+    $query = $db->prepare('INSERT INTO flight_offers VALUES (NULL, ?, ?, ?, ?, ?, 1)');
+    $query->execute([$_POST['package_id'], $_POST['offer_name'], $_POST['code'], $_POST['price'], $_POST['duration']]);
+    echo json_encode(['success' => 1]);
+}
+
+function deleteOffer()
+{
+    global $db;
+
+    $query = $db->prepare('UPDATE flight_offers SET status = 0 WHERE id = ?');
+    $query->execute([$_POST['id']]);
+    echo json_encode(['success' => 1]);
+}
+
+
 call_user_func($_POST['call']);

@@ -27,7 +27,8 @@ if ($position == 'cashier'  || $position == 'Operator' || $_SESSION[SESS_MOCK_RO
 			<li class="' . ($current_page == 'revenue_liability_customer.php' ? 'active' : '') . '"><a href="revenue_liability_customer.php?d1=0&d2=0"><i class="icon-money icon-2x"></i> Customer Liability</a></li>
 			<li class="' . ($current_page == 'collection_other.php' ? 'active' : '') . '"><a href="collection_other.php?d1=0&d2=0"><i class="icon-bar-chart icon-2x"></i> Collection Report</a></li>
 			<li class="' . ($current_page == 'revenue_liability_acc.php' ? 'active' : '') . '"><a href="revenue_liability_acc.php?d1=0&d2=0"><i class="icon-money icon-2x"></i> Revenue & Liability Acc.</a></li>
-			<li class="' . ($current_page == 'discounts.php' ? 'active' : '') . '"><a href="discounts.php"><i class="icon-cog icon-2x"></i> Discounts</a></li>';
+			<li class="' . ($current_page == 'discounts.php' ? 'active' : '') . '"><a href="discounts.php"><i class="icon-arrow-down icon-2x"></i> Discounts</a></li>
+			<li class="' . ($current_page == 'packages.php' ? 'active' : '') . '"><a href="packages.php"><i class="icon-list icon-2x"></i> Flight Packages</a></li>';
 	//<li class="'.($current_page=='collection_other.php'?'active':'').'"><a href="collection_other.php?d1=0&d2=0"><i class="icon-bar-chart icon-2x"></i> Master Report</a></li>
 	//<li class="'.($current_page=='sales.php'?'active':'').'"><a href="sales.php?id=cash&invoice=' . $finalcode . '"><i class="icon-shopping-cart icon-2x"></i> Sales</a>  </li>
 	//<li class="'.($current_page=='products.php'?'active':'').'"><a href="products.php"><i class="icon-list-alt icon-2x"></i> Products</a></li>
