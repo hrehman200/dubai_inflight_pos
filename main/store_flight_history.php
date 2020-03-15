@@ -292,5 +292,5 @@ session_start();
         }
     }
 </script>
-<?php include('footer.php'); ?>
+<?php include('store_footer.php'); ?>
 </html>
