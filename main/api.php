@@ -1400,5 +1400,30 @@ function deleteOffer()
     echo json_encode(['success' => 1]);
 }
 
+function getFTFDiscountDetails()
+{
+    global $db;
+
+    $query = $db->prepare("SELECT fp.invoice_id, fo.offer_name, fo.duration, DATE(fp.created) AS created
+        FROM `flight_purchases` fp 
+        INNER JOIN flight_offers fo ON fp.flight_offer_id = fo.id 
+        INNER JOIN discounts d ON fp.discount_id = d.id 
+        WHERE fp.created >= ? AND fp.created <= ? AND d.category LIKE ? ");
+    $query->execute([$_POST['startDate'], $_POST['endDate'], $_POST['discountName'] . '%']);
+    $rows = $query->fetchAll(PDO::FETCH_ASSOC);
+
+    $tbl = '';
+    foreach ($rows as $row) {
+        $tbl .= sprintf('<tr>
+            <td>%s</td>
+            <td>%s</td>
+            <td>%s</td>
+            <td>%s</td>
+        </tr>', $row['invoice_id'], $row['offer_name'], $row['duration'], $row['created']);
+    }
+
+    echo json_encode(['success' => 1, 'data' => $tbl]);
+}
+
 
 call_user_func($_POST['call']);

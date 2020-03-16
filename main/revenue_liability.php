@@ -4,6 +4,37 @@ ini_set('max_execution_time', 1800);
 set_time_limit(1800);
 ?>
 
+<div class="modal fade modalFtfDiscountDetails">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+                <h4 class="modal-title">Bookings for <span id="spDiscountName"></span></h4>
+            </div>
+            <div class="modal-body">
+                <div>
+                    <table class="table table-striped">
+                        <tr>
+                            <th>Invoice</th>
+                            <th>Offer</th>
+                            <th>Minutes</th>
+                            <th>Purchase <br>Date</th>
+                        </tr>
+                        <tbody id="tblBookings">
+
+                        </tbody>
+                    </table>
+
+                </div>
+            </div>
+            <div class="modal-footer">
+                <div class="msg"></div>
+                <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <div class="container-fluid">
     <div class="row-fluid">
         <div class="span2">
@@ -126,6 +157,10 @@ set_time_limit(1800);
 
                             if ($row['package_name'] == 'Retail Revenue') {
                                 $display_title = 'Revenue other than Tunnel';
+                            }
+
+                            if (in_array($_POST['pageType'], ['B2B', 'B2C', 'Corporate Discount'])) {
+                                $display_title = sprintf('<a href="javascript:;" class="btn-ftf-discount">%s</a>', $row['package_name']);
                             }
 
                         ?>
@@ -470,6 +505,27 @@ set_time_limit(1800);
                     data: {
 
                     }
+                });
+
+                $('.btn-ftf-discount').on('click', function(e) {
+                    $('.modalFtfDiscountDetails').modal('show');
+                    $('#spDiscountName').html($(e.target).text());
+                    $.ajax({
+                        url: 'api.php',
+                        method: 'POST',
+                        data: {
+                            'call': 'getFTFDiscountDetails',
+                            'startDate': '<?= $_GET['d1'] ?>',
+                            'endDate': '<?= $_GET['d2'] ?>',
+                            'discountName': $(e.target).text()
+                        },
+                        dataType: 'json',
+                        success: function(response) {
+                            if (response.success == 1) {
+                                $('.modalFtfDiscountDetails').find('#tblBookings').html(response.data);
+                            }
+                        }
+                    });
                 });
             </script>
 

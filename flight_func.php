@@ -1918,8 +1918,16 @@ function getRnL($start_date, $end_date, $parent_package = null, $level = 2)
 
     $package_column = $level == 1 ? 'parent_package AS package_name' : 'package AS package_name';
 
+    $one_of_ftf_discounts = in_array($parent_package, ['B2B']);
+
+    if ($one_of_ftf_discounts) {
+        $package_name = "replace(replace(package ,'EYW',''),'SWY','SWY')";
+        $package_column = $package_name . ' AS package_name';
+    }
+
     $sql = 'SELECT ' . $package_column . ', SUM(paid) AS paid, SUM(total_minutes) AS total_minutes, SUM(minutes_used) AS minutes_used, SUM(aed_value) AS aed_value, avg_per_min
       FROM rnl_cache WHERE date >= ? AND date <= ?';
+
     $params = [$start_date, $end_date];
 
     if ($parent_package == 'FTF') {
@@ -1935,8 +1943,10 @@ function getRnL($start_date, $end_date, $parent_package = null, $level = 2)
 
     if ($level == 1) {
         $sql .= ' GROUP BY parent_package';
-    } else {
+    } else if (!$one_of_ftf_discounts) {
         $sql .= ' GROUP BY package';
+    } else {
+        $sql .= ' GROUP BY ' . $package_name;
     }
 
     $query = $db->prepare($sql);
