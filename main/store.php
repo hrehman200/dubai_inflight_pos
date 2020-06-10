@@ -91,6 +91,8 @@
 
     <link href="../style.css" media="screen" rel="stylesheet" type="text/css" />
 
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@9"></script>
+
 </head>
 
 <body>
@@ -688,7 +690,7 @@
         e.preventDefault();
 
         if ($('#resultTable tbody tr').length <= 1) {
-            bootbox.alert('Please select an offer and time first');
+            Swal.fire('Please select an offer and time first');
             return false;
         }
 
@@ -699,39 +701,58 @@
         }
         ?>
 
-        var amount = $('#payment_form').find('input[name="amount"]').val();
-        if (amount > 0) {
-            $.ajax({
-                url: 'api.php',
-                method: 'POST',
-                data: {
-                    'call': 'getSignature',
-                    'data': $('#payment_form').serializeArray(),
-                },
-                dataType: 'json',
-                success: function(response) {
-                    if (response.success == 1) {
-                        $('#payment_form')
-                            .find('#signature').remove().end()
-                            .append('<input type="hidden" id="signature" name="signature" value="' + response.data + '" />')
-                            .submit();
-                    }
+        var covidHtml = '<h3>General Rules:</h3><ul> \
+        <li>Children under the age of 12, adults aged over 60 and those prone to illnesses or suffering from chronic diseases are not allowed to enter Inflight Dubai.<br/><br/></li> \
+        <li>All people visiting Inflight Dubai must wear a mask all the time.<br/><br/></li> \
+        <li>A safe 2-meter distance must be maintained by visitors inside and outside at the premises.<br/></li> \
+        <div><br/>Due to situation of Covid-19 and as per the regulations of Government, these conditions apply until further notice. </div> \
+        <div><br/>By clicking OK, you confirm and understand the instructions.</div>';
+
+        Swal.fire({
+            title: 'General Rules',
+            html: covidHtml,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#3085d6',
+            cancelButtonColor: '#d33',
+            confirmButtonText: 'OK'
+        }).then((result) => {
+            if (result.value) {
+                var amount = $('#payment_form').find('input[name="amount"]').val();
+                if (amount > 0) {
+                    $.ajax({
+                        url: 'api.php',
+                        method: 'POST',
+                        data: {
+                            'call': 'getSignature',
+                            'data': $('#payment_form').serializeArray(),
+                        },
+                        dataType: 'json',
+                        success: function(response) {
+                            if (response.success == 1) {
+                                $('#payment_form')
+                                    .find('#signature').remove().end()
+                                    .append('<input type="hidden" id="signature" name="signature" value="' + response.data + '" />')
+                                    .submit();
+                            }
+                        }
+                    });
+                } else {
+                    $.ajax({
+                        method: 'POST',
+                        dataType: 'json',
+                        url: './store_savesales.php',
+                        data: {
+                            req_reference_number: '<?= $_GET['invoice'] ?>',
+                            req_amount: 0
+                        },
+                        complete: function(response) {
+                            window.location.href = 'flight_preview.php?invoice=<?= $_GET['invoice'] ?>';
+                        }
+                    });
                 }
-            });
-        } else {
-            $.ajax({
-                method: 'POST',
-                dataType: 'json',
-                url: './store_savesales.php',
-                data: {
-                    req_reference_number: '<?= $_GET['invoice'] ?>',
-                    req_amount: 0
-                },
-                complete: function(response) {
-                    window.location.href = 'flight_preview.php?invoice=<?= $_GET['invoice'] ?>';
-                }
-            });
-        }
+            }
+        })
     });
 
     var p = getParameterByName('p');
