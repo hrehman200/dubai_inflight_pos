@@ -701,21 +701,25 @@
         }
         ?>
 
-        var covidHtml = '<h3>General Rules:</h3><ul> \
-        <li>Children under the age of 12, adults aged over 60 and those prone to illnesses or suffering from chronic diseases are not allowed to enter Inflight Dubai.<br/><br/></li> \
+        var covidHtml = '<ul> \
+        <li>Children under the age of 12, adults aged over 60 and those prone to illnesses or suffering from chronic diseases are not allowed to book and fly at Inflight Dubai.<br/><br/></li> \
         <li>All people visiting Inflight Dubai must wear a mask all the time.<br/><br/></li> \
-        <li>A safe 2-meter distance must be maintained by visitors inside and outside at the premises.<br/></li> \
-        <div><br/>Due to situation of Covid-19 and as per the regulations of Government, these conditions apply until further notice. </div> \
-        <div><br/>By clicking OK, you confirm and understand the instructions.</div>';
+        <li>A safe 2-meter distance must be maintained by visitors inside the premises.<br/></li> \
+        <div><br/>Due to current situation of Covid-19 and as per the regulations of Government of UAE, these conditions apply until further notice. </div> \
+        <br/><br/>\
+        <div><input type="checkbox" id="chkAgree" /> <label for="chkAgree" style="color:#000;display:inline;">I acknowledge that I read and accept the above mentioned instructions</label></div>';
 
         Swal.fire({
-            title: 'General Rules',
+            title: 'Important Notice<br/>(Health & Safety):<br/><br/>',
             html: covidHtml,
             icon: 'warning',
             showCancelButton: true,
             confirmButtonColor: '#3085d6',
             cancelButtonColor: '#d33',
-            confirmButtonText: 'OK'
+            confirmButtonText: 'Proceed',
+            onOpen: function() {
+                $('.swal2-confirm').prop('disabled', true)
+            }
         }).then((result) => {
             if (result.value) {
                 var amount = $('#payment_form').find('input[name="amount"]').val();
@@ -754,6 +758,10 @@
             }
         })
     });
+
+    $('body').on('change', '#chkAgree', function(e) {
+        $('.swal2-confirm').prop('disabled', !$('#chkAgree').is(':checked'))
+    }).trigger('change')
 
     var p = getParameterByName('p');
     if (p == 2) {
