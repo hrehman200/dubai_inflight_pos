@@ -704,7 +704,8 @@
         var covidHtml = '<ul> \
         <li>Children under the age of 12, adults aged over 60 and those prone to illnesses or suffering from chronic diseases are not allowed to book and fly at Inflight Dubai.<br/><br/></li> \
         <li>All people visiting Inflight Dubai must wear a mask all the time.<br/><br/></li> \
-        <li>A safe 2-meter distance must be maintained by visitors inside the premises.<br/></li> \
+        <li>A safe 2-meter distance must be maintained by visitors inside the premises.<br/><br/></li> \
+        <li>People having symtoms with temprature above 37.3 Celsius will be prohibited from entering.</li> \
         <div><br/>Due to current situation of Covid-19 and as per the regulations of Government of UAE, these conditions apply until further notice. </div> \
         <br/><br/>\
         <div><input type="checkbox" id="chkAgree" /> <label for="chkAgree" style="color:#000;display:inline;">I acknowledge that I read and accept the above mentioned instructions</label></div>';
@@ -714,7 +715,7 @@
             html: covidHtml,
             icon: 'warning',
             showCancelButton: true,
-            confirmButtonColor: '#3085d6',
+            confirmButtonColor: '#2E8B57',
             cancelButtonColor: '#d33',
             confirmButtonText: 'Proceed',
             onOpen: function() {
