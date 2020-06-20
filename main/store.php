@@ -976,7 +976,7 @@
                     $(divToFillId).html(response.data);
                     $('[data-toggle="tooltip"]').tooltip();
                 } else {
-                    alert(response.msg);
+                    Swal.fire(response.msg);
                 }
             }
         });
