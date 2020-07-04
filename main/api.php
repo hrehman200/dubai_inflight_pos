@@ -23,8 +23,8 @@ function getTimeslotsForFlightDate()
 
     $datetime = DateTime::createFromFormat('Y-m-d', $_POST['flight_date']);
     $day = $datetime->format('D');
-    if ($day == 'Mon' || $day == 'Tue') {
-        echo json_encode(array('success' => 0, 'msg' => 'No slot available on Mondays and Tuesdays'));
+    if ($day == 'Sun' || $day == 'Mon' || $day == 'Tue' || $day == 'Wed') {
+        echo json_encode(array('success' => 0, 'msg' => 'No slot available from Sunday to Wednesday'));
         exit;
     }
 
@@ -244,20 +244,34 @@ function saveCustomer()
     $link_token = sha1(uniqid('t-'));
     $link = sprintf('<a href="%smain/activate.php?lt=%s&invoice=%s&p=%s">Activate</a>', BASE_URL, $link_token, $post['invoice'], $post['p']);
 
-    $query->execute(array(
-        ':customer_name' => ($post['pos'] == 1) ? $post['customer_name'] : $post['first_name'] . ' ' . $post['last_name'],
-        ':address' => ($post['pos'] == 1) ? $post['email'] : ($post['address'] ? $post['address'] : ''),
-        ':gender' => $post['gender'],
-        ':phone' => $post['phone'],
-        ':email' => $post['email'],
-        ':password' => sha1($post['password']),
-        ':nationality' => ($post['nationality'] ? $post['nationality'] : ''),
-        ':resident_of' => ($post['resident_of'] ? $post['resident_of'] : ''),
-        ':dob' => $post['dob-year'] . '-' . $post['dob-month'] . '-' . $post['dob-day'],
-        ':image' => ($new_image ? $new_image : ''),
-        ':activate_token' => $link_token,
-        ':note' => $post['note'] ? $post['note'] : ''
-    ));
+    if (isset($post['dob-year'])) {
+        $dob = $post['dob-year'] . '-' . $post['dob-month'] . '-' . $post['dob-day'];
+    } else {
+        $dob = date('Y-m-d');
+    }
+
+    try {
+        $query->execute(array(
+            ':customer_name' => ($post['pos'] == 1) ? $post['customer_name'] : $post['first_name'] . ' ' . $post['last_name'],
+            ':address' => ($post['pos'] == 1) ? $post['email'] : ($post['address'] ? $post['address'] : ''),
+            ':gender' => $post['gender'],
+            ':phone' => $post['phone'],
+            ':email' => $post['email'],
+            ':password' => sha1($post['password']),
+            ':nationality' => ($post['nationality'] ? $post['nationality'] : ''),
+            ':resident_of' => ($post['resident_of'] ? $post['resident_of'] : ''),
+            ':dob' => $dob,
+            ':image' => ($new_image ? $new_image : ''),
+            ':activate_token' => $link_token,
+            ':note' => $post['note'] ? $post['note'] : ''
+        ));
+    } catch (Exception $e) {
+        echo json_encode(array(
+            'success' => 0,
+            'msg' => $e->getMessage(),
+        ));
+        exit();
+    }
 
     $customer_id = $db->lastInsertId();
 
@@ -496,6 +510,22 @@ function searchCustomers()
         ':search' => '%' . $post['search'] . '%'
     ));
 
+    $result = $query->fetchAll(PDO::FETCH_ASSOC);
+
+    echo json_encode(array(
+        'success' => 1,
+        'msg' => '',
+        'data' => $result
+    ));
+}
+
+function searchDiscounts()
+{
+    global $db;
+
+    $sql = sprintf('SELECT *, CONCAT(category, " (", percent, "%%)") AS category FROM discounts WHERE type = "%s" AND status=1 AND parent="%s" AND category LIKE "%s" ', TYPE_SERVICE, $_POST['discountParent'], '%'.$_POST['search'].'%');
+    $query = $db->query($sql);
+    $query->execute();
     $result = $query->fetchAll(PDO::FETCH_ASSOC);
 
     echo json_encode(array(
@@ -1057,8 +1087,13 @@ function saveDiscount()
     global $db;
 
     if (@$_POST['saving_flight'] == 1) {
+
+        $query = $db->prepare('SELECT percent FROM discounts WHERE id = ?');
+        $query->execute([$_POST['discount_id']]);
+        $row = $query->fetch(PDO::FETCH_ASSOC);
+
         $sql = "UPDATE flight_purchases SET discount = ?, discount_id = ? ";
-        $arr = [$_POST['discount'], $_POST['discount_id']];
+        $arr = [$row['percent'], $_POST['discount_id']];
         if (strlen($_POST['groupon_code']) > 0) {
             $sql .= ", groupon_code = ?, deduct_from_balance=3 ";
             $arr[] = $_POST['groupon_code'];
