@@ -523,7 +523,7 @@ function searchDiscounts()
 {
     global $db;
 
-    $sql = sprintf('SELECT *, CONCAT(category, " (", percent, "%%)") AS category FROM discounts WHERE type = "%s" AND status=1 AND parent="%s" AND category LIKE "%s" ', TYPE_SERVICE, $_POST['discountParent'], '%'.$_POST['search'].'%');
+    $sql = sprintf('SELECT *, CONCAT(category, " (", percent, "%%)") AS category FROM discounts WHERE type = "%s" AND status=1 AND parent="%s" AND category LIKE "%s" ', TYPE_SERVICE, $_POST['discountParent'], '%' . $_POST['search'] . '%');
     $query = $db->query($sql);
     $query->execute();
     $result = $query->fetchAll(PDO::FETCH_ASSOC);
@@ -1205,7 +1205,51 @@ function getSignature()
     }
 
     $signature = sign($params);
-    echo json_encode(array('success' => 1, 'data' => $signature));
+    //echo json_encode(array('success' => 1, 'data' => $signature));
+
+    $access_token = getNGeniusAccessToken();
+    //echo json_encode(array('success' => 1, 'data' => $access_token));
+
+    $postData = new StdClass();
+    $postData->action = "SALE";
+    $postData->amount = new StdClass();
+    $postData->amount->currencyCode = "AED";
+    $postData->amount->value = $params['amount'] * 100;
+    $postData->emailAddress = $params['bill_to_email'];
+    $postData->merchantAttributes = new StdClass();
+    $postData->merchantAttributes->redirectUrl = BASE_URL . 'main/store_savesales.php';
+    $postData->merchantAttributes->skipConfirmationPage = true;
+    $postData->merchantOrderReference = $params['reference_number'];
+    $postData->billingAddress = new StdClass();
+    $postData->billingAddress->firstName =    $params['bill_to_forename'];
+    $postData->billingAddress->lastName =    $params['bill_to_surname'];
+    $postData->billingAddress->address1 = $params['bill_to_address_line1'];
+    $postData->billingAddress->city    = 'bill_to_address_city';
+    $postData->billingAddress->countryCode = 'AE';
+
+    $json = json_encode($postData);
+
+    $ch = curl_init();
+
+    curl_setopt($ch, CURLOPT_URL, NI_TRANSACTION_URL . NI_REF . "/orders");
+    curl_setopt($ch, CURLOPT_HTTPHEADER, array(
+        "Authorization: Bearer " . $access_token,
+        "Content-Type: application/vnd.ni-payment.v2+json",
+        "Accept: application/vnd.ni-payment.v2+json"
+    ));
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_POST, 1);
+    curl_setopt($ch, CURLOPT_POSTFIELDS, $json);
+
+    $output = json_decode(curl_exec($ch));
+    if (count($output->errors) > 0) {
+        echo json_encode(['success' => 0, 'data' => $output->errors[0]->message]);
+    } else {
+        $order_reference = $output->reference;
+        $order_paypage_url = $output->_links->payment->href;
+        echo json_encode(['success' => 1, 'data' => $order_paypage_url]);
+    }
+    curl_close($ch);
 }
 
 function getFlightOffers()

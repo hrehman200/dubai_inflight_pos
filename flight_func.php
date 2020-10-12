@@ -1918,10 +1918,10 @@ function getRnL($start_date, $end_date, $parent_package = null, $level = 2)
 
     $package_column = $level == 1 ? 'parent_package AS package_name' : 'package AS package_name';
 
-    $one_of_ftf_discounts = in_array($parent_package, ['B2B']);
+    $one_of_ftf_discounts = in_array($parent_package, ['B2B', 'B2C', 'Corporate Discount']);
 
     if ($one_of_ftf_discounts) {
-        $package_name = "replace(replace(package ,'EYW',''),'SWY','SWY')";
+        $package_name = "replace(replace(package ,'EYW', ''), 'SYW', '')";
         $package_column = $package_name . ' AS package_name';
     }
 

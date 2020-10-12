@@ -735,10 +735,16 @@
                         dataType: 'json',
                         success: function(response) {
                             if (response.success == 1) {
-                                $('#payment_form')
-                                    .find('#signature').remove().end()
-                                    .append('<input type="hidden" id="signature" name="signature" value="' + response.data + '" />')
-                                    .submit();
+                                window.location.href = response.data;
+                                // $('#payment_form')
+                                //     .find('#signature').remove().end()
+                                //     .append('<input type="hidden" id="signature" name="signature" value="' + response.data + '" />')
+                                //     .submit();
+                            } else {
+                                Swal.fire({
+                                    icon: error,
+                                    title: response.data
+                                });
                             }
                         }
                     });
